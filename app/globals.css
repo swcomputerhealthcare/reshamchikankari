@@ -1,26 +1,299 @@
 @import "tailwindcss";
+@source ".";
+@source "../components";
+@source "../context";
+@source "../hooks";
+@source "../lib";
+@source "../actions";
+@source not "../claude-skills";
+@source not "../.agents";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --color-brand-offwhite: #FFF9F4;
+  --color-brand-black: #000000;
+  --color-brand-pink: #E694AA;
+  --color-brand-sage: #3F5031;
+  --color-brand-maroon: #800020;
+
+  /* Two genuinely new surfaces. Deliberately NOT adding near-duplicates of
+     offwhite / pink / black — the established values above stay authoritative. */
+  --color-brand-cream: #F4EFE7;
+  --color-brand-sage-muted: #59684B;
+
+  --font-display: var(--font-gilda-display);
+  --font-sans: var(--font-inter);
+  --font-serif: var(--font-gilda-display);
+  --font-mono: var(--font-inter);
+  --font-devanagari: var(--font-tiro-devanagari);
+}
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Announcement bar (~2.25rem) + sticky header (h-20 = 5rem).
+     The hero subtracts this from 100svh so the first viewport holds the chrome
+     plus the hero exactly, and the next section cannot leak above the fold. */
+  --chrome-height: 7.25rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: #FFF9F4;
+  background-image: url('/images/bg.webp');
+  background-repeat: repeat-y;
+  background-size: 100% auto;
+  background-position: center top;
+  font-family: var(--font-sans);
+  min-height: 100vh;
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: #FFF9F4;
+  --foreground: #000000;
+  --card: #FFF9F4;
+  --card-foreground: #000000;
+  --popover: #FFF9F4;
+  --popover-foreground: #000000;
+  --primary: #3F5031;
+  --primary-foreground: #FFF9F4;
+  --secondary: #FFF9F4;
+  --secondary-foreground: #3F5031;
+  --muted: #fbf5ee;
+  --muted-foreground: #7C7A5A;
+  --accent: #E694AA;
+  --accent-foreground: #FFF9F4;
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@layer base {
+  *, ::before, ::after {
+    box-sizing: border-box;
+  }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply text-foreground;
+    background-color: #FFF9F4;
+    background-image: url('/images/bg.webp');
+    background-repeat: repeat-y;
+    background-size: 100% auto;
+    background-position: center top;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+  html {
+    @apply font-sans;
+    max-width: 100%;
+    overflow-x: clip;
+  }
+  img, svg, iframe, video {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+@utility bg-brand-sage-section {
+  background-color: #3F5031;
+  background-image: linear-gradient(rgba(63, 80, 49, 0.955), rgba(63, 80, 49, 0.955)), url('/images/bg.webp');
+  background-repeat: repeat-y;
+  background-size: 100% auto;
+  background-position: center top;
+  color: #FFF9F4;
+}
+
+@utility bg-brand-cream-section {
+  background-image: url('/images/bg.webp');
+  background-repeat: repeat-y;
+  background-size: 100% auto;
+  background-position: center top;
+  color: #000000;
+}
+
+@utility font-display {
+  font-family: var(--font-gilda-display);
+}
+
+@utility font-sans {
+  font-family: var(--font-inter);
+}
+
+/* Devanagari display face. Kept separate from font-display (Gilda, latin-only)
+   so चिकनकारी renders in a face actually designed for the script. */
+@utility font-devanagari {
+  font-family: var(--font-tiro-devanagari);
+}
+
+/* Custom editorial scrollbar styling */
+.scrollbar-custom::-webkit-scrollbar {
+  width: 4px;
+}
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background-color: rgba(63, 80, 49, 0.35);
+  border-radius: 999px;
+}
+
+@utility nav-link-underline {
+  position: relative;
+  &::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    transform: scaleX(0);
+    height: 1px;
+    bottom: -4px;
+    left: 0;
+    background-color: var(--color-brand-pink, #E694AA);
+    transform-origin: bottom right;
+    transition: transform 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+  &:hover::after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+  }
+}
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-33.333333%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 35s linear infinite;
+  will-change: transform;
+}
+
+/* Hero entrance.
+   Deliberately CSS rather than GSAP: a keyframe animation starts on the first
+   paint instead of waiting for hydration, so there is no flash of content
+   appearing and then being hidden again, and the hero needs no client JS at all.
+   Transform and opacity only, and `both` fill mode means the from-state applies
+   during the stagger delay. */
+@keyframes hero-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 14px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.hero-rise {
+  animation: hero-rise 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-rise {
+    animation: none;
+  }
 }

@@ -1,0 +1,14 @@
+{
+  "wallets": {
+    "wall_2jx811rz2": {
+      "id": "wall_2jx811rz2",
+      "userId": "52c3b85d-bacf-4e58-8fb6-b443a63aaa10",
+      "availableBalancePaise": 0,
+      "lockedBalancePaise": 0,
+      "currency": "INR"
+    }
+  },
+  "transactions": [],
+  "payoutMethods": [],
+  "withdrawalRequests": []
+}
