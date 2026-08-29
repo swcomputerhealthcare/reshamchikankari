@@ -19,6 +19,9 @@ export default function HeroLotus() {
     if (prefersReducedMotion) return;
 
     const ctx = gsap.context(() => {
+      const homeEl = document.querySelector("#home") || rotationRef.current?.parentElement;
+      if (!homeEl) return;
+
       // 1. Initial State: Facing UPWARDS (rotation: 0deg), 0.95 high visibility opacity
       gsap.set(rotationRef.current, {
         rotation: 0,
@@ -31,7 +34,7 @@ export default function HeroLotus() {
         rotation: 180,
         ease: "none",
         scrollTrigger: {
-          trigger: "#home",
+          trigger: homeEl,
           start: "top top",
           end: "bottom 30%",
           scrub: 0.3,
@@ -43,16 +46,16 @@ export default function HeroLotus() {
   }, []);
 
   return (
-    /* Stable position wrapper attached directly to bottom border of hero frame */
+    /* Intentional heritage seal wrapper positioned cleanly on hero bottom border */
     <div
-      className="lotus-position absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-1/2 pointer-events-none select-none z-30"
+      className="lotus-position absolute left-1/2 bottom-0 -translate-x-1/2 translate-y-[calc(38%+16px)] sm:translate-y-[calc(38%+24px)] lg:translate-y-[calc(38%+33.16px)] pointer-events-none select-none z-40"
       style={{ pointerEvents: "none" }}
       aria-hidden="true"
     >
-      {/* High-visibility upright motif element (Opacity 0.95) */}
+      {/* Refined editorial motif element */}
       <div
         ref={rotationRef}
-        className="lotus-rotation w-[clamp(180px,18vw,280px)] aspect-square"
+        className="lotus-rotation w-[180px] sm:w-[240px] lg:w-[310px] h-[141.5px] sm:h-[188.6px] lg:h-[243.67px] relative"
         style={{
           transformOrigin: "center center",
           willChange: "transform",
@@ -65,8 +68,8 @@ export default function HeroLotus() {
           fill
           priority
           unoptimized
-          className="object-contain filter drop-shadow-md brightness-110 opacity-100 lotus-svg"
-          sizes="(max-width: 768px) 220px, 280px"
+          className="object-contain filter drop-shadow-[0_12px_24px_rgba(0,0,0,0.18)] brightness-110 opacity-100 lotus-svg transition-all"
+          sizes="(max-width: 640px) 180px, (max-width: 1024px) 240px, 310px"
         />
       </div>
     </div>

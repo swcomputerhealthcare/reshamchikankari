@@ -42,22 +42,16 @@ export default function LotusJourney() {
     >
       <div
         id={LOTUS_ID}
-        className="absolute left-1/2 top-0 w-[clamp(120px,14vw,240px)] aspect-square will-change-transform"
-        /**
-         * Matches the first waypoint so the motif is already in the right place
-         * on the very first paint — otherwise it appears at the top of the
-         * screen for a frame and then jumps once GSAP initialises. GSAP
-         * overwrites this transform wholesale on mount.
-         */
-        style={{ transform: "translate(-50%, -50%) translateY(100svh)", opacity: 0.9 }}
+        className="absolute left-1/2 top-0 w-[clamp(180px,18vw,280px)] aspect-square will-change-transform"
+        style={{ transform: "translate(-50%, -50%) translateY(100svh)", opacity: 0.95 }}
       >
         <Image
           src="/images/lotus2.svg"
-          alt=""
+          alt="Lotus Decorative Motif"
           fill
           priority
           unoptimized
-          className="object-contain"
+          className="object-contain filter drop-shadow-md brightness-110 opacity-100"
         />
       </div>
     </div>

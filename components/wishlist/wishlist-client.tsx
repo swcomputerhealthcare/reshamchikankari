@@ -3,10 +3,9 @@
 import React, { useState, useTransition, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useWishlist } from "@/context/wishlist-context";
 import { useCart } from "@/context/cart-context";
-import { Heart, Trash2, Check, Loader2, Share2, ArrowRight } from "lucide-react";
+import { Heart, Check, Loader2, Share2, ArrowRight } from "lucide-react";
 
 interface CatalogProduct {
   id: string;
@@ -68,10 +67,10 @@ export default function WishlistClient({ products: initialProducts }: WishlistCl
     });
   };
 
-  const handleAddToBag = (productId: string, productName: string) => {
+  const handleMoveToBag = (productId: string, productName: string) => {
     const variantId = selectedSizes[productId];
     if (!variantId) {
-      alert("Please select a size first.");
+      setNotification("Please select a size first.");
       return;
     }
 
@@ -89,13 +88,18 @@ export default function WishlistClient({ products: initialProducts }: WishlistCl
       const res = await addItemOptimistic(mappedProduct, variantId, 1);
       if (res.success) {
         setAddingBag((prev) => ({ ...prev, [productId]: "success" }));
-        setNotification(`Added "${productName}" to shopping bag.`);
+        setNotification(`Moved "${productName}" to shopping bag.`);
+        
+        // Remove item from wishlist ONLY after bag addition succeeds
+        await toggleWishlist(productId);
+        setProducts((prev) => prev.filter((p) => p.id !== productId));
+
         setTimeout(() => {
           setAddingBag((prev) => ({ ...prev, [productId]: "idle" }));
-        }, 2500);
+        }, 2000);
       } else {
         setAddingBag((prev) => ({ ...prev, [productId]: "idle" }));
-        alert(res.error || "Failed to add item to bag");
+        setNotification(res.error || "Failed to add item to bag");
       }
     });
   };
@@ -106,21 +110,22 @@ export default function WishlistClient({ products: initialProducts }: WishlistCl
     setNotification(`Link to "${productName}" copied to clipboard.`);
   };
 
+  // Editorial Empty State
   if (products.length === 0) {
     return (
-      <div className="max-w-2xl mx-auto text-center py-20 px-6 bg-[#FFF9F4] border border-[#161616]/10 rounded-3xl relative overflow-hidden font-sans">
-        <span className="text-xs tracking-[0.2em] font-sans uppercase font-bold text-[#75786e] mb-3 block">
-          YOUR SELECTION
+      <div className="max-w-2xl mx-auto text-center py-20 px-6 bg-[#FFF9F4] border border-[#161616]/10 rounded-3xl relative overflow-hidden font-sans shadow-xs">
+        <span className="text-xs tracking-[0.25em] font-sans uppercase font-bold text-[#E694AA] mb-3 block">
+          YOUR EDIT
         </span>
         <h2 className="font-display text-3xl sm:text-4xl text-[#3F5031] mb-3 flex items-center justify-center gap-2">
-          <Heart className="w-6 h-6 stroke-[1.4] text-[#E58FA7] fill-[#E58FA7]" />
           Nothing Saved Yet
         </h2>
-        <p className="text-sm text-[#44483f] max-w-sm mx-auto mb-8 leading-relaxed">
-          Your carefully chosen treasures will appear here. Save pieces to curate your Lucknowi wardrobe.
+        <div className="w-12 h-[1px] bg-[#3F5031]/20 mx-auto mb-4" />
+        <p className="text-xs sm:text-sm text-neutral-600 max-w-sm mx-auto mb-8 leading-relaxed">
+          Discover pieces handcrafted by Lucknow artisans and curate your personal heritage wardrobe.
         </p>
         <Link href="/shop">
-          <button className="px-8 py-3.5 bg-[#3F5031] text-[#FFF9F4] font-sans text-xs font-semibold uppercase tracking-[0.15em] rounded-full hover:bg-black transition-all cursor-pointer border-none inline-flex items-center gap-2">
+          <button className="px-8 py-4 bg-[#3F5031] text-[#FFF9F4] font-sans text-xs font-semibold uppercase tracking-[0.18em] rounded-full hover:bg-black transition-all cursor-pointer border-none inline-flex items-center gap-2">
             Explore Collection <ArrowRight className="w-4 h-4" />
           </button>
         </Link>
@@ -129,8 +134,8 @@ export default function WishlistClient({ products: initialProducts }: WishlistCl
   }
 
   return (
-    <div className="font-sans relative">
-      {/* Toast notification overlay */}
+    <div className="font-sans relative text-left">
+      {/* Toast Notification */}
       {notification && (
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-[#3F5031] text-[#FFF9F4] text-xs font-semibold px-6 py-3 rounded-full shadow-lg z-50 animate-in fade-in slide-in-from-bottom-2">
           {notification}
@@ -139,118 +144,173 @@ export default function WishlistClient({ products: initialProducts }: WishlistCl
 
       {/* Header bar */}
       <div className="mb-10 border-b border-[#161616]/15 pb-4 flex justify-between items-end">
-        <h1 className="font-display text-3xl sm:text-4xl uppercase text-[#3F5031] tracking-wide">
-          YOUR SELECTION
-        </h1>
-        <span className="font-sans text-xs font-semibold tracking-widest text-[#75786e] uppercase">
-          {products.length} {products.length === 1 ? "ITEM" : "ITEMS"}
+        <div>
+          <span className="text-[10px] font-bold tracking-[0.25em] uppercase text-[#E694AA] block mb-1">
+            CURATED COUTURE
+          </span>
+          <h1 className="font-display text-3xl sm:text-4xl uppercase text-[#3F5031] tracking-wide">
+            Your Wishlist Edit
+          </h1>
+        </div>
+        <span className="font-sans text-xs font-semibold tracking-widest text-neutral-500 uppercase">
+          {products.length} {products.length === 1 ? "PIECE" : "PIECES"}
         </span>
       </div>
 
       {/* Product Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
-        {products.map((product) => {
-          const selectedVarId = selectedSizes[product.id];
-          const selectedVariant = product.variants.find((v) => v.id === selectedVarId);
-          const isOutOfStock = !selectedVariant || selectedVariant.stock === 0 || !selectedVariant.isActive;
-          const addState = addingBag[product.id] || "idle";
+        {products.map((product) => (
+          <WishlistProductItem
+            key={product.id}
+            product={product}
+            selectedVarId={selectedSizes[product.id]}
+            addState={addingBag[product.id] || "idle"}
+            isPending={isPending}
+            onSelectSize={(varId) => setSelectedSizes((prev) => ({ ...prev, [product.id]: varId }))}
+            onRemove={() => handleRemove(product.id, product.name)}
+            onMoveToBag={() => handleMoveToBag(product.id, product.name)}
+            onShare={() => handleShare(product.name, product.slug)}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
-          return (
-            <div key={product.id} className="group flex flex-col items-start w-full text-left">
-              {/* Product Photography Container (3:4 ratio) */}
-              <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#efeee9] rounded-2xl mb-4 border border-[#161616]/10">
-                <Link href={`/product/${product.slug}`} className="block w-full h-full">
-                  <Image
-                    src={product.images[0]?.url || "/images/chikankari_hero.png"}
-                    alt={product.name}
-                    fill
-                    className="object-cover object-center group-hover:scale-105 transition-transform duration-700 ease-out"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
-                </Link>
+function WishlistProductItem({
+  product,
+  selectedVarId,
+  addState,
+  isPending,
+  onSelectSize,
+  onRemove,
+  onMoveToBag,
+  onShare,
+}: {
+  product: CatalogProduct;
+  selectedVarId?: string;
+  addState: "idle" | "loading" | "success";
+  isPending: boolean;
+  onSelectSize: (varId: string) => void;
+  onRemove: () => void;
+  onMoveToBag: () => void;
+  onShare: () => void;
+}) {
+  const [currentImgIndex, setCurrentImgIndex] = useState(0);
+  const [isHovered, setIsHovered] = useState(false);
 
-                {/* Heart / Remove Action Button */}
-                <button
-                  onClick={() => handleRemove(product.id, product.name)}
-                  disabled={isPending}
-                  className="absolute top-4 right-4 text-[#3F5031] bg-[#FFF9F4]/90 backdrop-blur-xs p-2.5 rounded-full hover:bg-[#3F5031] hover:text-[#FFF9F4] transition-colors z-20 cursor-pointer border-none shadow-xs"
-                  aria-label={`Remove ${product.name}`}
-                  title="Remove from wishlist"
-                >
-                  <Heart className="w-4 h-4 fill-current stroke-current" />
-                </button>
+  const images = product.images && product.images.length > 0 ? product.images.map((img) => img.url) : ["/images/chikankari_hero.png"];
 
-                {/* Optional Craft Badge */}
-                <div className="absolute bottom-4 left-4 bg-[#E58FA7] text-[#FFF9F4] px-3 py-1 text-[9px] uppercase tracking-widest font-semibold rounded-xs shadow-xs z-20">
-                  Handcrafted
-                </div>
-              </div>
+  useEffect(() => {
+    if (images.length <= 1 || isHovered) return;
 
-              {/* Product Info & CTA */}
-              <div className="flex flex-col items-start w-full space-y-2">
-                <div className="flex justify-between items-baseline w-full">
-                  <Link href={`/product/${product.slug}`}>
-                    <h3 className="font-display text-xl sm:text-2xl text-[#161616] group-hover:text-[#3F5031] transition-colors">
-                      {product.name}
-                    </h3>
-                  </Link>
-                  <p className="font-sans text-sm font-semibold text-[#526443]">
-                    ₹{(product.pricePaise / 100).toLocaleString("en-IN")}
-                  </p>
-                </div>
+    const timer = setInterval(() => {
+      setCurrentImgIndex((prev) => (prev + 1) % images.length);
+    }, 3000);
 
-                {/* Variant Size selector dropdown */}
-                {product.variants.length > 1 && (
-                  <div className="flex items-center gap-2 pt-1 text-xs text-[#75786e]">
-                    <span className="font-bold text-[10px] uppercase tracking-wider">Size:</span>
-                    <select
-                      value={selectedVarId || ""}
-                      onChange={(e) => setSelectedSizes((prev) => ({ ...prev, [product.id]: e.target.value }))}
-                      className="bg-transparent border border-[#161616]/15 rounded-md px-2 py-1 text-xs text-[#161616] focus:outline-none focus:ring-1 focus:ring-[#3F5031]"
-                    >
-                      {product.variants.map((v) => (
-                        <option key={v.id} value={v.id} disabled={v.stock === 0 || !v.isActive}>
-                          {v.name} {v.stock === 0 ? "(Out of Stock)" : ""}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                )}
+    return () => clearInterval(timer);
+  }, [images.length, isHovered]);
 
-                {/* Add to Bag CTA & Share Button */}
-                <div className="flex items-center justify-between w-full pt-2">
-                  <button
-                    disabled={isOutOfStock || addState === "loading" || isPending}
-                    onClick={() => handleAddToBag(product.id, product.name)}
-                    className="font-sans text-xs font-bold uppercase tracking-[0.12em] text-[#3F5031] border-b border-[#3F5031] pb-0.5 hover:text-[#E58FA7] hover:border-[#E58FA7] transition-colors cursor-pointer border-x-0 border-t-0 bg-transparent flex items-center gap-1.5 disabled:opacity-50"
-                  >
-                    {addState === "loading" ? (
-                      <>
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Adding...
-                      </>
-                    ) : addState === "success" ? (
-                      <>
-                        <Check className="w-3.5 h-3.5" /> Added to Bag
-                      </>
-                    ) : isOutOfStock ? (
-                      "Unavailable"
-                    ) : (
-                      "ADD TO BAG"
-                    )}
-                  </button>
+  const selectedVariant = product.variants.find((v) => v.id === selectedVarId);
+  const isOutOfStock = !selectedVariant || selectedVariant.stock === 0 || !selectedVariant.isActive;
 
-                  <button
-                    onClick={() => handleShare(product.name, product.slug)}
-                    className="p-1.5 text-[#75786e] hover:text-[#3F5031] transition-colors border-none bg-transparent cursor-pointer"
-                    title="Share item"
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        })}
+  return (
+    <div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="group flex flex-col items-start w-full text-left bg-[#FAF7F2] p-3 sm:p-4 rounded-2xl border border-[#161616]/10 shadow-xs"
+    >
+      {/* Product Image Container (3:4 aspect ratio) */}
+      <div className="relative aspect-[3/4] w-full overflow-hidden bg-[#FFF9F4] rounded-xl mb-4 border border-[#161616]/10">
+        <Link href={`/product/${product.slug}`} className="block w-full h-full">
+          <Image
+            key={images[currentImgIndex]}
+            src={images[currentImgIndex]}
+            alt={product.name}
+            fill
+            className="object-cover object-center group-hover:scale-105 transition-all duration-500 ease-in-out"
+            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          />
+        </Link>
+
+        {/* Remove Action Button */}
+        <button
+          onClick={onRemove}
+          disabled={isPending}
+          className="absolute top-3 right-3 text-[#E694AA] bg-[#FFF9F4]/90 backdrop-blur-xs p-2.5 rounded-full hover:bg-[#E694AA] hover:text-[#FFF9F4] transition-colors z-20 cursor-pointer border-none shadow-xs"
+          aria-label={`Remove ${product.name}`}
+          title="Remove from wishlist"
+        >
+          <Heart className="w-4 h-4 fill-current stroke-current" />
+        </button>
+
+        {/* Fabric / Craft Badge */}
+        <div className="absolute bottom-3 left-3 bg-[#3F5031] text-[#FFF9F4] px-2.5 py-1 text-[9px] uppercase tracking-widest font-semibold rounded-md shadow-xs z-20">
+          {product.fabric || "Handcrafted"}
+        </div>
+      </div>
+
+      {/* Product Info & Actions */}
+      <div className="flex flex-col items-start w-full space-y-2.5">
+        <div className="flex justify-between items-baseline w-full">
+          <Link href={`/product/${product.slug}`}>
+            <h3 className="font-display text-xl text-[#161616] group-hover:text-[#3F5031] transition-colors">
+              {product.name}
+            </h3>
+          </Link>
+          <p className="font-sans text-sm font-semibold text-[#3F5031]">
+            ₹{(product.pricePaise / 100).toLocaleString("en-IN")}
+          </p>
+        </div>
+
+        {/* Size Selector */}
+        {product.variants.length > 0 && (
+          <div className="flex items-center gap-2 text-xs text-neutral-600 w-full pt-1">
+            <span className="font-bold text-[10px] uppercase tracking-wider">Select Size:</span>
+            <select
+              value={selectedVarId || ""}
+              onChange={(e) => onSelectSize(e.target.value)}
+              className="bg-[#FFF9F4] border border-[#161616]/15 rounded-lg px-2.5 py-1.5 text-xs text-[#161616] focus:outline-none focus:ring-1 focus:ring-[#3F5031] cursor-pointer"
+            >
+              {product.variants.map((v) => (
+                <option key={v.id} value={v.id} disabled={v.stock === 0 || !v.isActive}>
+                  {v.name} {v.stock === 0 ? "(Sold Out)" : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Move to Bag CTA & Share Button */}
+        <div className="flex items-center justify-between w-full pt-2">
+          <button
+            disabled={isOutOfStock || addState === "loading" || isPending}
+            onClick={onMoveToBag}
+            className="font-sans text-xs font-bold uppercase tracking-[0.15em] text-[#3F5031] hover:text-[#E694AA] transition-colors cursor-pointer border-none bg-transparent flex items-center gap-1.5 disabled:opacity-50"
+          >
+            {addState === "loading" ? (
+              <>
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Moving...
+              </>
+            ) : addState === "success" ? (
+              <>
+                <Check className="w-3.5 h-3.5" /> Moved to Bag
+              </>
+            ) : isOutOfStock ? (
+              "Sold Out"
+            ) : (
+              "MOVE TO BAG →"
+            )}
+          </button>
+
+          <button
+            onClick={onShare}
+            className="p-1.5 text-neutral-400 hover:text-[#3F5031] transition-colors border-none bg-transparent cursor-pointer"
+            title="Share piece"
+          >
+            <Share2 className="w-4 h-4" />
+          </button>
+        </div>
       </div>
     </div>
   );

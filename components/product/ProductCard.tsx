@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -22,11 +22,23 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedVarId, setSelectedVarId] = useState(product.variants[0]?.id || "");
   const [isAddedToCart, setIsAddedToCart] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Map product images
   const images = product.images && product.images.length > 0
     ? product.images.map((img) => img.url)
     : ["/images/chikankari_hero.png"];
+
+  // Auto-switch product image every 6 seconds (6000ms) for performance & calm cadence
+  useEffect(() => {
+    if (images.length <= 1 || isHovered) return;
+
+    const timer = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % images.length);
+    }, 6000);
+
+    return () => clearInterval(timer);
+  }, [images.length, isHovered]);
 
   // Deterministically mock reviews/ratings based on product ID for stable, authentic looking details
   const rating = (4.5 + (product.id.charCodeAt(product.id.length - 1) % 5) * 0.1).toFixed(1);
@@ -71,15 +83,20 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
   };
 
   return (
-    <div className="group flex flex-col bg-[#FFF9F4] border border-brand-black/5 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 relative text-left">
+    <div
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      className="group flex flex-col bg-[#FFF9F4] border border-brand-black/5 rounded-2xl overflow-hidden shadow-xs hover:shadow-md transition-all duration-300 relative text-left"
+    >
       {/* Image Gallery Column / Aspect ratio 3:4 */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-white">
         <Link href={`/product/${product.slug}`} className="block w-full h-full relative bg-[#FFF9F4]">
           <Image
+            key={images[currentImageIndex]}
             src={images[currentImageIndex]}
             alt={`${product.name} - View ${currentImageIndex + 1}`}
             fill
-            className="object-contain transition-transform duration-700 ease-out group-hover:scale-102 bg-[#FFF9F4]"
+            className="object-contain transition-all duration-500 ease-in-out group-hover:scale-102 bg-[#FFF9F4]"
             sizes="(max-width: 768px) 50vw, 25vw"
             priority={false}
           />

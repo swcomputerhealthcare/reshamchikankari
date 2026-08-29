@@ -14,17 +14,15 @@ export default function HeroSection() {
   return (
     <section
       id="home"
-      className="hero-frame sticky top-0 z-10 w-full min-h-[calc(100svh_-_var(--chrome-height))] flex flex-col justify-center bg-brand-sage-section border-b border-brand-offwhite/15 select-none pt-8 sm:pt-10 pb-[13svh] sm:pb-[12svh] overflow-visible"
+      className="hero-frame relative z-30 w-full min-h-[100svh] flex flex-col justify-start lg:justify-center bg-brand-sage-section border-b border-brand-offwhite/15 select-none pt-6 sm:pt-10 pb-12 sm:pb-16 lg:pb-[12svh] overflow-visible"
     >
       <HeroLotus />
       <Container>
         {/* Editorial slug line */}
         <div
-          className="hero-rise flex items-center gap-3 font-sans text-[10px] sm:text-[11px] tracking-[0.24em] uppercase text-brand-pink"
+          className="hero-rise flex items-center font-sans text-[10px] sm:text-[11px] tracking-[0.24em] uppercase text-brand-pink"
           style={{ animationDelay: "40ms" }}
         >
-          <span className="text-brand-offwhite/55">01</span>
-          <span className="h-px w-6 bg-brand-pink/40" />
           <span>The art of Lucknow / Hand embroidery</span>
         </div>
 

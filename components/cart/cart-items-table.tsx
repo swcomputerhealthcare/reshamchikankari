@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { updateCartItemQtyAction, removeFromCartAction, clearCartAction } from "@/actions/cart";
 import CouponInput from "@/components/cart/coupon-input";
+import EditorialOrderSummary from "@/components/checkout/editorial-order-summary";
 import { Minus, Plus, Trash2 } from "lucide-react";
 
 import { useCart } from "@/context/cart-context";
@@ -37,6 +38,7 @@ export default function CartItemsTable({
   appliedCouponCode: initialCoupon,
   discountPaise: initialDiscount = 0,
 }: CartItemsTableProps) {
+  const router = useRouter();
   const {
     cart,
     updateQtyOptimistic,
@@ -315,62 +317,19 @@ export default function CartItemsTable({
 
       {/* RIGHT COLUMN: Order Summary card */}
       <div className="lg:col-span-4 w-full">
-        <div className="bg-[#fff9f4] border border-brand-black/5 p-6 sm:p-8 rounded-[28px] shadow-[0_15px_40px_rgba(0,0,0,0.03)] space-y-6">
-          <h2 className="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-[#6f6f68] border-b border-brand-black/5 pb-4">
-            Order Summary
-          </h2>
-
-          {/* Pricing breakdowns */}
-          <div className="space-y-4 border-b border-brand-black/5 pb-6 text-xs sm:text-sm">
-            <div className="flex justify-between text-neutral-500">
-              <span>Bag Subtotal</span>
-              <span className="font-semibold text-brand-black">
-                ₹{(subtotalPaise / 100).toLocaleString("en-IN")}
-              </span>
-            </div>
-
-            {discountPaise > 0 && (
-              <div className="flex justify-between text-[#3F5031] font-medium">
-                <span>Discount ({appliedCouponCode})</span>
-                <span>&minus; ₹{(discountPaise / 100).toLocaleString("en-IN")}</span>
-              </div>
-            )}
-
-            <div className="flex justify-between text-neutral-500">
-              <span>Estimated Shipping</span>
-              <span className="font-semibold text-brand-sage uppercase text-[11px] tracking-wider font-bold">
-                {shippingCostPaise === 0 ? "Free" : `₹${(shippingCostPaise / 100).toFixed(2)}`}
-              </span>
-            </div>
-
-            <div className="flex justify-between text-neutral-500">
-              <span>Taxes & Duties</span>
-              <span className="font-medium text-brand-black text-[11px] uppercase tracking-wider">Inclusive</span>
-            </div>
-          </div>
-
-          {/* Checkout CTA block */}
-          <div className="space-y-6">
-            <div className="flex justify-between items-baseline">
-              <span className="text-[10px] uppercase tracking-widest text-neutral-400 font-bold">Total</span>
-              <span className="text-xl sm:text-2xl font-bold text-brand-black">
-                ₹{(totalCostPaise / 100).toLocaleString("en-IN")}
-              </span>
-            </div>
-
-            <Link href="/checkout" className="block w-full">
-              <button
-                disabled={items.length === 0}
-                className="w-full h-13 bg-brand-black text-brand-offwhite text-[11px] font-bold uppercase tracking-widest rounded-full transition-all duration-300 hover:bg-brand-sage disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 cursor-pointer border-none"
-              >
-                Proceed to Secure Checkout
-              </button>
-            </Link>
-
-            {/* Coupon Code block */}
-            <CouponInput appliedCode={appliedCouponCode} subtotalPaise={subtotalPaise} />
-          </div>
-        </div>
+        <EditorialOrderSummary
+          subtotalPaise={subtotalPaise}
+          shippingPaise={shippingCostPaise}
+          initialCouponCode={appliedCouponCode}
+          initialDiscountPaise={discountPaise}
+          showCheckoutButton={true}
+          ctaText="PROCEED TO SECURE CHECKOUT"
+          onSubmitOrder={() => {
+            if (items.length > 0) {
+              router.push("/checkout");
+            }
+          }}
+        />
       </div>
     </div>
   );

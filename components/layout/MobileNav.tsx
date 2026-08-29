@@ -93,9 +93,11 @@ export default function MobileNav({ user, variant = "default" }: MobileNavProps)
         >
           <ShoppingBag className="w-5 h-5" />
           {cartCount > 0 && (
-            <span className={`absolute top-1 right-0.5 rounded-full w-4 h-4 flex items-center justify-center text-[9px] font-bold ${
-              variant === "dark" ? "bg-[#FFF9F4] text-[#3F5031]" : "bg-brand-black text-brand-offwhite"
-            }`}>
+            <span
+              className={`absolute -top-1 -right-1 rounded-full w-4.5 h-4.5 inline-flex items-center justify-center text-[9px] font-mono font-bold leading-none select-none text-center ${
+                variant === "dark" ? "bg-[#FFF9F4] text-[#3F5031]" : "bg-[#161616] text-[#FFF9F4]"
+              }`}
+            >
               {cartCount}
             </span>
           )}
@@ -194,13 +196,13 @@ export default function MobileNav({ user, variant = "default" }: MobileNavProps)
                 Our Story
               </Link>
 
-              {/* Patron Voices */}
+              {/* Reviews */}
               <Link
                 href="/patron-voices"
                 onClick={() => setIsOpen(false)}
                 className="block hover:text-brand-pink transition-colors py-3.5 border-b border-brand-black/5"
               >
-                Patron Voices
+                Reviews
               </Link>
 
               {/* Wishlist */}

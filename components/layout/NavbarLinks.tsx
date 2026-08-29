@@ -13,34 +13,37 @@ export default function NavbarLinks({ variant = "default" }: { variant?: "defaul
   const isActive = (route: string) => {
     if (route === "/") return pathname === "/";
     if (route === "/shop") return pathname.startsWith("/shop") || pathname.startsWith("/product");
+    if (route === "/patron-voices" || route === "/reviews") return pathname.startsWith("/patron-voices") || pathname.startsWith("/reviews");
     return pathname.startsWith(route);
   };
 
+  const activeClass = variant === "dark"
+    ? "text-[#FFF9F4] font-semibold border-b-2 border-brand-pink pb-0.5 whitespace-nowrap"
+    : "text-brand-black font-semibold border-b-2 border-brand-sage pb-0.5 whitespace-nowrap";
+
+  const inactiveClass = variant === "dark"
+    ? "text-[#FFF9F4]/80 hover:text-[#FFF9F4] transition-colors duration-200 whitespace-nowrap"
+    : "text-brand-black/80 hover:text-brand-black transition-colors duration-200 whitespace-nowrap";
+
   return (
-    <div className="flex items-center gap-8 text-[11px] uppercase tracking-widest font-medium font-sans relative">
+    <div className="flex items-center gap-7 text-[11px] uppercase tracking-[0.16em] font-medium font-sans relative whitespace-nowrap">
       {/* HOME */}
       <TransitionLink
         href="/"
-        className={`hover:text-brand-pink transition-colors duration-200 ${
-          isActive("/") 
-            ? "text-brand-pink font-bold border-b border-brand-pink/30 pb-1" 
-            : `nav-link-underline ${variant === "dark" ? "text-[#FFF9F4]" : "text-brand-black"}`
-        }`}
+        className={isActive("/") ? activeClass : inactiveClass}
       >
         Home
       </TransitionLink>
 
       {/* SHOP WITH DROPDOWN */}
       <div
-        className="relative py-2"
+        className="relative py-1 whitespace-nowrap"
         onMouseEnter={() => setIsShopOpen(true)}
         onMouseLeave={() => setIsShopOpen(false)}
       >
         <button
-          className={`hover:text-brand-pink transition-colors duration-200 flex items-center gap-1 uppercase tracking-widest cursor-pointer font-medium border-none bg-transparent p-0 ${
-            isActive("/shop") 
-              ? "text-brand-pink font-bold" 
-              : `nav-link-underline ${variant === "dark" ? "text-[#FFF9F4]" : "text-brand-black"}`
+          className={`flex items-center gap-1 uppercase tracking-[0.16em] cursor-pointer font-medium border-none bg-transparent p-0 whitespace-nowrap ${
+            isActive("/shop") ? activeClass : inactiveClass
           }`}
         >
           Shop{" "}
@@ -52,11 +55,11 @@ export default function NavbarLinks({ variant = "default" }: { variant?: "defaul
         <AnimatePresence>
           {isShopOpen && (
             <motion.div
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 8 }}
+              exit={{ opacity: 0, y: 6 }}
               transition={{ duration: 0.15, ease: "easeOut" }}
-              className="absolute left-0 mt-2 w-56 bg-[#FFF9F4] border border-brand-black/10 shadow-md py-4 z-50 normal-case rounded-xl"
+              className="absolute left-0 mt-2 w-56 bg-[#FFF9F4] border border-brand-black/10 shadow-md py-3 z-50 normal-case rounded-xl"
             >
               {/* Dropdown Layout */}
               <div className="flex flex-col text-[10px] uppercase tracking-wider font-semibold font-sans">
@@ -67,31 +70,31 @@ export default function NavbarLinks({ variant = "default" }: { variant?: "defaul
                 <TransitionLink
                   href="/shop/everyday-cotton"
                   onClick={() => setIsShopOpen(false)}
-                  className="px-5 py-2.5 hover:bg-brand-black/5 hover:text-brand-pink transition-colors text-left text-neutral-600"
+                  className="px-5 py-2.5 hover:bg-brand-black/5 hover:text-brand-sage transition-colors text-left text-neutral-700"
                 >
                   Everyday Cotton
                 </TransitionLink>
                 <TransitionLink
                   href="/shop/festive-georgette"
                   onClick={() => setIsShopOpen(false)}
-                  className="px-5 py-2.5 hover:bg-brand-black/5 hover:text-brand-pink transition-colors text-left text-neutral-600"
+                  className="px-5 py-2.5 hover:bg-brand-black/5 hover:text-brand-sage transition-colors text-left text-neutral-700"
                 >
                   Festive Georgette
                 </TransitionLink>
                 <TransitionLink
                   href="/shop/the-pastel-edit"
                   onClick={() => setIsShopOpen(false)}
-                  className="px-5 py-2.5 hover:bg-brand-black/5 hover:text-brand-pink transition-colors text-left text-neutral-600"
+                  className="px-5 py-2.5 hover:bg-brand-black/5 hover:text-brand-sage transition-colors text-left text-neutral-700"
                 >
                   The Pastel Edit
                 </TransitionLink>
 
-                <div className="border-t border-brand-black/5 my-2"></div>
+                <div className="border-t border-brand-black/5 my-1.5"></div>
                 
                 <TransitionLink
                   href="/shop"
                   onClick={() => setIsShopOpen(false)}
-                  className="px-5 py-2 hover:text-brand-pink transition-colors text-left text-brand-black font-bold"
+                  className="px-5 py-2 hover:text-brand-sage transition-colors text-left text-brand-black font-bold"
                 >
                   All Products
                 </TransitionLink>
@@ -104,35 +107,23 @@ export default function NavbarLinks({ variant = "default" }: { variant?: "defaul
       {/* OUR STORY */}
       <TransitionLink
         href="/about"
-        className={`hover:text-brand-pink transition-colors duration-200 ${
-          isActive("/about") 
-            ? "text-brand-pink font-bold border-b border-brand-pink/30 pb-1" 
-            : `nav-link-underline ${variant === "dark" ? "text-[#FFF9F4]" : "text-brand-black"}`
-        }`}
+        className={isActive("/about") ? activeClass : inactiveClass}
       >
         Our Story
       </TransitionLink>
 
-      {/* PATRON VOICES */}
+      {/* REVIEWS */}
       <TransitionLink
         href="/patron-voices"
-        className={`hover:text-brand-pink transition-colors duration-200 ${
-          isActive("/patron-voices") 
-            ? "text-brand-pink font-bold border-b border-brand-pink/30 pb-1" 
-            : `nav-link-underline ${variant === "dark" ? "text-[#FFF9F4]" : "text-brand-black"}`
-        }`}
+        className={isActive("/patron-voices") ? activeClass : inactiveClass}
       >
-        Patron Voices
+        Reviews
       </TransitionLink>
 
       {/* CONTACT */}
       <TransitionLink
         href="/contact"
-        className={`hover:text-brand-pink transition-colors duration-200 ${
-          isActive("/contact") 
-            ? "text-brand-pink font-bold border-b border-brand-pink/30 pb-1" 
-            : `nav-link-underline ${variant === "dark" ? "text-[#FFF9F4]" : "text-brand-black"}`
-        }`}
+        className={isActive("/contact") ? activeClass : inactiveClass}
       >
         Contact
       </TransitionLink>

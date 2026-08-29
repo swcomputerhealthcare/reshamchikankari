@@ -1,4 +1,8 @@
 import { cookies } from "next/headers";
+import { getCurrentUser } from "@/lib/auth/helpers";
+import { db } from "@/db";
+import { wishlists, wishlistItems } from "@/db/schema/wishlist";
+import { eq, and } from "drizzle-orm";
 
 const COOKIE_NAME = "resham_wishlist";
 
@@ -6,7 +10,7 @@ const hasDatabase = () => {
   return !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
 };
 
-// Local Cookie Parsing Helpers
+// Local Cookie Helpers
 export async function getCookieWishlistItems(): Promise<string[]> {
   const cookieStore = await cookies();
   const raw = cookieStore.get(COOKIE_NAME)?.value;
@@ -28,32 +32,135 @@ async function saveCookieWishlistItems(items: string[]) {
   });
 }
 
-// Main Service Functions
+// Database Wishlist Helpers
+async function getDbWishlistItems(userId: string): Promise<string[]> {
+  if (!hasDatabase()) return [];
+  try {
+    const userWishlist = await db
+      .select({ id: wishlists.id })
+      .from(wishlists)
+      .where(eq(wishlists.userId, userId))
+      .limit(1);
+
+    if (userWishlist.length === 0) return [];
+
+    const items = await db
+      .select({ productId: wishlistItems.productId })
+      .from(wishlistItems)
+      .where(eq(wishlistItems.wishlistId, userWishlist[0].id));
+
+    return items.map((i) => i.productId);
+  } catch (e) {
+    console.error("Failed to fetch DB wishlist:", e);
+    return [];
+  }
+}
+
+// Main Public Service Functions
 export async function getWishlistItems(): Promise<string[]> {
+  const user = await getCurrentUser();
+  if (user && hasDatabase()) {
+    const dbItems = await getDbWishlistItems(user.id);
+    const cookieItems = await getCookieWishlistItems();
+    
+    // Merge cookie items if any exist
+    if (cookieItems.length > 0) {
+      const merged = Array.from(new Set([...dbItems, ...cookieItems]));
+      await syncWishlistToDb(user.id, merged);
+      await saveCookieWishlistItems([]); // clear cookie after merging to DB
+      return merged;
+    }
+    return dbItems;
+  }
   return await getCookieWishlistItems();
 }
 
+async function syncWishlistToDb(userId: string, productIds: string[]) {
+  if (!hasDatabase()) return;
+  try {
+    let [userWishlist] = await db
+      .select({ id: wishlists.id })
+      .from(wishlists)
+      .where(eq(wishlists.userId, userId))
+      .limit(1);
+
+    if (!userWishlist) {
+      const wishlistId = `wsh_${Math.random().toString(36).substring(2, 11)}`;
+      await db.insert(wishlists).values({
+        id: wishlistId,
+        userId,
+      });
+      userWishlist = { id: wishlistId };
+    }
+
+    for (const productId of productIds) {
+      await db
+        .insert(wishlistItems)
+        .values({
+          id: `wi_${Math.random().toString(36).substring(2, 11)}`,
+          wishlistId: userWishlist.id,
+          productId,
+        })
+        .onConflictDoNothing();
+    }
+  } catch (e) {
+    console.error("Failed to sync wishlist to DB:", e);
+  }
+}
+
 export async function toggleWishlistItem(productId: string): Promise<{ wishlisted: boolean }> {
-  const items = await getCookieWishlistItems();
-  const index = items.indexOf(productId);
+  const user = await getCurrentUser();
+  const cookieItems = await getCookieWishlistItems();
+  const index = cookieItems.indexOf(productId);
   let wishlisted = false;
 
   if (index > -1) {
-    items.splice(index, 1);
+    cookieItems.splice(index, 1);
   } else {
-    items.push(productId);
+    cookieItems.push(productId);
     wishlisted = true;
   }
 
-  await saveCookieWishlistItems(items);
+  await saveCookieWishlistItems(cookieItems);
 
-  // If DB is connected, attempt sync as well
-  if (hasDatabase()) {
+  if (user && hasDatabase()) {
     try {
-      // In production, we'd lookup active user id first
-      console.log("DB sync wishlist item: ", productId, wishlisted);
+      let [userWishlist] = await db
+        .select({ id: wishlists.id })
+        .from(wishlists)
+        .where(eq(wishlists.userId, user.id))
+        .limit(1);
+
+      if (!userWishlist) {
+        const wishlistId = `wsh_${Math.random().toString(36).substring(2, 11)}`;
+        await db.insert(wishlists).values({
+          id: wishlistId,
+          userId: user.id,
+        });
+        userWishlist = { id: wishlistId };
+      }
+
+      if (wishlisted) {
+        await db
+          .insert(wishlistItems)
+          .values({
+            id: `wi_${Math.random().toString(36).substring(2, 11)}`,
+            wishlistId: userWishlist.id,
+            productId,
+          })
+          .onConflictDoNothing();
+      } else {
+        await db
+          .delete(wishlistItems)
+          .where(
+            and(
+              eq(wishlistItems.wishlistId, userWishlist.id),
+              eq(wishlistItems.productId, productId)
+            )
+          );
+      }
     } catch (e) {
-      console.error("DB Wishlist sync failed:", e);
+      console.error("DB Wishlist toggle error:", e);
     }
   }
 
@@ -61,6 +168,6 @@ export async function toggleWishlistItem(productId: string): Promise<{ wishliste
 }
 
 export async function isProductWishlisted(productId: string): Promise<boolean> {
-  const items = await getCookieWishlistItems();
+  const items = await getWishlistItems();
   return items.includes(productId);
 }

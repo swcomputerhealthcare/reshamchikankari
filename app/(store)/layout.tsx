@@ -9,6 +9,7 @@ interface StoreLayoutProps {
 export default function StoreLayout({ children }: StoreLayoutProps) {
   return (
     <div className="flex flex-col min-h-screen text-brand-black selection:bg-[#E694AA]/20 bg-[#FFF9F4]">
+
       {/* Announcement Bar */}
       <div className="w-full bg-brand-black text-brand-offwhite text-[10px] sm:text-xs tracking-widest text-center py-2.5 uppercase font-sans font-medium px-4">
         Free Shipping on Orders Above ₹4,000 | Handcrafted with Love in Lucknow

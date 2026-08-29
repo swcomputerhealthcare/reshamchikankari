@@ -26,12 +26,10 @@ export default function StickyHeader({ children, variant = "default" }: StickyHe
 
   const headerClass = variant === "dark"
     ? cn(
-        "fixed top-0 left-0 right-0 z-40 transition-all duration-350 h-20 flex items-center border-b border-white/15 text-[#FFF9F4]",
-        isScrolled ? "bg-brand-black/90 backdrop-blur-md shadow-sm border-brand-black/10" : "bg-transparent"
+        "sticky top-0 left-0 right-0 z-[100] transition-colors duration-300 h-[72px] min-h-[72px] flex items-center border-b border-white/15 bg-brand-black text-[#FFF9F4]"
       )
     : cn(
-        "sticky top-0 left-0 right-0 z-40 transition-all duration-350 h-20 flex items-center border-b border-brand-black/5 text-brand-black",
-        isScrolled ? "bg-[#FFF9F4]/95 backdrop-blur-md shadow-xs" : "bg-[#FFF9F4] bg-opacity-100"
+        "sticky top-0 left-0 right-0 z-[100] transition-colors duration-300 h-[72px] min-h-[72px] flex items-center border-b border-brand-black/10 bg-[#FFF9F4] text-brand-black"
       );
 
   return (

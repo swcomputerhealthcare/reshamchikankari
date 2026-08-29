@@ -44,6 +44,7 @@ import PrefetchManager from "@/components/performance/PrefetchManager";
 
 import SmoothScrollProvider from "@/components/providers/SmoothScrollProvider";
 import { PageTransitionProvider } from "@/components/transitions/PageTransition";
+import SitePreloader from "@/components/transitions/SitePreloader";
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [cartDetails, wishlistIds] = await Promise.all([
@@ -63,14 +64,16 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         "font-sans"
       )}
     >
-      <body className="min-h-full flex flex-col text-brand-black">
+      <body className="min-h-full flex flex-col text-brand-black bg-[#FAF7F2]">
         <WishlistProvider initialWishlistIds={wishlistIds}>
           <CartProvider initialCart={cartDetails}>
             <PrefetchManager />
             <SmoothScrollProvider>
-              <PageTransitionProvider>
-                {children}
-              </PageTransitionProvider>
+              <SitePreloader>
+                <PageTransitionProvider>
+                  {children}
+                </PageTransitionProvider>
+              </SitePreloader>
             </SmoothScrollProvider>
           </CartProvider>
         </WishlistProvider>

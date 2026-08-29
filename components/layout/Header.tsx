@@ -18,18 +18,18 @@ export default async function Header({ variant = "default" }: HeaderProps) {
   return (
     <StickyHeader variant={variant}>
       <Container className="w-full">
-        {/* Desktop grid layout: 4 cols (left) | 4 cols (center) | 4 cols (right) */}
+        {/* Desktop grid layout: 5 cols (left) | 2 cols (center) | 5 cols (right) */}
         <div className="hidden lg:grid grid-cols-12 items-center w-full">
-          {/* Left Navigation (Home, Shop dropdown, Our Story) */}
-          <div className="col-span-4 flex items-center gap-8">
+          {/* Left Navigation (Home, Shop dropdown, Our Story, Reviews, Contact) */}
+          <div className="col-span-5 flex items-center gap-7 whitespace-nowrap">
             <NavbarLinks variant={variant} />
           </div>
 
-          {/* Center Brand Logo (always points to /) */}
-          <div className="col-span-4 flex items-center justify-center text-center">
+          {/* Center Brand Logo (always points to / and mathematically centered) */}
+          <div className="col-span-2 flex items-center justify-center text-center">
             <Link
               href="/"
-              className={`font-display text-2xl tracking-wider select-none hover:opacity-90 transition-opacity whitespace-nowrap ${
+              className={`font-display text-[22px] sm:text-2xl tracking-wide select-none hover:opacity-90 transition-opacity whitespace-nowrap font-normal ${
                 variant === "dark" ? "text-[#FFF9F4]" : "text-brand-black"
               }`}
             >
@@ -38,13 +38,13 @@ export default async function Header({ variant = "default" }: HeaderProps) {
           </div>
 
           {/* Right Utilities (Search, AccountDropdown, Wishlist, Cart) */}
-          <div className="col-span-4 flex items-center justify-end gap-7">
+          <div className="col-span-5 flex items-center justify-end gap-6 whitespace-nowrap">
             <HeaderSearch variant={variant} />
             <AccountDropdown user={user} variant={variant} />
             
             <Link
               href="/account/wishlist"
-              className={`hover:text-brand-pink transition-colors text-[11px] uppercase tracking-widest font-medium font-sans whitespace-nowrap nav-link-underline ${
+              className={`hover:text-brand-pink transition-colors text-[11px] uppercase tracking-[0.16em] font-medium font-sans whitespace-nowrap ${
                 variant === "dark" ? "text-[#FFF9F4]" : "text-brand-black"
               }`}
             >

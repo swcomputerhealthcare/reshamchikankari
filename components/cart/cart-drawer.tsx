@@ -57,9 +57,11 @@ export default function CartDrawer({ variant = "default" }: CartDrawerProps) {
       <ShoppingBag className="w-4.5 h-4.5" />
       <span className="font-medium">Bag</span>
       {totalQuantity > 0 && (
-        <span className={`rounded-full min-w-4 h-4 px-1 flex items-center justify-center text-[9px] font-bold ${
-          variant === "dark" ? "bg-[#FFF9F4] text-[#3F5031]" : "bg-brand-black text-brand-offwhite"
-        }`}>
+        <span
+          className={`rounded-full w-4.5 h-4.5 inline-flex items-center justify-center text-[9px] font-mono font-bold leading-none select-none text-center shrink-0 ${
+            variant === "dark" ? "bg-[#FFF9F4] text-[#3F5031]" : "bg-[#161616] text-[#FFF9F4]"
+          }`}
+        >
           {totalQuantity}
         </span>
       )}
