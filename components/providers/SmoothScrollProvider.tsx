@@ -37,15 +37,16 @@ export default function SmoothScrollProvider({ children }: { children: React.Rea
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (prefersReducedMotion) return;
 
-    // 1. Single Global Lenis Instance
+    // 1. Single Global Lenis Instance with responsive physics (duration: 0.95)
     const lenis = new Lenis({
-      duration: 1.2,
+      duration: 0.95,
       easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
       orientation: "vertical",
       gestureOrientation: "vertical",
       smoothWheel: true,
-      wheelMultiplier: 1.0,
+      wheelMultiplier: 1.1,
       touchMultiplier: 1.5,
+      autoResize: true,
     });
 
     lenisRef.current = lenis;
@@ -58,21 +59,77 @@ export default function SmoothScrollProvider({ children }: { children: React.Rea
     };
 
     gsap.ticker.add(updateLenis);
-    gsap.ticker.lagSmoothing(0);
+    gsap.ticker.lagSmoothing(1000, 16);
+
+    // 3. ResizeObserver to dynamically recalculate page height when dynamic content/images render
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== "undefined" && document.body) {
+      resizeObserver = new ResizeObserver(() => {
+        lenis.resize();
+        ScrollTrigger.refresh();
+      });
+      resizeObserver.observe(document.body);
+    }
+
+    // 4. Window event listeners for page load and window resize
+    const handleResize = () => {
+      lenis.resize();
+      ScrollTrigger.refresh();
+    };
+
+    window.addEventListener("resize", handleResize);
+    window.addEventListener("load", handleResize);
 
     return () => {
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
+      window.removeEventListener("resize", handleResize);
+      window.removeEventListener("load", handleResize);
       gsap.ticker.remove(updateLenis);
       lenis.destroy();
       lenisRef.current = null;
     };
   }, []);
 
-  // Sync scroll position & ScrollTrigger refresh on route change
+  // Sync scroll position, unlock scrolling, and refresh layout height on route change
   useEffect(() => {
     if (lenisRef.current) {
+      // ALWAYS guarantee scrolling is unlocked on route change
+      lenisRef.current.start();
       lenisRef.current.scrollTo(0, { immediate: true });
+      lenisRef.current.resize();
       ScrollTrigger.refresh();
     }
+
+    // Staggered safety height recalculations to catch async images and client component hydration
+    const timer1 = setTimeout(() => {
+      if (lenisRef.current) {
+        lenisRef.current.start();
+        lenisRef.current.resize();
+        ScrollTrigger.refresh();
+      }
+    }, 150);
+
+    const timer2 = setTimeout(() => {
+      if (lenisRef.current) {
+        lenisRef.current.resize();
+        ScrollTrigger.refresh();
+      }
+    }, 600);
+
+    const timer3 = setTimeout(() => {
+      if (lenisRef.current) {
+        lenisRef.current.resize();
+        ScrollTrigger.refresh();
+      }
+    }, 1200);
+
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+      clearTimeout(timer3);
+    };
   }, [pathname]);
 
   const stop = () => lenisRef.current?.stop();

@@ -10,7 +10,7 @@ export interface CatalogProduct extends Product {
 
 export type CatalogProductInput = Omit<
   CatalogProduct,
-  "createdAt" | "updatedAt" | "fabric" | "color" | "length" | "neckline" | "sleeves" | "occasion" | "washCare" | "images" | "variants" | "featured"
+  "createdAt" | "updatedAt" | "fabric" | "color" | "length" | "neckline" | "sleeves" | "occasion" | "washCare" | "images" | "variants" | "featured" | "weightKg" | "lengthCm" | "breadthCm" | "heightCm" | "hsnCode"
 > & {
   createdAt?: Date;
   updatedAt?: Date;
@@ -22,17 +22,27 @@ export type CatalogProductInput = Omit<
   occasion?: string | null;
   washCare?: string | null;
   featured?: boolean;
-  images: (Omit<ProductImage, "createdAt" | "imageUrl" | "altText" | "isPrimary" | "width" | "height"> & {
+  weightKg?: number;
+  lengthCm?: number;
+  breadthCm?: number;
+  heightCm?: number;
+  hsnCode?: string;
+  images: (Omit<ProductImage, "createdAt" | "imageUrl" | "altText" | "isPrimary" | "width" | "height" | "colorName"> & {
     createdAt?: Date;
     imageUrl?: string | null;
     altText?: string | null;
+    colorName?: string | null;
     isPrimary?: boolean;
     width?: number | null;
     height?: number | null;
   })[];
-  variants: (Omit<ProductVariant, "createdAt" | "updatedAt" | "compareAtPricePaise" | "inventoryQuantity" | "isAvailable"> & {
+  variants: (Omit<ProductVariant, "createdAt" | "updatedAt" | "compareAtPricePaise" | "inventoryQuantity" | "isAvailable" | "colorName" | "colorCode" | "size" | "imageId"> & {
     createdAt?: Date;
     updatedAt?: Date;
+    colorName?: string | null;
+    colorCode?: string | null;
+    size?: string | null;
+    imageId?: string | null;
     compareAtPricePaise?: number | null;
     inventoryQuantity?: number;
     isAvailable?: boolean;
@@ -50,10 +60,16 @@ export function mapInputToCatalogProduct(p: CatalogProductInput): CatalogProduct
     occasion: p.occasion ?? null,
     washCare: p.washCare ?? null,
     featured: p.featured ?? false,
+    weightKg: p.weightKg ?? 0.5,
+    lengthCm: p.lengthCm ?? 30,
+    breadthCm: p.breadthCm ?? 25,
+    heightCm: p.heightCm ?? 5,
+    hsnCode: p.hsnCode ?? "6204",
     createdAt: p.createdAt || new Date(),
     updatedAt: p.updatedAt || new Date(),
     images: p.images.map(img => ({
       ...img,
+      colorName: (img as any).colorName ?? null,
       imageUrl: img.imageUrl ?? img.url,
       altText: img.altText ?? img.alt ?? null,
       isPrimary: img.isPrimary ?? false,
@@ -63,6 +79,10 @@ export function mapInputToCatalogProduct(p: CatalogProductInput): CatalogProduct
     })),
     variants: p.variants.map(v => ({
       ...v,
+      colorName: (v as any).colorName ?? null,
+      colorCode: (v as any).colorCode ?? null,
+      size: (v as any).size ?? (v.name ? v.name : null),
+      imageId: (v as any).imageId ?? null,
       compareAtPricePaise: v.compareAtPricePaise ?? null,
       inventoryQuantity: v.inventoryQuantity ?? v.stock ?? 0,
       isAvailable: v.isAvailable ?? v.isActive ?? true,
@@ -113,6 +133,58 @@ export const MOCK_CATEGORIES: Category[] = [
 
 export const MOCK_PRODUCTS: CatalogProductInput[] = [
   {
+    "id": "prod_test_1rupee",
+    "categoryId": "cat_kurtis",
+    "name": "Razorpay ₹1 Test Product",
+    "slug": "razorpay-1-rupee-test-product",
+    "description": "Special ₹1 test product created to test end-to-end Razorpay payments, webhooks, and checkout flows.",
+    "sku": "RC-TEST-1INR",
+    "pricePaise": 100,
+    "compareAtPricePaise": 10000,
+    "isActive": true,
+    "featured": true,
+    "productNumber": 999,
+    "fabric": "Mulmul Cotton",
+    "color": "Emerald Green",
+    "length": "Knee Length",
+    "neckline": "Round Neck",
+    "sleeves": "3/4 Sleeves",
+    "occasion": "Testing",
+    "washCare": "Hand Wash",
+    "images": [
+      {
+        "id": "img_test_1rupee_1",
+        "productId": "prod_test_1rupee",
+        "url": "/images/reshamchikankari/New folder 3/IMG_3001.JPG",
+        "imageUrl": "/images/reshamchikankari/New folder 3/IMG_3001.JPG",
+        "publicId": "rc_test_1rupee_1",
+        "alt": "Razorpay ₹1 Test Product",
+        "altText": "Razorpay ₹1 Test Product",
+        "isPrimary": true,
+        "width": null,
+        "height": null,
+        "sortOrder": 0
+      }
+    ],
+    "variants": [
+      {
+        "id": "var_test_1rupee_std",
+        "productId": "prod_test_1rupee",
+        "sku": "RC-TEST-1INR-STD",
+        "name": "Standard",
+        "pricePaise": 100,
+        "compareAtPricePaise": 10000,
+        "stock": 999,
+        "inventoryQuantity": 999,
+        "isActive": true,
+        "isAvailable": true,
+        "size": "Standard",
+        "colorName": null,
+        "colorCode": null
+      }
+    ]
+  },
+  {
     "id": "prod_rc_1",
     "categoryId": "cat_coord",
     "name": "RC Chanderi Sparkle set",
@@ -143,7 +215,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": true,
         "width": null,
         "height": null,
-        "sortOrder": 0
+        "sortOrder": 0,
+        "colorName": null
       },
       {
         "id": "img_1_2",
@@ -156,7 +229,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "colorName": null
       },
       {
         "id": "img_1_3",
@@ -169,7 +243,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 2
+        "sortOrder": 2,
+        "colorName": null
       },
       {
         "id": "img_1_4",
@@ -182,7 +257,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 3
+        "sortOrder": 3,
+        "colorName": null
       },
       {
         "id": "img_1_5",
@@ -195,7 +271,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 4
+        "sortOrder": 4,
+        "colorName": null
       },
       {
         "id": "img_1_6",
@@ -208,15 +285,34 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 5
+        "sortOrder": 5,
+        "colorName": null
       }
     ],
     "variants": [
+      {
+        "id": "var_rc_1_s",
+        "productId": "prod_rc_1",
+        "sku": "RC-SKU-1-S",
+        "name": "S",
+        "size": "S",
+        "colorName": null,
+        "colorCode": null,
+        "pricePaise": 259900,
+        "compareAtPricePaise": 319900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
       {
         "id": "var_rc_1_m",
         "productId": "prod_rc_1",
         "sku": "RC-SKU-1-M",
         "name": "M",
+        "size": "M",
+        "colorName": null,
+        "colorCode": null,
         "pricePaise": 259900,
         "compareAtPricePaise": 319900,
         "stock": 12,
@@ -229,6 +325,9 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "productId": "prod_rc_1",
         "sku": "RC-SKU-1-L",
         "name": "L",
+        "size": "L",
+        "colorName": null,
+        "colorCode": null,
         "pricePaise": 259900,
         "compareAtPricePaise": 319900,
         "stock": 12,
@@ -241,10 +340,13 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "productId": "prod_rc_1",
         "sku": "RC-SKU-1-XL",
         "name": "XL",
+        "size": "XL",
+        "colorName": null,
+        "colorCode": null,
         "pricePaise": 259900,
         "compareAtPricePaise": 319900,
-        "stock": 12,
-        "inventoryQuantity": 12,
+        "stock": 6,
+        "inventoryQuantity": 6,
         "isActive": true,
         "isAvailable": true
       }
@@ -281,7 +383,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": true,
         "width": null,
         "height": null,
-        "sortOrder": 0
+        "sortOrder": 0,
+        "colorName": "Purple"
       },
       {
         "id": "img_2_2",
@@ -294,7 +397,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "colorName": "Purple"
       },
       {
         "id": "img_2_3",
@@ -307,7 +411,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 2
+        "sortOrder": 2,
+        "colorName": "Purple"
       },
       {
         "id": "img_2_4",
@@ -320,7 +425,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 3
+        "sortOrder": 3,
+        "colorName": "Purple"
       },
       {
         "id": "img_2_5",
@@ -333,7 +439,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 4
+        "sortOrder": 4,
+        "colorName": "Purple"
       },
       {
         "id": "img_2_6",
@@ -346,7 +453,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 5
+        "sortOrder": 5,
+        "colorName": "Purple"
       },
       {
         "id": "img_2_7",
@@ -359,7 +467,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 6
+        "sortOrder": 6,
+        "colorName": "Light Blue"
       },
       {
         "id": "img_2_8",
@@ -372,7 +481,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 7
+        "sortOrder": 7,
+        "colorName": "Light Blue"
       },
       {
         "id": "img_2_9",
@@ -385,7 +495,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 8
+        "sortOrder": 8,
+        "colorName": "Light Blue"
       },
       {
         "id": "img_2_10",
@@ -398,7 +509,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 9
+        "sortOrder": 9,
+        "colorName": "Light Blue"
       },
       {
         "id": "img_2_11",
@@ -411,7 +523,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 10
+        "sortOrder": 10,
+        "colorName": "Light Blue"
       },
       {
         "id": "img_2_12",
@@ -424,15 +537,34 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 11
+        "sortOrder": 11,
+        "colorName": "Light Blue"
       }
     ],
     "variants": [
       {
-        "id": "var_rc_2_m",
+        "id": "var_rc_2_purple_s",
         "productId": "prod_rc_2",
-        "sku": "RC-SKU-2-M",
-        "name": "M",
+        "sku": "RC-SKU-2-PUR-S",
+        "name": "Purple / S",
+        "colorName": "Purple",
+        "colorCode": "#B59FD9",
+        "size": "S",
+        "pricePaise": 349900,
+        "compareAtPricePaise": 399900,
+        "stock": 6,
+        "inventoryQuantity": 6,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_2_purple_m",
+        "productId": "prod_rc_2",
+        "sku": "RC-SKU-2-PUR-M",
+        "name": "Purple / M",
+        "colorName": "Purple",
+        "colorCode": "#B59FD9",
+        "size": "M",
         "pricePaise": 349900,
         "compareAtPricePaise": 399900,
         "stock": 12,
@@ -441,10 +573,13 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_2_l",
+        "id": "var_rc_2_purple_l",
         "productId": "prod_rc_2",
-        "sku": "RC-SKU-2-L",
-        "name": "L",
+        "sku": "RC-SKU-2-PUR-L",
+        "name": "Purple / L",
+        "colorName": "Purple",
+        "colorCode": "#B59FD9",
+        "size": "L",
         "pricePaise": 349900,
         "compareAtPricePaise": 399900,
         "stock": 12,
@@ -453,10 +588,43 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_2_xl",
+        "id": "var_rc_2_purple_xl",
         "productId": "prod_rc_2",
-        "sku": "RC-SKU-2-XL",
-        "name": "XL",
+        "sku": "RC-SKU-2-PUR-XL",
+        "name": "Purple / XL",
+        "colorName": "Purple",
+        "colorCode": "#B59FD9",
+        "size": "XL",
+        "pricePaise": 349900,
+        "compareAtPricePaise": 399900,
+        "stock": 5,
+        "inventoryQuantity": 5,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_2_light_blue_s",
+        "productId": "prod_rc_2",
+        "sku": "RC-SKU-2-LIG-S",
+        "name": "Light Blue / S",
+        "colorName": "Light Blue",
+        "colorCode": "#A0C4E2",
+        "size": "S",
+        "pricePaise": 349900,
+        "compareAtPricePaise": 399900,
+        "stock": 6,
+        "inventoryQuantity": 6,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_2_light_blue_m",
+        "productId": "prod_rc_2",
+        "sku": "RC-SKU-2-LIG-M",
+        "name": "Light Blue / M",
+        "colorName": "Light Blue",
+        "colorCode": "#A0C4E2",
+        "size": "M",
         "pricePaise": 349900,
         "compareAtPricePaise": 399900,
         "stock": 12,
@@ -465,10 +633,13 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_2_38_blue",
+        "id": "var_rc_2_light_blue_l",
         "productId": "prod_rc_2",
-        "sku": "RC-SKU-2-38BLUE",
-        "name": "38 Blue",
+        "sku": "RC-SKU-2-LIG-L",
+        "name": "Light Blue / L",
+        "colorName": "Light Blue",
+        "colorCode": "#A0C4E2",
+        "size": "L",
         "pricePaise": 349900,
         "compareAtPricePaise": 399900,
         "stock": 12,
@@ -477,14 +648,17 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_2_40p",
+        "id": "var_rc_2_light_blue_xl",
         "productId": "prod_rc_2",
-        "sku": "RC-SKU-2-40P",
-        "name": "40P",
+        "sku": "RC-SKU-2-LIG-XL",
+        "name": "Light Blue / XL",
+        "colorName": "Light Blue",
+        "colorCode": "#A0C4E2",
+        "size": "XL",
         "pricePaise": 349900,
         "compareAtPricePaise": 399900,
-        "stock": 12,
-        "inventoryQuantity": 12,
+        "stock": 0,
+        "inventoryQuantity": 0,
         "isActive": true,
         "isAvailable": true
       }
@@ -521,7 +695,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": true,
         "width": null,
         "height": null,
-        "sortOrder": 0
+        "sortOrder": 0,
+        "colorName": "Lemon Yellow"
       },
       {
         "id": "img_3_2",
@@ -534,7 +709,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "colorName": "Lemon Yellow"
       },
       {
         "id": "img_3_3",
@@ -547,7 +723,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 2
+        "sortOrder": 2,
+        "colorName": "Lemon Yellow"
       },
       {
         "id": "img_3_4",
@@ -560,7 +737,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 3
+        "sortOrder": 3,
+        "colorName": "Lemon Yellow"
       },
       {
         "id": "img_3_5",
@@ -573,7 +751,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 4
+        "sortOrder": 4,
+        "colorName": "Lemon Yellow"
       },
       {
         "id": "img_3_6",
@@ -586,7 +765,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 5
+        "sortOrder": 5,
+        "colorName": "Lemon Yellow"
       },
       {
         "id": "img_3_7",
@@ -599,7 +779,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 6
+        "sortOrder": 6,
+        "colorName": "Peach Pink"
       },
       {
         "id": "img_3_8",
@@ -612,7 +793,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 7
+        "sortOrder": 7,
+        "colorName": "Peach Pink"
       },
       {
         "id": "img_3_9",
@@ -625,7 +807,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 8
+        "sortOrder": 8,
+        "colorName": "Peach Pink"
       },
       {
         "id": "img_3_10",
@@ -638,7 +821,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 9
+        "sortOrder": 9,
+        "colorName": "Peach Pink"
       },
       {
         "id": "img_3_11",
@@ -651,7 +835,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 10
+        "sortOrder": 10,
+        "colorName": "Peach Pink"
       },
       {
         "id": "img_3_12",
@@ -664,7 +849,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 11
+        "sortOrder": 11,
+        "colorName": "Peach Pink"
       },
       {
         "id": "img_3_13",
@@ -677,7 +863,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 12
+        "sortOrder": 12,
+        "colorName": "Sky Blue"
       },
       {
         "id": "img_3_14",
@@ -690,7 +877,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 13
+        "sortOrder": 13,
+        "colorName": "Sky Blue"
       },
       {
         "id": "img_3_15",
@@ -703,7 +891,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 14
+        "sortOrder": 14,
+        "colorName": "Sky Blue"
       },
       {
         "id": "img_3_16",
@@ -716,7 +905,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 15
+        "sortOrder": 15,
+        "colorName": "Sky Blue"
       },
       {
         "id": "img_3_17",
@@ -729,7 +919,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 16
+        "sortOrder": 16,
+        "colorName": "Sky Blue"
       },
       {
         "id": "img_3_18",
@@ -742,15 +933,19 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 17
+        "sortOrder": 17,
+        "colorName": "Sky Blue"
       }
     ],
     "variants": [
       {
-        "id": "var_rc_3_m",
+        "id": "var_rc_3_lemon_yellow_m",
         "productId": "prod_rc_3",
-        "sku": "RC-SKU-3-M",
-        "name": "M",
+        "sku": "RC-SKU-3-LEM-M",
+        "name": "Lemon Yellow / M",
+        "colorName": "Lemon Yellow",
+        "colorCode": "#FDE047",
+        "size": "M",
         "pricePaise": 149900,
         "compareAtPricePaise": 189900,
         "stock": 12,
@@ -759,10 +954,13 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_3_l",
+        "id": "var_rc_3_lemon_yellow_l",
         "productId": "prod_rc_3",
-        "sku": "RC-SKU-3-L",
-        "name": "L",
+        "sku": "RC-SKU-3-LEM-L",
+        "name": "Lemon Yellow / L",
+        "colorName": "Lemon Yellow",
+        "colorCode": "#FDE047",
+        "size": "L",
         "pricePaise": 149900,
         "compareAtPricePaise": 189900,
         "stock": 12,
@@ -771,14 +969,107 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_3_xl",
+        "id": "var_rc_3_lemon_yellow_xl",
         "productId": "prod_rc_3",
-        "sku": "RC-SKU-3-XL",
-        "name": "XL",
+        "sku": "RC-SKU-3-LEM-XL",
+        "name": "Lemon Yellow / XL",
+        "colorName": "Lemon Yellow",
+        "colorCode": "#FDE047",
+        "size": "XL",
+        "pricePaise": 149900,
+        "compareAtPricePaise": 189900,
+        "stock": 5,
+        "inventoryQuantity": 5,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_3_peach_pink_m",
+        "productId": "prod_rc_3",
+        "sku": "RC-SKU-3-PEA-M",
+        "name": "Peach Pink / M",
+        "colorName": "Peach Pink",
+        "colorCode": "#FCA5A5",
+        "size": "M",
         "pricePaise": 149900,
         "compareAtPricePaise": 189900,
         "stock": 12,
         "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_3_peach_pink_l",
+        "productId": "prod_rc_3",
+        "sku": "RC-SKU-3-PEA-L",
+        "name": "Peach Pink / L",
+        "colorName": "Peach Pink",
+        "colorCode": "#FCA5A5",
+        "size": "L",
+        "pricePaise": 149900,
+        "compareAtPricePaise": 189900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_3_peach_pink_xl",
+        "productId": "prod_rc_3",
+        "sku": "RC-SKU-3-PEA-XL",
+        "name": "Peach Pink / XL",
+        "colorName": "Peach Pink",
+        "colorCode": "#FCA5A5",
+        "size": "XL",
+        "pricePaise": 149900,
+        "compareAtPricePaise": 189900,
+        "stock": 5,
+        "inventoryQuantity": 5,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_3_sky_blue_m",
+        "productId": "prod_rc_3",
+        "sku": "RC-SKU-3-SKY-M",
+        "name": "Sky Blue / M",
+        "colorName": "Sky Blue",
+        "colorCode": "#93C5FD",
+        "size": "M",
+        "pricePaise": 149900,
+        "compareAtPricePaise": 189900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_3_sky_blue_l",
+        "productId": "prod_rc_3",
+        "sku": "RC-SKU-3-SKY-L",
+        "name": "Sky Blue / L",
+        "colorName": "Sky Blue",
+        "colorCode": "#93C5FD",
+        "size": "L",
+        "pricePaise": 149900,
+        "compareAtPricePaise": 189900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_3_sky_blue_xl",
+        "productId": "prod_rc_3",
+        "sku": "RC-SKU-3-SKY-XL",
+        "name": "Sky Blue / XL",
+        "colorName": "Sky Blue",
+        "colorCode": "#93C5FD",
+        "size": "XL",
+        "pricePaise": 149900,
+        "compareAtPricePaise": 189900,
+        "stock": 5,
+        "inventoryQuantity": 5,
         "isActive": true,
         "isAvailable": true
       }
@@ -815,7 +1106,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": true,
         "width": null,
         "height": null,
-        "sortOrder": 0
+        "sortOrder": 0,
+        "colorName": "Baby Pink"
       },
       {
         "id": "img_4_2",
@@ -828,7 +1120,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "colorName": "Baby Pink"
       },
       {
         "id": "img_4_3",
@@ -841,7 +1134,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 2
+        "sortOrder": 2,
+        "colorName": "Baby Pink"
       },
       {
         "id": "img_4_4",
@@ -854,7 +1148,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 3
+        "sortOrder": 3,
+        "colorName": "Baby Pink"
       },
       {
         "id": "img_4_5",
@@ -867,7 +1162,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 4
+        "sortOrder": 4,
+        "colorName": "Baby Pink"
       },
       {
         "id": "img_4_6",
@@ -880,7 +1176,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 5
+        "sortOrder": 5,
+        "colorName": "Baby Pink"
       },
       {
         "id": "img_4_7",
@@ -893,7 +1190,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 6
+        "sortOrder": 6,
+        "colorName": "Mint Green"
       },
       {
         "id": "img_4_8",
@@ -906,7 +1204,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 7
+        "sortOrder": 7,
+        "colorName": "Mint Green"
       },
       {
         "id": "img_4_9",
@@ -919,7 +1218,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 8
+        "sortOrder": 8,
+        "colorName": "Mint Green"
       },
       {
         "id": "img_4_10",
@@ -932,7 +1232,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 9
+        "sortOrder": 9,
+        "colorName": "Mint Green"
       },
       {
         "id": "img_4_11",
@@ -945,7 +1246,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 10
+        "sortOrder": 10,
+        "colorName": "Mint Green"
       },
       {
         "id": "img_4_12",
@@ -958,15 +1260,19 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 11
+        "sortOrder": 11,
+        "colorName": "Mint Green"
       }
     ],
     "variants": [
       {
-        "id": "var_rc_4_m",
+        "id": "var_rc_4_baby_pink_m",
         "productId": "prod_rc_4",
-        "sku": "RC-SKU-4-M",
-        "name": "M",
+        "sku": "RC-SKU-4-BAB-M",
+        "name": "Baby Pink / M",
+        "colorName": "Baby Pink",
+        "colorCode": "#F9A8D4",
+        "size": "M",
         "pricePaise": 299900,
         "compareAtPricePaise": 359900,
         "stock": 12,
@@ -975,10 +1281,13 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_4_l",
+        "id": "var_rc_4_baby_pink_l",
         "productId": "prod_rc_4",
-        "sku": "RC-SKU-4-L",
-        "name": "L",
+        "sku": "RC-SKU-4-BAB-L",
+        "name": "Baby Pink / L",
+        "colorName": "Baby Pink",
+        "colorCode": "#F9A8D4",
+        "size": "L",
         "pricePaise": 299900,
         "compareAtPricePaise": 359900,
         "stock": 12,
@@ -987,10 +1296,28 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_4_xl",
+        "id": "var_rc_4_baby_pink_xl",
         "productId": "prod_rc_4",
-        "sku": "RC-SKU-4-XL",
-        "name": "XL",
+        "sku": "RC-SKU-4-BAB-XL",
+        "name": "Baby Pink / XL",
+        "colorName": "Baby Pink",
+        "colorCode": "#F9A8D4",
+        "size": "XL",
+        "pricePaise": 299900,
+        "compareAtPricePaise": 359900,
+        "stock": 5,
+        "inventoryQuantity": 5,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_4_mint_green_m",
+        "productId": "prod_rc_4",
+        "sku": "RC-SKU-4-MIN-M",
+        "name": "Mint Green / M",
+        "colorName": "Mint Green",
+        "colorCode": "#A7F3D0",
+        "size": "M",
         "pricePaise": 299900,
         "compareAtPricePaise": 359900,
         "stock": 12,
@@ -999,14 +1326,32 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_4_xxl",
+        "id": "var_rc_4_mint_green_l",
         "productId": "prod_rc_4",
-        "sku": "RC-SKU-4-XXL",
-        "name": "XXL",
+        "sku": "RC-SKU-4-MIN-L",
+        "name": "Mint Green / L",
+        "colorName": "Mint Green",
+        "colorCode": "#A7F3D0",
+        "size": "L",
         "pricePaise": 299900,
         "compareAtPricePaise": 359900,
-        "stock": 0,
-        "inventoryQuantity": 0,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_4_mint_green_xl",
+        "productId": "prod_rc_4",
+        "sku": "RC-SKU-4-MIN-XL",
+        "name": "Mint Green / XL",
+        "colorName": "Mint Green",
+        "colorCode": "#A7F3D0",
+        "size": "XL",
+        "pricePaise": 299900,
+        "compareAtPricePaise": 359900,
+        "stock": 5,
+        "inventoryQuantity": 5,
         "isActive": true,
         "isAvailable": true
       }
@@ -1122,7 +1467,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "M",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_5_l",
@@ -1134,7 +1482,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "L",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_5_xl",
@@ -1146,7 +1497,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "XL",
+        "colorName": null,
+        "colorCode": null
       }
     ]
   },
@@ -1260,7 +1614,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "M",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_6_l",
@@ -1272,7 +1629,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "L",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_6_xl",
@@ -1284,7 +1644,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "XL",
+        "colorName": null,
+        "colorCode": null
       }
     ]
   },
@@ -1398,7 +1761,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "M",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_7_l",
@@ -1410,7 +1776,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "L",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_7_xl",
@@ -1422,7 +1791,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "XL",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_7_xxl",
@@ -1434,7 +1806,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 0,
         "inventoryQuantity": 0,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "XXL",
+        "colorName": null,
+        "colorCode": null
       }
     ]
   },
@@ -1469,7 +1844,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": true,
         "width": null,
         "height": null,
-        "sortOrder": 0
+        "sortOrder": 0,
+        "colorName": "Yellow"
       },
       {
         "id": "img_8_2",
@@ -1482,7 +1858,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "colorName": "Yellow"
       },
       {
         "id": "img_8_3",
@@ -1495,7 +1872,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 2
+        "sortOrder": 2,
+        "colorName": "Yellow"
       },
       {
         "id": "img_8_4",
@@ -1508,7 +1886,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 3
+        "sortOrder": 3,
+        "colorName": "Yellow"
       },
       {
         "id": "img_8_5",
@@ -1521,7 +1900,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 4
+        "sortOrder": 4,
+        "colorName": "Yellow"
       },
       {
         "id": "img_8_6",
@@ -1534,7 +1914,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 5
+        "sortOrder": 5,
+        "colorName": "Yellow"
       },
       {
         "id": "img_8_7",
@@ -1547,7 +1928,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 6
+        "sortOrder": 6,
+        "colorName": "Peach"
       },
       {
         "id": "img_8_8",
@@ -1560,7 +1942,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 7
+        "sortOrder": 7,
+        "colorName": "Peach"
       },
       {
         "id": "img_8_9",
@@ -1573,7 +1956,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 8
+        "sortOrder": 8,
+        "colorName": "Peach"
       },
       {
         "id": "img_8_10",
@@ -1586,7 +1970,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 9
+        "sortOrder": 9,
+        "colorName": "Peach"
       },
       {
         "id": "img_8_11",
@@ -1599,7 +1984,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 10
+        "sortOrder": 10,
+        "colorName": "Peach"
       },
       {
         "id": "img_8_12",
@@ -1612,15 +1998,19 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 11
+        "sortOrder": 11,
+        "colorName": "Peach"
       }
     ],
     "variants": [
       {
-        "id": "var_rc_8_m",
+        "id": "var_rc_8_yellow_m",
         "productId": "prod_rc_8",
-        "sku": "RC-SKU-8-M",
-        "name": "M",
+        "sku": "RC-SKU-8-YEL-M",
+        "name": "Yellow / M",
+        "colorName": "Yellow",
+        "colorCode": "#FACC15",
+        "size": "M",
         "pricePaise": 189900,
         "compareAtPricePaise": 229900,
         "stock": 12,
@@ -1629,10 +2019,13 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_8_l",
+        "id": "var_rc_8_yellow_l",
         "productId": "prod_rc_8",
-        "sku": "RC-SKU-8-L",
-        "name": "L",
+        "sku": "RC-SKU-8-YEL-L",
+        "name": "Yellow / L",
+        "colorName": "Yellow",
+        "colorCode": "#FACC15",
+        "size": "L",
         "pricePaise": 189900,
         "compareAtPricePaise": 229900,
         "stock": 12,
@@ -1641,14 +2034,62 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_8_xl",
+        "id": "var_rc_8_yellow_xl",
         "productId": "prod_rc_8",
-        "sku": "RC-SKU-8-XL",
-        "name": "XL",
+        "sku": "RC-SKU-8-YEL-XL",
+        "name": "Yellow / XL",
+        "colorName": "Yellow",
+        "colorCode": "#FACC15",
+        "size": "XL",
+        "pricePaise": 189900,
+        "compareAtPricePaise": 229900,
+        "stock": 5,
+        "inventoryQuantity": 5,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_8_peach_m",
+        "productId": "prod_rc_8",
+        "sku": "RC-SKU-8-PEA-M",
+        "name": "Peach / M",
+        "colorName": "Peach",
+        "colorCode": "#FB923C",
+        "size": "M",
         "pricePaise": 189900,
         "compareAtPricePaise": 229900,
         "stock": 12,
         "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_8_peach_l",
+        "productId": "prod_rc_8",
+        "sku": "RC-SKU-8-PEA-L",
+        "name": "Peach / L",
+        "colorName": "Peach",
+        "colorCode": "#FB923C",
+        "size": "L",
+        "pricePaise": 189900,
+        "compareAtPricePaise": 229900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_8_peach_xl",
+        "productId": "prod_rc_8",
+        "sku": "RC-SKU-8-PEA-XL",
+        "name": "Peach / XL",
+        "colorName": "Peach",
+        "colorCode": "#FB923C",
+        "size": "XL",
+        "pricePaise": 189900,
+        "compareAtPricePaise": 229900,
+        "stock": 5,
+        "inventoryQuantity": 5,
         "isActive": true,
         "isAvailable": true
       }
@@ -1777,7 +2218,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "M",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_9_l",
@@ -1789,7 +2233,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "L",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_9_xl",
@@ -1801,7 +2248,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "XL",
+        "colorName": null,
+        "colorCode": null
       }
     ]
   },
@@ -1836,7 +2286,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": true,
         "width": null,
         "height": null,
-        "sortOrder": 0
+        "sortOrder": 0,
+        "colorName": "Lavender"
       },
       {
         "id": "img_10_2",
@@ -1849,7 +2300,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "colorName": "Lavender"
       },
       {
         "id": "img_10_3",
@@ -1862,7 +2314,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 2
+        "sortOrder": 2,
+        "colorName": "Lavender"
       },
       {
         "id": "img_10_4",
@@ -1875,7 +2328,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 3
+        "sortOrder": 3,
+        "colorName": "Lavender"
       },
       {
         "id": "img_10_5",
@@ -1888,7 +2342,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 4
+        "sortOrder": 4,
+        "colorName": "Lavender"
       },
       {
         "id": "img_10_6",
@@ -1901,7 +2356,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 5
+        "sortOrder": 5,
+        "colorName": "Lavender"
       },
       {
         "id": "img_10_7",
@@ -1914,7 +2370,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 6
+        "sortOrder": 6,
+        "colorName": "Rani Pink"
       },
       {
         "id": "img_10_8",
@@ -1927,7 +2384,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 7
+        "sortOrder": 7,
+        "colorName": "Rani Pink"
       },
       {
         "id": "img_10_9",
@@ -1940,7 +2398,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 8
+        "sortOrder": 8,
+        "colorName": "Rani Pink"
       },
       {
         "id": "img_10_10",
@@ -1953,7 +2412,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 9
+        "sortOrder": 9,
+        "colorName": "Rani Pink"
       },
       {
         "id": "img_10_11",
@@ -1966,7 +2426,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 10
+        "sortOrder": 10,
+        "colorName": "Rani Pink"
       },
       {
         "id": "img_10_12",
@@ -1979,15 +2440,19 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 11
+        "sortOrder": 11,
+        "colorName": "Rani Pink"
       }
     ],
     "variants": [
       {
-        "id": "var_rc_10_m",
+        "id": "var_rc_10_lavender_m",
         "productId": "prod_rc_10",
-        "sku": "RC-SKU-10-M",
-        "name": "M",
+        "sku": "RC-SKU-10-LAV-M",
+        "name": "Lavender / M",
+        "colorName": "Lavender",
+        "colorCode": "#C084FC",
+        "size": "M",
         "pricePaise": 249900,
         "compareAtPricePaise": 299900,
         "stock": 12,
@@ -1996,10 +2461,13 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_10_l",
+        "id": "var_rc_10_lavender_l",
         "productId": "prod_rc_10",
-        "sku": "RC-SKU-10-L",
-        "name": "L",
+        "sku": "RC-SKU-10-LAV-L",
+        "name": "Lavender / L",
+        "colorName": "Lavender",
+        "colorCode": "#C084FC",
+        "size": "L",
         "pricePaise": 249900,
         "compareAtPricePaise": 299900,
         "stock": 12,
@@ -2008,14 +2476,62 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_10_xl",
+        "id": "var_rc_10_lavender_xl",
         "productId": "prod_rc_10",
-        "sku": "RC-SKU-10-XL",
-        "name": "XL",
+        "sku": "RC-SKU-10-LAV-XL",
+        "name": "Lavender / XL",
+        "colorName": "Lavender",
+        "colorCode": "#C084FC",
+        "size": "XL",
+        "pricePaise": 249900,
+        "compareAtPricePaise": 299900,
+        "stock": 5,
+        "inventoryQuantity": 5,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_10_rani_pink_m",
+        "productId": "prod_rc_10",
+        "sku": "RC-SKU-10-RAN-M",
+        "name": "Rani Pink / M",
+        "colorName": "Rani Pink",
+        "colorCode": "#EC4899",
+        "size": "M",
         "pricePaise": 249900,
         "compareAtPricePaise": 299900,
         "stock": 12,
         "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_10_rani_pink_l",
+        "productId": "prod_rc_10",
+        "sku": "RC-SKU-10-RAN-L",
+        "name": "Rani Pink / L",
+        "colorName": "Rani Pink",
+        "colorCode": "#EC4899",
+        "size": "L",
+        "pricePaise": 249900,
+        "compareAtPricePaise": 299900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_10_rani_pink_xl",
+        "productId": "prod_rc_10",
+        "sku": "RC-SKU-10-RAN-XL",
+        "name": "Rani Pink / XL",
+        "colorName": "Rani Pink",
+        "colorCode": "#EC4899",
+        "size": "XL",
+        "pricePaise": 249900,
+        "compareAtPricePaise": 299900,
+        "stock": 5,
+        "inventoryQuantity": 5,
         "isActive": true,
         "isAvailable": true
       }
@@ -2131,7 +2647,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "M",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_11_l",
@@ -2143,7 +2662,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "L",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_11_xl",
@@ -2155,7 +2677,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "XL",
+        "colorName": null,
+        "colorCode": null
       }
     ]
   },
@@ -2269,7 +2794,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "M",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_12_l",
@@ -2281,7 +2809,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "L",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_12_xl",
@@ -2293,7 +2824,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "XL",
+        "colorName": null,
+        "colorCode": null
       }
     ]
   },
@@ -2328,7 +2862,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": true,
         "width": null,
         "height": null,
-        "sortOrder": 0
+        "sortOrder": 0,
+        "colorName": "Turquoise Blue"
       },
       {
         "id": "img_13_2",
@@ -2341,7 +2876,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "colorName": "Turquoise Blue"
       },
       {
         "id": "img_13_3",
@@ -2354,7 +2890,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 2
+        "sortOrder": 2,
+        "colorName": "Turquoise Blue"
       },
       {
         "id": "img_13_4",
@@ -2367,7 +2904,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 3
+        "sortOrder": 3,
+        "colorName": "Turquoise Blue"
       },
       {
         "id": "img_13_5",
@@ -2380,7 +2918,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 4
+        "sortOrder": 4,
+        "colorName": "Turquoise Blue"
       },
       {
         "id": "img_13_6",
@@ -2393,7 +2932,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 5
+        "sortOrder": 5,
+        "colorName": "Turquoise Blue"
       },
       {
         "id": "img_13_7",
@@ -2406,7 +2946,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 6
+        "sortOrder": 6,
+        "colorName": "Black"
       },
       {
         "id": "img_13_8",
@@ -2419,7 +2960,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 7
+        "sortOrder": 7,
+        "colorName": "Black"
       },
       {
         "id": "img_13_9",
@@ -2432,7 +2974,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 8
+        "sortOrder": 8,
+        "colorName": "Black"
       },
       {
         "id": "img_13_10",
@@ -2445,7 +2988,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 9
+        "sortOrder": 9,
+        "colorName": "Black"
       },
       {
         "id": "img_13_11",
@@ -2458,7 +3002,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 10
+        "sortOrder": 10,
+        "colorName": "Black"
       },
       {
         "id": "img_13_12",
@@ -2471,7 +3016,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 11
+        "sortOrder": 11,
+        "colorName": "Black"
       },
       {
         "id": "img_13_13",
@@ -2484,7 +3030,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 12
+        "sortOrder": 12,
+        "colorName": "Beige"
       },
       {
         "id": "img_13_14",
@@ -2497,7 +3044,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 13
+        "sortOrder": 13,
+        "colorName": "Beige"
       },
       {
         "id": "img_13_15",
@@ -2510,7 +3058,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 14
+        "sortOrder": 14,
+        "colorName": "Beige"
       },
       {
         "id": "img_13_16",
@@ -2523,7 +3072,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 15
+        "sortOrder": 15,
+        "colorName": "Beige"
       },
       {
         "id": "img_13_17",
@@ -2536,7 +3086,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 16
+        "sortOrder": 16,
+        "colorName": "Beige"
       },
       {
         "id": "img_13_18",
@@ -2549,15 +3100,19 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 17
+        "sortOrder": 17,
+        "colorName": "Beige"
       }
     ],
     "variants": [
       {
-        "id": "var_rc_13_m",
+        "id": "var_rc_13_turquoise_blue_m",
         "productId": "prod_rc_13",
-        "sku": "RC-SKU-13-M",
-        "name": "M",
+        "sku": "RC-SKU-13-TUR-M",
+        "name": "Turquoise Blue / M",
+        "colorName": "Turquoise Blue",
+        "colorCode": "#38BDF8",
+        "size": "M",
         "pricePaise": 199900,
         "compareAtPricePaise": 249900,
         "stock": 12,
@@ -2566,10 +3121,13 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_13_l",
+        "id": "var_rc_13_turquoise_blue_l",
         "productId": "prod_rc_13",
-        "sku": "RC-SKU-13-L",
-        "name": "L",
+        "sku": "RC-SKU-13-TUR-L",
+        "name": "Turquoise Blue / L",
+        "colorName": "Turquoise Blue",
+        "colorCode": "#38BDF8",
+        "size": "L",
         "pricePaise": 199900,
         "compareAtPricePaise": 249900,
         "stock": 12,
@@ -2578,14 +3136,107 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_13_xl",
+        "id": "var_rc_13_turquoise_blue_xl",
         "productId": "prod_rc_13",
-        "sku": "RC-SKU-13-XL",
-        "name": "XL",
+        "sku": "RC-SKU-13-TUR-XL",
+        "name": "Turquoise Blue / XL",
+        "colorName": "Turquoise Blue",
+        "colorCode": "#38BDF8",
+        "size": "XL",
+        "pricePaise": 199900,
+        "compareAtPricePaise": 249900,
+        "stock": 5,
+        "inventoryQuantity": 5,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_13_black_m",
+        "productId": "prod_rc_13",
+        "sku": "RC-SKU-13-BLA-M",
+        "name": "Black / M",
+        "colorName": "Black",
+        "colorCode": "#1E293B",
+        "size": "M",
         "pricePaise": 199900,
         "compareAtPricePaise": 249900,
         "stock": 12,
         "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_13_black_l",
+        "productId": "prod_rc_13",
+        "sku": "RC-SKU-13-BLA-L",
+        "name": "Black / L",
+        "colorName": "Black",
+        "colorCode": "#1E293B",
+        "size": "L",
+        "pricePaise": 199900,
+        "compareAtPricePaise": 249900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_13_black_xl",
+        "productId": "prod_rc_13",
+        "sku": "RC-SKU-13-BLA-XL",
+        "name": "Black / XL",
+        "colorName": "Black",
+        "colorCode": "#1E293B",
+        "size": "XL",
+        "pricePaise": 199900,
+        "compareAtPricePaise": 249900,
+        "stock": 5,
+        "inventoryQuantity": 5,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_13_beige_m",
+        "productId": "prod_rc_13",
+        "sku": "RC-SKU-13-BEI-M",
+        "name": "Beige / M",
+        "colorName": "Beige",
+        "colorCode": "#D4B996",
+        "size": "M",
+        "pricePaise": 199900,
+        "compareAtPricePaise": 249900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_13_beige_l",
+        "productId": "prod_rc_13",
+        "sku": "RC-SKU-13-BEI-L",
+        "name": "Beige / L",
+        "colorName": "Beige",
+        "colorCode": "#D4B996",
+        "size": "L",
+        "pricePaise": 199900,
+        "compareAtPricePaise": 249900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_13_beige_xl",
+        "productId": "prod_rc_13",
+        "sku": "RC-SKU-13-BEI-XL",
+        "name": "Beige / XL",
+        "colorName": "Beige",
+        "colorCode": "#D4B996",
+        "size": "XL",
+        "pricePaise": 199900,
+        "compareAtPricePaise": 249900,
+        "stock": 5,
+        "inventoryQuantity": 5,
         "isActive": true,
         "isAvailable": true
       }
@@ -2622,7 +3273,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": true,
         "width": null,
         "height": null,
-        "sortOrder": 0
+        "sortOrder": 0,
+        "colorName": "Black"
       },
       {
         "id": "img_14_2",
@@ -2635,7 +3287,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "colorName": "Black"
       },
       {
         "id": "img_14_3",
@@ -2648,7 +3301,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 2
+        "sortOrder": 2,
+        "colorName": "Black"
       },
       {
         "id": "img_14_4",
@@ -2661,7 +3315,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 3
+        "sortOrder": 3,
+        "colorName": "Black"
       },
       {
         "id": "img_14_5",
@@ -2674,7 +3329,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 4
+        "sortOrder": 4,
+        "colorName": "Black"
       },
       {
         "id": "img_14_6",
@@ -2687,7 +3343,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 5
+        "sortOrder": 5,
+        "colorName": "Black"
       },
       {
         "id": "img_14_7",
@@ -2700,7 +3357,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 6
+        "sortOrder": 6,
+        "colorName": "Olive Brown"
       },
       {
         "id": "img_14_8",
@@ -2713,7 +3371,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 7
+        "sortOrder": 7,
+        "colorName": "Olive Brown"
       },
       {
         "id": "img_14_9",
@@ -2726,7 +3385,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 8
+        "sortOrder": 8,
+        "colorName": "Olive Brown"
       },
       {
         "id": "img_14_10",
@@ -2739,7 +3399,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 9
+        "sortOrder": 9,
+        "colorName": "Olive Brown"
       },
       {
         "id": "img_14_11",
@@ -2752,7 +3413,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 10
+        "sortOrder": 10,
+        "colorName": "Olive Brown"
       },
       {
         "id": "img_14_12",
@@ -2765,7 +3427,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 11
+        "sortOrder": 11,
+        "colorName": "Olive Brown"
       },
       {
         "id": "img_14_13",
@@ -2778,7 +3441,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 12
+        "sortOrder": 12,
+        "colorName": "Coral Pink"
       },
       {
         "id": "img_14_14",
@@ -2791,7 +3455,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 13
+        "sortOrder": 13,
+        "colorName": "Coral Pink"
       },
       {
         "id": "img_14_15",
@@ -2804,7 +3469,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 14
+        "sortOrder": 14,
+        "colorName": "Coral Pink"
       },
       {
         "id": "img_14_16",
@@ -2817,7 +3483,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 15
+        "sortOrder": 15,
+        "colorName": "Coral Pink"
       },
       {
         "id": "img_14_17",
@@ -2830,7 +3497,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 16
+        "sortOrder": 16,
+        "colorName": "Coral Pink"
       },
       {
         "id": "img_14_18",
@@ -2843,27 +3511,19 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 17
+        "sortOrder": 17,
+        "colorName": "Coral Pink"
       }
     ],
     "variants": [
       {
-        "id": "var_rc_14_m",
+        "id": "var_rc_14_black_m",
         "productId": "prod_rc_14",
-        "sku": "RC-SKU-14-M",
-        "name": "M",
-        "pricePaise": 209900,
-        "compareAtPricePaise": 259900,
-        "stock": 0,
-        "inventoryQuantity": 0,
-        "isActive": true,
-        "isAvailable": true
-      },
-      {
-        "id": "var_rc_14_l",
-        "productId": "prod_rc_14",
-        "sku": "RC-SKU-14-L",
-        "name": "L",
+        "sku": "RC-SKU-14-BLA-M",
+        "name": "Black / M",
+        "colorName": "Black",
+        "colorCode": "#1E293B",
+        "size": "M",
         "pricePaise": 209900,
         "compareAtPricePaise": 259900,
         "stock": 12,
@@ -2872,14 +3532,122 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_14_xl",
+        "id": "var_rc_14_black_l",
         "productId": "prod_rc_14",
-        "sku": "RC-SKU-14-XL",
-        "name": "XL",
+        "sku": "RC-SKU-14-BLA-L",
+        "name": "Black / L",
+        "colorName": "Black",
+        "colorCode": "#1E293B",
+        "size": "L",
         "pricePaise": 209900,
         "compareAtPricePaise": 259900,
         "stock": 12,
         "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_14_black_xl",
+        "productId": "prod_rc_14",
+        "sku": "RC-SKU-14-BLA-XL",
+        "name": "Black / XL",
+        "colorName": "Black",
+        "colorCode": "#1E293B",
+        "size": "XL",
+        "pricePaise": 209900,
+        "compareAtPricePaise": 259900,
+        "stock": 5,
+        "inventoryQuantity": 5,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_14_olive_brown_m",
+        "productId": "prod_rc_14",
+        "sku": "RC-SKU-14-OLI-M",
+        "name": "Olive Brown / M",
+        "colorName": "Olive Brown",
+        "colorCode": "#78624E",
+        "size": "M",
+        "pricePaise": 209900,
+        "compareAtPricePaise": 259900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_14_olive_brown_l",
+        "productId": "prod_rc_14",
+        "sku": "RC-SKU-14-OLI-L",
+        "name": "Olive Brown / L",
+        "colorName": "Olive Brown",
+        "colorCode": "#78624E",
+        "size": "L",
+        "pricePaise": 209900,
+        "compareAtPricePaise": 259900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_14_olive_brown_xl",
+        "productId": "prod_rc_14",
+        "sku": "RC-SKU-14-OLI-XL",
+        "name": "Olive Brown / XL",
+        "colorName": "Olive Brown",
+        "colorCode": "#78624E",
+        "size": "XL",
+        "pricePaise": 209900,
+        "compareAtPricePaise": 259900,
+        "stock": 5,
+        "inventoryQuantity": 5,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_14_coral_pink_m",
+        "productId": "prod_rc_14",
+        "sku": "RC-SKU-14-COR-M",
+        "name": "Coral Pink / M",
+        "colorName": "Coral Pink",
+        "colorCode": "#F87171",
+        "size": "M",
+        "pricePaise": 209900,
+        "compareAtPricePaise": 259900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_14_coral_pink_l",
+        "productId": "prod_rc_14",
+        "sku": "RC-SKU-14-COR-L",
+        "name": "Coral Pink / L",
+        "colorName": "Coral Pink",
+        "colorCode": "#F87171",
+        "size": "L",
+        "pricePaise": 209900,
+        "compareAtPricePaise": 259900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_14_coral_pink_xl",
+        "productId": "prod_rc_14",
+        "sku": "RC-SKU-14-COR-XL",
+        "name": "Coral Pink / XL",
+        "colorName": "Coral Pink",
+        "colorCode": "#F87171",
+        "size": "XL",
+        "pricePaise": 209900,
+        "compareAtPricePaise": 259900,
+        "stock": 5,
+        "inventoryQuantity": 5,
         "isActive": true,
         "isAvailable": true
       }
@@ -2916,7 +3684,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": true,
         "width": null,
         "height": null,
-        "sortOrder": 0
+        "sortOrder": 0,
+        "colorName": "Turquoise Blue"
       },
       {
         "id": "img_15_2",
@@ -2929,7 +3698,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "colorName": "Turquoise Blue"
       },
       {
         "id": "img_15_3",
@@ -2942,7 +3712,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 2
+        "sortOrder": 2,
+        "colorName": "Turquoise Blue"
       },
       {
         "id": "img_15_4",
@@ -2955,7 +3726,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 3
+        "sortOrder": 3,
+        "colorName": "Turquoise Blue"
       },
       {
         "id": "img_15_5",
@@ -2968,7 +3740,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 4
+        "sortOrder": 4,
+        "colorName": "Turquoise Blue"
       },
       {
         "id": "img_15_6",
@@ -2981,7 +3754,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 5
+        "sortOrder": 5,
+        "colorName": "Turquoise Blue"
       },
       {
         "id": "img_15_7",
@@ -2994,7 +3768,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 6
+        "sortOrder": 6,
+        "colorName": "Black"
       },
       {
         "id": "img_15_8",
@@ -3007,7 +3782,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 7
+        "sortOrder": 7,
+        "colorName": "Black"
       },
       {
         "id": "img_15_9",
@@ -3020,7 +3796,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 8
+        "sortOrder": 8,
+        "colorName": "Black"
       },
       {
         "id": "img_15_10",
@@ -3033,7 +3810,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 9
+        "sortOrder": 9,
+        "colorName": "Black"
       },
       {
         "id": "img_15_11",
@@ -3046,7 +3824,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 10
+        "sortOrder": 10,
+        "colorName": "Black"
       },
       {
         "id": "img_15_12",
@@ -3059,7 +3838,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 11
+        "sortOrder": 11,
+        "colorName": "Black"
       },
       {
         "id": "img_15_13",
@@ -3072,7 +3852,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 12
+        "sortOrder": 12,
+        "colorName": "Mauve Pink"
       },
       {
         "id": "img_15_14",
@@ -3085,7 +3866,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 13
+        "sortOrder": 13,
+        "colorName": "Mauve Pink"
       },
       {
         "id": "img_15_15",
@@ -3098,7 +3880,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 14
+        "sortOrder": 14,
+        "colorName": "Mauve Pink"
       },
       {
         "id": "img_15_16",
@@ -3111,7 +3894,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 15
+        "sortOrder": 15,
+        "colorName": "Mauve Pink"
       },
       {
         "id": "img_15_17",
@@ -3124,7 +3908,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 16
+        "sortOrder": 16,
+        "colorName": "Mauve Pink"
       },
       {
         "id": "img_15_18",
@@ -3137,15 +3922,34 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 17
+        "sortOrder": 17,
+        "colorName": "Mauve Pink"
       }
     ],
     "variants": [
       {
-        "id": "var_rc_15_s",
+        "id": "var_rc_15_turquoise_blue_s",
         "productId": "prod_rc_15",
-        "sku": "RC-SKU-15-S",
-        "name": "S",
+        "sku": "RC-SKU-15-TUR-S",
+        "name": "Turquoise Blue / S",
+        "colorName": "Turquoise Blue",
+        "colorCode": "#38BDF8",
+        "size": "S",
+        "pricePaise": 139900,
+        "compareAtPricePaise": 179900,
+        "stock": 6,
+        "inventoryQuantity": 6,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_15_turquoise_blue_m",
+        "productId": "prod_rc_15",
+        "sku": "RC-SKU-15-TUR-M",
+        "name": "Turquoise Blue / M",
+        "colorName": "Turquoise Blue",
+        "colorCode": "#38BDF8",
+        "size": "M",
         "pricePaise": 139900,
         "compareAtPricePaise": 179900,
         "stock": 12,
@@ -3154,10 +3958,13 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_15_m",
+        "id": "var_rc_15_turquoise_blue_l",
         "productId": "prod_rc_15",
-        "sku": "RC-SKU-15-M",
-        "name": "M",
+        "sku": "RC-SKU-15-TUR-L",
+        "name": "Turquoise Blue / L",
+        "colorName": "Turquoise Blue",
+        "colorCode": "#38BDF8",
+        "size": "L",
         "pricePaise": 139900,
         "compareAtPricePaise": 179900,
         "stock": 12,
@@ -3166,10 +3973,88 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_15_l",
+        "id": "var_rc_15_black_s",
         "productId": "prod_rc_15",
-        "sku": "RC-SKU-15-L",
-        "name": "L",
+        "sku": "RC-SKU-15-BLA-S",
+        "name": "Black / S",
+        "colorName": "Black",
+        "colorCode": "#1E293B",
+        "size": "S",
+        "pricePaise": 139900,
+        "compareAtPricePaise": 179900,
+        "stock": 6,
+        "inventoryQuantity": 6,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_15_black_m",
+        "productId": "prod_rc_15",
+        "sku": "RC-SKU-15-BLA-M",
+        "name": "Black / M",
+        "colorName": "Black",
+        "colorCode": "#1E293B",
+        "size": "M",
+        "pricePaise": 139900,
+        "compareAtPricePaise": 179900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_15_black_l",
+        "productId": "prod_rc_15",
+        "sku": "RC-SKU-15-BLA-L",
+        "name": "Black / L",
+        "colorName": "Black",
+        "colorCode": "#1E293B",
+        "size": "L",
+        "pricePaise": 139900,
+        "compareAtPricePaise": 179900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_15_mauve_pink_s",
+        "productId": "prod_rc_15",
+        "sku": "RC-SKU-15-MAU-S",
+        "name": "Mauve Pink / S",
+        "colorName": "Mauve Pink",
+        "colorCode": "#C084FC",
+        "size": "S",
+        "pricePaise": 139900,
+        "compareAtPricePaise": 179900,
+        "stock": 6,
+        "inventoryQuantity": 6,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_15_mauve_pink_m",
+        "productId": "prod_rc_15",
+        "sku": "RC-SKU-15-MAU-M",
+        "name": "Mauve Pink / M",
+        "colorName": "Mauve Pink",
+        "colorCode": "#C084FC",
+        "size": "M",
+        "pricePaise": 139900,
+        "compareAtPricePaise": 179900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_15_mauve_pink_l",
+        "productId": "prod_rc_15",
+        "sku": "RC-SKU-15-MAU-L",
+        "name": "Mauve Pink / L",
+        "colorName": "Mauve Pink",
+        "colorCode": "#C084FC",
+        "size": "L",
         "pricePaise": 139900,
         "compareAtPricePaise": 179900,
         "stock": 12,
@@ -3210,7 +4095,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": true,
         "width": null,
         "height": null,
-        "sortOrder": 0
+        "sortOrder": 0,
+        "colorName": "Mustard Yellow"
       },
       {
         "id": "img_16_2",
@@ -3223,7 +4109,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 1
+        "sortOrder": 1,
+        "colorName": "Mustard Yellow"
       },
       {
         "id": "img_16_3",
@@ -3236,7 +4123,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 2
+        "sortOrder": 2,
+        "colorName": "Mustard Yellow"
       },
       {
         "id": "img_16_4",
@@ -3249,7 +4137,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 3
+        "sortOrder": 3,
+        "colorName": "Mustard Yellow"
       },
       {
         "id": "img_16_5",
@@ -3262,7 +4151,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 4
+        "sortOrder": 4,
+        "colorName": "Mustard Yellow"
       },
       {
         "id": "img_16_6",
@@ -3275,7 +4165,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 5
+        "sortOrder": 5,
+        "colorName": "Mustard Yellow"
       },
       {
         "id": "img_16_7",
@@ -3288,7 +4179,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 6
+        "sortOrder": 6,
+        "colorName": "Lavender"
       },
       {
         "id": "img_16_8",
@@ -3301,7 +4193,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 7
+        "sortOrder": 7,
+        "colorName": "Lavender"
       },
       {
         "id": "img_16_9",
@@ -3314,7 +4207,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 8
+        "sortOrder": 8,
+        "colorName": "Lavender"
       },
       {
         "id": "img_16_10",
@@ -3327,7 +4221,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 9
+        "sortOrder": 9,
+        "colorName": "Lavender"
       },
       {
         "id": "img_16_11",
@@ -3340,7 +4235,8 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 10
+        "sortOrder": 10,
+        "colorName": "Lavender"
       },
       {
         "id": "img_16_12",
@@ -3353,15 +4249,34 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isPrimary": false,
         "width": null,
         "height": null,
-        "sortOrder": 11
+        "sortOrder": 11,
+        "colorName": "Lavender"
       }
     ],
     "variants": [
       {
-        "id": "var_rc_16_s",
+        "id": "var_rc_16_mustard_yellow_s",
         "productId": "prod_rc_16",
-        "sku": "RC-SKU-16-S",
-        "name": "S",
+        "sku": "RC-SKU-16-MUS-S",
+        "name": "Mustard Yellow / S",
+        "colorName": "Mustard Yellow",
+        "colorCode": "#EAB308",
+        "size": "S",
+        "pricePaise": 149900,
+        "compareAtPricePaise": 189900,
+        "stock": 6,
+        "inventoryQuantity": 6,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_16_mustard_yellow_m",
+        "productId": "prod_rc_16",
+        "sku": "RC-SKU-16-MUS-M",
+        "name": "Mustard Yellow / M",
+        "colorName": "Mustard Yellow",
+        "colorCode": "#EAB308",
+        "size": "M",
         "pricePaise": 149900,
         "compareAtPricePaise": 189900,
         "stock": 12,
@@ -3370,22 +4285,58 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "isAvailable": true
       },
       {
-        "id": "var_rc_16_m",
+        "id": "var_rc_16_mustard_yellow_l",
         "productId": "prod_rc_16",
-        "sku": "RC-SKU-16-M",
-        "name": "M",
+        "sku": "RC-SKU-16-MUS-L",
+        "name": "Mustard Yellow / L",
+        "colorName": "Mustard Yellow",
+        "colorCode": "#EAB308",
+        "size": "L",
         "pricePaise": 149900,
         "compareAtPricePaise": 189900,
-        "stock": 0,
-        "inventoryQuantity": 0,
+        "stock": 12,
+        "inventoryQuantity": 12,
         "isActive": true,
         "isAvailable": true
       },
       {
-        "id": "var_rc_16_l",
+        "id": "var_rc_16_lavender_s",
         "productId": "prod_rc_16",
-        "sku": "RC-SKU-16-L",
-        "name": "L",
+        "sku": "RC-SKU-16-LAV-S",
+        "name": "Lavender / S",
+        "colorName": "Lavender",
+        "colorCode": "#A855F7",
+        "size": "S",
+        "pricePaise": 149900,
+        "compareAtPricePaise": 189900,
+        "stock": 6,
+        "inventoryQuantity": 6,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_16_lavender_m",
+        "productId": "prod_rc_16",
+        "sku": "RC-SKU-16-LAV-M",
+        "name": "Lavender / M",
+        "colorName": "Lavender",
+        "colorCode": "#A855F7",
+        "size": "M",
+        "pricePaise": 149900,
+        "compareAtPricePaise": 189900,
+        "stock": 12,
+        "inventoryQuantity": 12,
+        "isActive": true,
+        "isAvailable": true
+      },
+      {
+        "id": "var_rc_16_lavender_l",
+        "productId": "prod_rc_16",
+        "sku": "RC-SKU-16-LAV-L",
+        "name": "Lavender / L",
+        "colorName": "Lavender",
+        "colorCode": "#A855F7",
+        "size": "L",
         "pricePaise": 149900,
         "compareAtPricePaise": 189900,
         "stock": 12,
@@ -3505,7 +4456,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "M",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_17_l",
@@ -3517,7 +4471,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "L",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_17_xl",
@@ -3529,7 +4486,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "XL",
+        "colorName": null,
+        "colorCode": null
       }
     ]
   },
@@ -3643,7 +4603,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "M",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_18_l",
@@ -3655,7 +4618,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "L",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_18_xl",
@@ -3667,7 +4633,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "XL",
+        "colorName": null,
+        "colorCode": null
       }
     ]
   },
@@ -3781,7 +4750,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "M",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_19_l",
@@ -3793,7 +4765,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "L",
+        "colorName": null,
+        "colorCode": null
       }
     ]
   },
@@ -3907,7 +4882,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "M",
+        "colorName": null,
+        "colorCode": null
       },
       {
         "id": "var_rc_20_l",
@@ -3919,7 +4897,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "L",
+        "colorName": null,
+        "colorCode": null
       }
     ]
   },
@@ -4033,7 +5014,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "Free Size",
+        "colorName": null,
+        "colorCode": null
       }
     ]
   },
@@ -4147,7 +5131,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "stock": 12,
         "inventoryQuantity": 12,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": true,
+        "size": "Free Size",
+        "colorName": null,
+        "colorCode": null
       }
     ]
   }

@@ -18,10 +18,24 @@ export interface User {
 export const getCurrentUser = cache(async (): Promise<User | null> => {
   const { data: ctx, error } = await createSupabaseContext({ auth: "user" });
   if (error || !ctx || !ctx.userClaims) {
+    // In development mode, only provide fallback Admin if ALLOW_DEV_AUTH_BYPASS is explicitly set to "true"
+    if (process.env.NODE_ENV === "development" && process.env.ALLOW_DEV_AUTH_BYPASS === "true") {
+      return {
+        id: "usr_admin_dev",
+        name: "Resham Admin (Dev Mode)",
+        email: "admin@reshamchikankari.com",
+        role: "ADMIN",
+        image: null,
+        createdAt: new Date().toISOString(),
+      };
+    }
     return null;
   }
 
   const { id: userId, email, userMetadata } = ctx.userClaims;
+  const adminEmails = (process.env.ADMIN_EMAILS || "mr.patil.satu@gmail.com").split(",").map((e) => e.trim().toLowerCase());
+  const userEmail = (email || "").toLowerCase();
+  const isAdminEmail = adminEmails.includes(userEmail);
 
   // Query profiles table using Drizzle with a try-catch to prevent crashing on missing tables
   let profile = null;
@@ -34,19 +48,36 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
   }
 
   if (!profile) {
-    const userEmail = email || "";
-    const resolvedRole = userEmail === "mr.patil.satu@gmail.com" ? "ADMIN" : "CUSTOMER";
+    const resolvedRole = isAdminEmail ? "ADMIN" : "CUSTOMER";
+    const fullName = (userMetadata?.full_name as string) || (userMetadata?.name as string) || email || "Valued Customer";
+    const avatarUrl = (userMetadata?.avatar_url as string) || null;
+
+    // Automatically upsert missing profile row to satisfy foreign key constraints across wishlists, orders, and wallets
+    try {
+      await db.insert(profiles).values({
+        id: userId,
+        fullName,
+        email: email || `${userId}@user.com`,
+        avatarUrl,
+        role: resolvedRole,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      }).onConflictDoNothing();
+    } catch (insertErr) {
+      console.warn("Could not auto-create profile row:", insertErr);
+    }
+
     return {
       id: userId,
-      name: (userMetadata?.full_name as string) || (userMetadata?.name as string) || userEmail || "",
-      email: userEmail,
+      name: fullName,
+      email: email || "",
       role: resolvedRole,
-      image: (userMetadata?.avatar_url as string) || null,
+      image: avatarUrl,
       createdAt: new Date().toISOString(),
     };
   }
 
-  const resolvedRole = (profile.email === "mr.patil.satu@gmail.com" || profile.role === "ADMIN") ? "ADMIN" : "CUSTOMER";
+  const resolvedRole = (isAdminEmail || profile.role === "ADMIN") ? "ADMIN" : "CUSTOMER";
 
   return {
     id: profile.id,

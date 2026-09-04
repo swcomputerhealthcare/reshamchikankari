@@ -233,16 +233,14 @@ const RadialArcCard = ({
         transformOrigin: "center 110%",
         touchAction: "pan-y",
       }}
-      className="absolute top-[10px] sm:top-[15px] lg:top-[20px] bg-[#FAF7F2] text-[#161616] border border-[#161616]/12 rounded-[12px] p-4 sm:p-5 shadow-2xl pointer-events-none flex flex-col justify-between text-left shrink-0 select-none"
+      className="absolute top-[10px] sm:top-[15px] lg:top-[20px] bg-[#F8F2EC] text-[#161616] border border-[#ECE9E2] rounded-[12px] p-4 sm:p-5 shadow-2xl pointer-events-none flex flex-col justify-between text-left shrink-0 select-none"
     >
       {/* Top 50% — Fashion Editorial Photography */}
-      <div className="relative w-full h-[50%] rounded-[8px] overflow-hidden bg-[#EAE5DC] border border-[#161616]/8 shrink-0">
+      <div className="relative w-full h-[50%] rounded-[8px] overflow-hidden bg-[#ECE9E2] border border-[#161616]/8 shrink-0">
         <Image
           src={photoUrl}
           alt={review.authorName}
           fill
-          priority
-          unoptimized
           sizes="(max-width: 640px) 240px, 300px"
           className="object-cover object-top filter brightness-102"
         />
@@ -253,22 +251,22 @@ const RadialArcCard = ({
         <div>
           {/* Rating Stars & Verified Purchase Badge */}
           <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1 text-[#E694AA]">
+            <div className="flex items-center gap-1 text-[#E2D89B]">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star
                   key={i}
                   className={`h-3.5 w-3.5 ${
                     i < review.rating
-                      ? "fill-[#E694AA] text-[#E694AA]"
-                      : "text-[#E694AA]/20 fill-[#E694AA]/10"
+                      ? "fill-[#E2D89B] text-[#E2D89B]"
+                      : "text-[#E2D89B]/20 fill-[#E2D89B]/10"
                   }`}
                 />
               ))}
             </div>
 
             {review.isVerified && (
-              <span className="inline-flex items-center gap-1 text-[8.5px] font-bold uppercase tracking-widest text-[#3F5031]">
-                <ShieldCheck className="h-3 w-3 text-[#3F5031]" />
+              <span className="inline-flex items-center gap-1 text-[8.5px] font-bold uppercase tracking-widest text-[#7C7A5A]">
+                <ShieldCheck className="h-3 w-3 text-[#7C7A5A]" />
                 VERIFIED PURCHASE
               </span>
             )}
@@ -281,11 +279,11 @@ const RadialArcCard = ({
         </div>
 
         {/* Customer Name & Product Title */}
-        <div className="pt-2 border-t border-[#161616]/10 flex flex-col gap-0.5">
+        <div className="pt-2 border-t border-[#ECE9E2] flex flex-col gap-0.5">
           <span className="text-[10px] font-bold uppercase tracking-widest text-[#161616]/85 font-sans truncate">
             — {review.authorName}
           </span>
-          <span className="text-[9px] font-semibold text-[#3F5031] uppercase tracking-wider font-sans truncate">
+          <span className="text-[9px] font-semibold text-[#7C7A5A] uppercase tracking-wider font-sans truncate">
             {productName}
           </span>
         </div>

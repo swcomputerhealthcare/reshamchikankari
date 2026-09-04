@@ -232,11 +232,33 @@ export default function MediaListController({
               </select>
             </div>
 
-            {/* Asset URL */}
+            {/* Asset File Upload / URL */}
             <div className="space-y-1.5">
               <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-400">
-                Image CDN URL
+                Upload File or Enter Image URL
               </span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const formData = new FormData();
+                  formData.append("file", file);
+                  startTransition(async () => {
+                    const { uploadAdminImageAction } = await import("@/actions/upload");
+                    const res = await uploadAdminImageAction(formData);
+                    if (res.success && res.image) {
+                      setNewUrl(res.image.url);
+                      setNewAlt(file.name.replace(/\.[^/.]+$/, ""));
+                      showToast("File uploaded. Click 'Link Image Asset' to save to product.");
+                    } else {
+                      showToast(res.error || "Failed to upload file.", true);
+                    }
+                  });
+                }}
+                className="w-full text-xs font-sans file:mr-3 file:py-1 file:px-3 file:border-0 file:text-[10px] file:font-bold file:bg-brand-sage file:text-white file:rounded-xs file:uppercase file:cursor-pointer mb-1"
+              />
               <input
                 type="url"
                 required

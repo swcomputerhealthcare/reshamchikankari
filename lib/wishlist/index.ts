@@ -23,13 +23,17 @@ export async function getCookieWishlistItems(): Promise<string[]> {
 }
 
 async function saveCookieWishlistItems(items: string[]) {
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, encodeURIComponent(JSON.stringify(items)), {
-    path: "/",
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-    httpOnly: true,
-    sameSite: "lax",
-  });
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set(COOKIE_NAME, encodeURIComponent(JSON.stringify(items)), {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      httpOnly: true,
+      sameSite: "lax",
+    });
+  } catch {
+    // Ignore error if invoked during Server Component rendering (where cookie modification is disallowed)
+  }
 }
 
 // Database Wishlist Helpers
@@ -85,6 +89,19 @@ async function syncWishlistToDb(userId: string, productIds: string[]) {
       .limit(1);
 
     if (!userWishlist) {
+      // Ensure profiles record exists first to satisfy foreign key wishlists_user_id_profiles_id_fk
+      try {
+        const { profiles } = await import("@/db/schema/auth");
+        await db.insert(profiles).values({
+          id: userId,
+          fullName: "Valued Customer",
+          email: `${userId}@user.com`,
+          role: "CUSTOMER",
+        }).onConflictDoNothing();
+      } catch (profileErr) {
+        console.warn("Profile auto-insert warning:", profileErr);
+      }
+
       const wishlistId = `wsh_${Math.random().toString(36).substring(2, 11)}`;
       await db.insert(wishlists).values({
         id: wishlistId,
@@ -132,6 +149,19 @@ export async function toggleWishlistItem(productId: string): Promise<{ wishliste
         .limit(1);
 
       if (!userWishlist) {
+        // Ensure profiles record exists first to satisfy foreign key wishlists_user_id_profiles_id_fk
+        try {
+          const { profiles } = await import("@/db/schema/auth");
+          await db.insert(profiles).values({
+            id: user.id,
+            fullName: user.name || "Valued Customer",
+            email: user.email || `${user.id}@user.com`,
+            role: user.role || "CUSTOMER",
+          }).onConflictDoNothing();
+        } catch (profileErr) {
+          console.warn("Profile auto-insert warning:", profileErr);
+        }
+
         const wishlistId = `wsh_${Math.random().toString(36).substring(2, 11)}`;
         await db.insert(wishlists).values({
           id: wishlistId,

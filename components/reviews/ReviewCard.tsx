@@ -27,10 +27,10 @@ export default function ReviewCard({ review, className = "", style }: ReviewCard
   return (
     <div
       style={style}
-      className={`bg-[#FAF7F2] text-[#161616] border border-[#161616]/12 rounded-[14px] p-4 sm:p-5 shadow-xl font-sans text-left w-full flex flex-col justify-between select-none ${className}`}
+      className={`bg-[#F8F2EC] text-[#161616] border border-[#ECE9E2] rounded-[14px] p-4 sm:p-5 shadow-lg font-sans text-left w-full flex flex-col justify-between select-none ${className}`}
     >
       {/* Top 50% — Fashion Editorial Photography */}
-      <div className="relative aspect-[4/3] w-full rounded-[10px] overflow-hidden bg-[#EAE5DC] border border-[#161616]/8 mb-3 shrink-0">
+      <div className="relative aspect-[4/3] w-full rounded-[10px] overflow-hidden bg-[#ECE9E2] border border-[#ECE9E2] mb-3 shrink-0">
         <Image
           src={photo}
           alt={review.authorName}
@@ -46,22 +46,22 @@ export default function ReviewCard({ review, className = "", style }: ReviewCard
       <div className="flex flex-col justify-between flex-1 pt-1">
         <div>
           <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-1 text-[#E694AA]">
+            <div className="flex items-center gap-1 text-[#E2D89B]">
               {Array.from({ length: 5 }).map((_, i) => (
                 <Star
                   key={i}
                   className={`h-3.5 w-3.5 ${
                     i < review.rating
-                      ? "fill-[#E694AA] text-[#E694AA]"
-                      : "text-[#E694AA]/20 fill-[#E694AA]/10"
+                      ? "fill-[#E2D89B] text-[#E2D89B]"
+                      : "text-[#E2D89B]/20 fill-[#E2D89B]/10"
                   }`}
                 />
               ))}
             </div>
 
             {review.isVerified && (
-              <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-[#3F5031]">
-                <ShieldCheck className="h-3 w-3 text-[#3F5031]" />
+              <span className="inline-flex items-center gap-1 text-[9px] font-bold uppercase tracking-widest text-[#7C7A5A]">
+                <ShieldCheck className="h-3 w-3 text-[#7C7A5A]" />
                 VERIFIED PURCHASE
               </span>
             )}
@@ -72,11 +72,11 @@ export default function ReviewCard({ review, className = "", style }: ReviewCard
           </p>
         </div>
 
-        <div className="pt-2.5 border-t border-[#161616]/10 flex flex-col gap-0.5">
+        <div className="pt-2.5 border-t border-[#ECE9E2] flex flex-col gap-0.5">
           <span className="text-[10.5px] font-bold uppercase tracking-widest text-[#161616]/85 font-sans truncate">
             — {review.authorName}
           </span>
-          <span className="text-[9.5px] font-semibold text-[#3F5031] uppercase tracking-wider font-sans truncate">
+          <span className="text-[9.5px] font-semibold text-[#7C7A5A] uppercase tracking-wider font-sans truncate">
             {product}
           </span>
         </div>

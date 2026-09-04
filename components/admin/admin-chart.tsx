@@ -141,7 +141,7 @@ export default function AdminChart({ data }: AdminChartProps) {
           <path
             d={pathD}
             fill="none"
-            stroke="#3F5031" /* brand-sage */
+            stroke="#7C7A5A" /* brand-sage */
             strokeWidth={1.5}
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -168,7 +168,7 @@ export default function AdminChart({ data }: AdminChartProps) {
                   cy={p.y}
                   r={3.5}
                   fill="#E694AA" /* brand-pink */
-                  stroke="#3F5031"
+                  stroke="#7C7A5A"
                   strokeWidth={1}
                   className="pointer-events-none"
                 />

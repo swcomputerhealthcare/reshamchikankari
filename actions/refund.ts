@@ -1,11 +1,14 @@
 'use server';
 
+import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { refunds } from "@/db/schema/refund";
 import { orders } from "@/db/schema/order";
-import { getCurrentUser } from "@/lib/auth/helpers";
+import { payments } from "@/db/schema/payment";
+import { requireAdmin } from "@/lib/auth/helpers";
 import { getOrCreateWallet, creditWallet } from "@/lib/wallet";
-import { eq, and } from "drizzle-orm";
+import { executeRazorpayRefund } from "@/lib/razorpay-services";
+import { eq, and, ne } from "drizzle-orm";
 
 export async function createRefundAction(
   orderId: string,
@@ -14,10 +17,8 @@ export async function createRefundAction(
   reason: string,
   refundMethod: "original_payment_method" | "rc_wallet"
 ) {
-  const adminUser = await getCurrentUser();
-  if (!adminUser || adminUser.role !== "ADMIN") {
-    return { success: false, error: "Unauthorized access. Admins only." };
-  }
+  // 1. Authorize Admin
+  await requireAdmin();
 
   if (amountPaise <= 0) {
     return { success: false, error: "Refund amount must be greater than zero." };
@@ -25,123 +26,131 @@ export async function createRefundAction(
 
   const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
 
-  if (isDbAvailable) {
-    try {
-      // 1. Get the order
-      const order = await db.query.orders.findFirst({
-        where: eq(orders.id, orderId),
-        with: {
-          items: true
-        }
-      });
-
-      if (!order) {
-        return { success: false, error: "Order not found." };
-      }
-
-      // Check if order belongs to a user (uuid)
-      if (!order.userId) {
-        return { success: false, error: "Cannot process refund: Order is not linked to a user profile." };
-      }
-
-      // Validate amount does not exceed total order value
-      if (amountPaise > order.totalPaise) {
-        return { success: false, error: "Refund amount cannot exceed the order total." };
-      }
-
-      // 2. Idempotency Check: check if this order/item has already been refunded
-      const existingRefunds = await db
-        .select()
-        .from(refunds)
-        .where(
-          and(
-            eq(refunds.orderId, orderId),
-            orderItemId ? eq(refunds.orderItemId, orderItemId) : eq(refunds.status, "COMPLETED")
-          )
-        );
-
-      const totalAlreadyRefunded = existingRefunds.reduce((sum, r) => sum + r.amountPaise, 0);
-      if (totalAlreadyRefunded + amountPaise > order.totalPaise) {
-        return { success: false, error: "Total refunded amount would exceed the order total." };
-      }
-
-      // 3. Process Refund
-      const refundId = `ref_${Math.random().toString(36).substring(2, 11)}`;
-
-      if (refundMethod === "rc_wallet") {
-        // Get customer wallet
-        const wallet = await getOrCreateWallet(order.userId!);
-
-        // Credit the wallet (this runs its own transaction internally)
-        await creditWallet(
-          wallet.id,
-          amountPaise,
-          "REFUND",
-          orderId,
-          `Refund for order ${order.orderNumber}. Reason: ${reason}`,
-          "order"
-        );
-
-        // Find the transaction record that was just created to get its ID
-        let walletTransactionId: string | null = null;
-        try {
-          const walletTransactionsSchema = (await import("@/db/schema/wallet")).walletTransactions;
-          const txRecord = await db
-            .select()
-            .from(walletTransactionsSchema)
-            .where(
-              and(
-                eq(walletTransactionsSchema.walletId, wallet.id),
-                eq(walletTransactionsSchema.referenceId, orderId),
-                eq(walletTransactionsSchema.referenceType, "order"),
-                eq(walletTransactionsSchema.type, "REFUND")
-              )
-            )
-            .limit(1);
-          
-          if (txRecord.length > 0) {
-            walletTransactionId = txRecord[0].id;
-          }
-        } catch (txErr) {
-          console.error("Failed to find refund transaction ID:", txErr);
-        }
-
-        // Insert refund record
-        await db.insert(refunds).values({
-          id: refundId,
-          orderId,
-          orderItemId,
-          userId: order.userId!,
-          amountPaise,
-          reason,
-          status: "COMPLETED",
-          refundMethod,
-          walletTransactionId,
-          processedAt: new Date(),
-        });
-
-        return { success: true, message: `Successfully refunded ₹${(amountPaise / 100).toFixed(2)} to customer wallet.` };
-      } else {
-        // Original payment method (Gateway/Manual process)
-        await db.insert(refunds).values({
-          id: refundId,
-          orderId,
-          orderItemId,
-          userId: order.userId!,
-          amountPaise,
-          reason,
-          status: "PENDING", // Stays pending until payment gateway webhook confirms it
-          refundMethod,
-        });
-
-        return { success: true, message: `Refund of ₹${(amountPaise / 100).toFixed(2)} initiated to original payment method (pending gateway processing).` };
-      }
-    } catch (e: any) {
-      console.error("Refund processing failed:", e);
-      return { success: false, error: e.message || "Failed to process refund." };
-    }
-  } else {
+  if (!isDbAvailable) {
     console.log("Offline Mode: Created refund", { orderId, orderItemId, amountPaise, reason, refundMethod });
-    return { success: true, message: "Mock Mode: Refund completed successfully!" };
+    return { success: true, message: "Mock Mode: Simulated refund created successfully!" };
+  }
+
+  try {
+    // 2. Fetch Order and items from DB
+    const order = await db.query.orders.findFirst({
+      where: eq(orders.id, orderId),
+      with: {
+        items: true,
+      },
+    });
+
+    if (!order) {
+      return { success: false, error: "Order not found in database." };
+    }
+
+    if (!order.userId) {
+      return { success: false, error: "Cannot process refund: Order is not associated with a registered user account." };
+    }
+
+    // 3. Calculate remaining refundable balance to prevent over-refunding
+    const existingRefunds = await db
+      .select()
+      .from(refunds)
+      .where(and(eq(refunds.orderId, orderId), ne(refunds.status, "FAILED")));
+
+    const totalAlreadyRefunded = existingRefunds.reduce((sum, r) => sum + r.amountPaise, 0);
+    const remainingRefundable = order.totalPaise - totalAlreadyRefunded;
+
+    if (amountPaise > remainingRefundable) {
+      return {
+        success: false,
+        error: `Refund amount (₹${(amountPaise / 100).toFixed(2)}) exceeds remaining refundable balance (₹${(remainingRefundable / 100).toFixed(2)}).`,
+      };
+    }
+
+    // 4. Find payment record
+    const paymentRecord = await db.select().from(payments).where(eq(payments.orderId, orderId)).limit(1);
+    const providerPaymentId = paymentRecord[0]?.providerPaymentId || order.paymentId || "mock_payment";
+
+    const refundId = `ref_${Math.random().toString(36).substring(2, 11)}`;
+    const idempotencyKey = `refund_${orderId}_${Date.now()}`;
+
+    // 5. Create initial pending refund record
+    await db.insert(refunds).values({
+      id: refundId,
+      orderId,
+      orderItemId,
+      userId: order.userId,
+      amountPaise,
+      reason,
+      status: "PROCESSING",
+      refundMethod,
+      idempotencyKey,
+    });
+
+    // 6. Call Razorpay Refund API
+    const rzpResult = await executeRazorpayRefund(providerPaymentId, amountPaise, idempotencyKey, {
+      orderId,
+      refundId,
+      refundMethod,
+      reason,
+    });
+
+    if (!rzpResult.success) {
+      await db.update(refunds).set({ status: "FAILED" }).where(eq(refunds.id, refundId));
+      return { success: false, error: rzpResult.error || "Razorpay refund execution failed." };
+    }
+
+    const rzpRefundId = rzpResult.refundId || `rfnd_${Date.now()}`;
+
+    let walletTxId: string | null = null;
+
+    // 7. Credit RC Wallet ONLY IF refundMethod is "rc_wallet" and refund is confirmed
+    if (refundMethod === "rc_wallet") {
+      const userWallet = await getOrCreateWallet(order.userId);
+      const creditRes = await creditWallet(
+        userWallet.id,
+        amountPaise,
+        "REFUND",
+        orderId,
+        `Refund for Order #${order.orderNumber}. Reason: ${reason}`,
+        "order"
+      );
+
+      // Extract transaction ID from user wallet transactions
+      const txs = (await import("@/db/schema/wallet")).walletTransactions;
+      const latestTx = await db
+        .select()
+        .from(txs)
+        .where(and(eq(txs.walletId, userWallet.id), eq(txs.referenceId, orderId)))
+        .orderBy(eq(txs.createdAt, txs.createdAt))
+        .limit(1);
+
+      if (latestTx[0]) walletTxId = latestTx[0].id;
+    }
+
+    // 8. Update refund record status to COMPLETED
+    await db
+      .update(refunds)
+      .set({
+        status: "COMPLETED",
+        razorpayRefundId: rzpRefundId,
+        walletTransactionId: walletTxId,
+        processedAt: new Date(),
+      })
+      .where(eq(refunds.id, refundId));
+
+    revalidatePath(`/admin/orders/${orderId}`);
+    revalidatePath("/admin/orders");
+    revalidatePath("/account/wallet");
+
+    const destMsg =
+      refundMethod === "rc_wallet"
+        ? "credited to customer's RC Wallet."
+        : "processed to customer's original payment method via Razorpay.";
+
+    return {
+      success: true,
+      message: `Successfully processed refund of ₹${(amountPaise / 100).toFixed(2)} (${destMsg}).`,
+    };
+  } catch (err: any) {
+    console.error("Refund processing failed:", err);
+    return { success: false, error: err.message || "An error occurred while executing refund." };
   }
 }

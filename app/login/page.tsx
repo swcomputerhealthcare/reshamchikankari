@@ -88,7 +88,7 @@ function LoginForm() {
   return (
     <div className="w-full max-w-md p-6 sm:p-10 bg-[#FFF9F4] border border-brand-black/5 shadow-xs">
       <div className="text-center mb-8">
-        <span className="text-[9px] uppercase tracking-widest text-[#3F5031] font-bold block mb-2">
+        <span className="text-[9px] uppercase tracking-widest text-[#7C7A5A] font-bold block mb-2">
           Atelier Entrance
         </span>
         <h1 className="font-display text-4xl text-brand-black mb-2 font-light">Welcome Back</h1>
@@ -98,7 +98,7 @@ function LoginForm() {
       </div>
 
       {successMessage && (
-        <div className="bg-[#3F5031]/5 text-[#3F5031] text-xs p-3 mb-6 border border-[#3F5031]/15 font-sans tracking-wide">
+        <div className="bg-[#7C7A5A]/5 text-[#7C7A5A] text-xs p-3 mb-6 border border-[#7C7A5A]/15 font-sans tracking-wide">
           {successMessage}
         </div>
       )}
@@ -122,7 +122,7 @@ function LoginForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
             disabled={isLoading || googleState !== "idle"}
-            className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#3F5031] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
+            className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
             placeholder="name@example.com"
           />
         </div>
@@ -146,7 +146,7 @@ function LoginForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
             disabled={isLoading || googleState !== "idle"}
-            className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#3F5031] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
+            className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
             placeholder="••••••••"
           />
         </div>

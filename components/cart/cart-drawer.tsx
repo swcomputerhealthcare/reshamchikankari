@@ -59,7 +59,7 @@ export default function CartDrawer({ variant = "default" }: CartDrawerProps) {
       {totalQuantity > 0 && (
         <span
           className={`rounded-full w-4.5 h-4.5 inline-flex items-center justify-center text-[9px] font-mono font-bold leading-none select-none text-center shrink-0 ${
-            variant === "dark" ? "bg-[#FFF9F4] text-[#3F5031]" : "bg-[#161616] text-[#FFF9F4]"
+            variant === "dark" ? "bg-[#FFF9F4] text-brand-sage" : "bg-[#161616] text-[#FFF9F4]"
           }`}
         >
           {totalQuantity}
@@ -165,7 +165,9 @@ export default function CartDrawer({ variant = "default" }: CartDrawerProps) {
                         </button>
                       </div>
                       <div className="text-[10px] text-[#6f6f68] mt-1 space-y-0.5">
-                        <p>Size: {item.sizeName || "One Size"} | Fabric: {fabricName}</p>
+                        <p>
+                          {item.variantLabel ? `Variant: ${item.variantLabel}` : `Size: ${item.sizeName || "One Size"}`} | Fabric: {fabricName}
+                        </p>
                         <p className="font-sans text-[9px] text-neutral-400">No. {productNo}</p>
                       </div>
                     </div>
@@ -221,7 +223,7 @@ export default function CartDrawer({ variant = "default" }: CartDrawerProps) {
 
             <div className="flex flex-col gap-2 pt-2">
               <Link href="/checkout" onClick={() => setIsOpen(false)} className="w-full">
-                <button className="w-full h-12 bg-[#3F5031] hover:bg-brand-black text-brand-offwhite text-[10px] font-bold uppercase tracking-widest rounded-full transition-all duration-300 cursor-pointer border-none flex items-center justify-center">
+                <button className="w-full h-12 bg-brand-sage hover:bg-brand-black text-brand-offwhite text-[10px] font-bold uppercase tracking-widest rounded-full transition-all duration-300 cursor-pointer border-none flex items-center justify-center">
                   Proceed to Secure Checkout
                 </button>
               </Link>

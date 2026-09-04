@@ -13,11 +13,8 @@ export default function StickyHeader({ children, variant = "default" }: StickyHe
 
   useEffect(() => {
     const handleScroll = () => {
-      if (window.scrollY > 20) {
-        setIsScrolled(true);
-      } else {
-        setIsScrolled(false);
-      }
+      const shouldScroll = window.scrollY > 20;
+      setIsScrolled((prev) => (shouldScroll !== prev ? shouldScroll : prev));
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });

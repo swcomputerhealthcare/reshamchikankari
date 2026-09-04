@@ -3,8 +3,99 @@
 import { db } from "@/db";
 import { reviews } from "@/db/schema/review";
 import { orders, orderItems } from "@/db/schema/order";
+import { products } from "@/db/schema/catalog";
+import { profiles } from "@/db/schema/auth";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { eq, and } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+
+export async function submitPublicReviewAction(
+  authorName: string,
+  rating: number,
+  body: string,
+  photoUrl?: string,
+  productId?: string
+) {
+  if (!authorName || authorName.trim().length < 2) {
+    return { success: false, error: "Please enter your name." };
+  }
+
+  if (rating < 1 || rating > 5) {
+    return { success: false, error: "Rating must be between 1 and 5 stars." };
+  }
+
+  if (!body || body.trim().length < 5) {
+    return { success: false, error: "Please write a review message (minimum 5 characters)." };
+  }
+
+  const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+
+  if (isDbAvailable) {
+    try {
+      // 1. Resolve product ID or fallback to first active product
+      let targetProductId = productId;
+      if (!targetProductId) {
+        const firstProd = await db.select({ id: products.id }).from(products).where(eq(products.isActive, true)).limit(1);
+        if (firstProd.length > 0) {
+          targetProductId = firstProd[0].id;
+        }
+      }
+
+      if (!targetProductId) {
+        return { success: false, error: "Product catalog is empty. Review cannot be linked." };
+      }
+
+      // 2. Resolve user ID or fallback to current logged in user / system guest user profile
+      const user = await getCurrentUser();
+      let targetUserId = user?.id;
+
+      if (!targetUserId) {
+        // Look up or create guest user profile
+        const guestProfile = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.role, "CUSTOMER")).limit(1);
+        if (guestProfile.length > 0) {
+          targetUserId = guestProfile[0].id;
+        } else {
+          // Create guest profile
+          const guestId = `usr_guest_${Math.random().toString(36).substring(2, 9)}`;
+          await db.insert(profiles).values({
+            id: guestId,
+            fullName: authorName.trim() || "Guest Patron",
+            email: `guest_${Date.now()}@reshamchikankari.com`,
+            role: "CUSTOMER",
+          }).onConflictDoNothing();
+          targetUserId = guestId;
+        }
+      }
+
+      if (!targetUserId) {
+        return { success: false, error: "Customer profiles unavailable." };
+      }
+
+      const reviewId = `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+      await db.insert(reviews).values({
+        id: reviewId,
+        productId: targetProductId,
+        userId: targetUserId,
+        rating,
+        title: authorName.trim(),
+        body: body.trim(),
+        isVerifiedPurchase: false,
+        isApproved: false, // Requires admin moderation
+      });
+
+      revalidatePath("/admin/reviews");
+      revalidatePath("/");
+      revalidatePath("/patron-voices");
+
+      return { success: true, message: "Thank you! Your story has been submitted for moderation." };
+    } catch (e: any) {
+      console.error("Failed to submit public review:", e);
+      return { success: false, error: e.message || "Failed to submit review. Please try again." };
+    }
+  } else {
+    return { success: true, message: "Mock Mode: Review submitted for moderation!" };
+  }
+}
 
 export async function submitReviewAction(
   productId: string,
@@ -77,6 +168,18 @@ export async function submitReviewAction(
           isVerifiedPurchase = true;
           finalOrderId = purchase[0].orders.id;
         }
+      }
+
+      // Ensure profile row exists to satisfy foreign key constraint
+      try {
+        await db.insert(profiles).values({
+          id: user.id,
+          fullName: user.name || "Valued Customer",
+          email: user.email,
+          role: user.role || "CUSTOMER",
+        }).onConflictDoNothing();
+      } catch (profileErr) {
+        console.warn("Profile auto-insert warning for review:", profileErr);
       }
 
       await db.insert(reviews).values({

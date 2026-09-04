@@ -857,46 +857,63 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
               )}
             </div>
 
-            {/* Add Image Link Form */}
-            <div className="bg-[#FFFDF9] border border-brand-black/5 p-6 rounded-xs">
-              <h4 className="text-xs uppercase font-bold tracking-widest text-brand-sage flex items-center gap-2 mb-4">
+            {/* Add Image Link / File Upload Form */}
+            <div className="bg-[#FFFDF9] border border-brand-black/5 p-6 rounded-xs space-y-4">
+              <h4 className="text-xs uppercase font-bold tracking-widest text-brand-sage flex items-center gap-2">
                 <ImageIcon className="h-4 w-4 text-brand-pink" />
-                <span>Add Image URL</span>
+                <span>Upload or Add Product Photo</span>
               </h4>
 
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 items-end">
-                <div className="sm:col-span-6 space-y-1.5">
+              <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-end">
+                <div className="flex-1 space-y-1.5">
                   <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">
-                    Public Asset URL (Cloudinary / CDN Link)
+                    Upload Local File
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const formData = new FormData();
+                      formData.append("file", file);
+                      startTransition(async () => {
+                        const { uploadAdminImageAction } = await import("@/actions/upload");
+                        const res = await uploadAdminImageAction(formData);
+                        if (res.success && res.image) {
+                          setNewImgUrl(res.image.url);
+                          setNewImgAlt(file.name.replace(/\.[^/.]+$/, ""));
+                          triggerToast("File uploaded successfully. Click 'Add to Gallery' below.");
+                        } else {
+                          triggerToast(res.error || "Failed to upload file.", true);
+                        }
+                      });
+                    }}
+                    className="w-full px-3 py-2 bg-white border border-brand-black/10 focus:outline-none text-xs rounded-xs font-sans file:mr-3 file:py-1 file:px-3 file:border-0 file:text-[10px] file:font-bold file:bg-brand-sage file:text-white file:rounded-xs file:uppercase file:cursor-pointer"
+                  />
+                </div>
+
+                <div className="flex-1 space-y-1.5">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">
+                    Or Image URL (Cloudinary / CDN Link)
                   </span>
                   <input
                     type="url"
                     placeholder="https://res.cloudinary.com/..."
                     value={newImgUrl}
                     onChange={(e) => setNewImgUrl(e.target.value)}
-                    className="w-full px-3 py-2 border border-brand-black/10 focus:outline-none text-xs rounded-xs font-sans"
+                    className="w-full px-3 py-2 bg-white border border-brand-black/10 focus:outline-none text-xs rounded-xs font-sans"
                   />
                 </div>
-                <div className="sm:col-span-4 space-y-1.5">
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-500">
-                    Image Alt Description
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="Front details closeup"
-                    value={newImgAlt}
-                    onChange={(e) => setNewImgAlt(e.target.value)}
-                    className="w-full px-3 py-2 border border-brand-black/10 focus:outline-none text-xs rounded-xs font-sans"
-                  />
-                </div>
-                <div className="sm:col-span-2">
+
+                <div className="sm:w-36">
                   <button
                     type="button"
                     onClick={handleAddImage}
-                    className="w-full py-2 bg-brand-sage hover:bg-[#324027] text-white text-[10px] uppercase tracking-widest font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer rounded-xs"
+                    className="w-full py-2.5 bg-brand-sage hover:bg-[#324027] text-white text-[10px] uppercase tracking-widest font-bold transition-colors flex items-center justify-center gap-1 cursor-pointer rounded-xs"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    <span>Upload</span>
+                    <span>Add to Gallery</span>
                   </button>
                 </div>
               </div>

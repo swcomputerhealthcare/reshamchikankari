@@ -113,3 +113,20 @@ export async function toggleCouponStatusAction(id: string, active: boolean) {
     return { success: false, error: "Failed to update coupon status." };
   }
 }
+
+export async function deleteCouponAction(id: string) {
+  await requireAdmin();
+
+  if (!hasDatabase()) {
+    return { success: true };
+  }
+
+  try {
+    await db.delete(coupons).where(eq(coupons.id, id));
+    revalidatePath("/admin/coupons");
+    return { success: true };
+  } catch (error: any) {
+    console.error("DB Delete Coupon failed:", error);
+    return { success: false, error: "Failed to delete coupon." };
+  }
+}

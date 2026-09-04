@@ -16,6 +16,9 @@ export interface CartItemDetail {
   pricePaise: number;
   image: string;
   sizeName?: string;
+  colorName?: string;
+  colorCode?: string;
+  variantLabel?: string;
   stock: number;
 }
 
@@ -45,13 +48,17 @@ async function getCookieCartItems(): Promise<{ id: string; productId: string; va
 }
 
 async function saveCookieCartItems(items: { id: string; productId: string; variantId: string | null; quantity: number }[]) {
-  const cookieStore = await cookies();
-  cookieStore.set(COOKIE_NAME, encodeURIComponent(JSON.stringify(items)), {
-    path: "/",
-    maxAge: 60 * 60 * 24 * 7, // 7 days
-    httpOnly: true,
-    sameSite: "lax",
-  });
+  try {
+    const cookieStore = await cookies();
+    cookieStore.set(COOKIE_NAME, encodeURIComponent(JSON.stringify(items)), {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+      httpOnly: true,
+      sameSite: "lax",
+    });
+  } catch {
+    // Ignore error if invoked during Server Component rendering (where cookie modification is disallowed)
+  }
 }
 
 // Main Service Functions
@@ -69,8 +76,12 @@ export async function getCartDetails(): Promise<CartDetails> {
       const variant = prod.variants.find(v => v.id === item.variantId);
       const price = variant ? (variant.pricePaise ?? 0) : (prod.pricePaise ?? 0);
       const stock = variant ? variant.stock : 10;
-      const sizeName = variant ? variant.name : undefined;
+      const sizeName = variant ? (variant.size || variant.name) : undefined;
+      const colorName = variant ? (variant.colorName || undefined) : undefined;
+      const colorCode = variant ? (variant.colorCode || undefined) : undefined;
       const image = prod.images[0]?.url || "/images/chikankari_hero.png";
+
+      const variantLabel = [colorName, sizeName].filter(Boolean).join(" · ") || variant?.name;
 
       resolvedItems.push({
         id: item.id,
@@ -83,6 +94,9 @@ export async function getCartDetails(): Promise<CartDetails> {
         pricePaise: price,
         image,
         sizeName,
+        colorName,
+        colorCode,
+        variantLabel,
         stock,
       });
 
@@ -106,6 +120,9 @@ export async function getCartDetails(): Promise<CartDetails> {
           if (!prod || !prod.isActive) continue;
 
           let variantName = "";
+          let colorName: string | undefined = undefined;
+          let colorCode: string | undefined = undefined;
+          let sizeName: string | undefined = undefined;
           let price = prod.pricePaise ?? 0;
           let stock = 10;
           let sku = prod.sku;
@@ -114,6 +131,9 @@ export async function getCartDetails(): Promise<CartDetails> {
             const variant = dbVariants.find(v => v.id === item.variantId);
             if (variant && variant.isActive) {
               variantName = variant.name;
+              colorName = variant.colorName || undefined;
+              colorCode = variant.colorCode || undefined;
+              sizeName = variant.size || variant.name || undefined;
               price = variant.pricePaise ?? 0;
               stock = variant.stock;
               sku = variant.sku;
@@ -122,6 +142,7 @@ export async function getCartDetails(): Promise<CartDetails> {
 
           // Find first product image
           const image = dbImages.find(img => img.productId === prod.id)?.url || "/images/chikankari_hero.png";
+          const variantLabel = [colorName, sizeName].filter(Boolean).join(" · ") || variantName;
 
           resolvedItems.push({
             id: item.id,
@@ -133,7 +154,10 @@ export async function getCartDetails(): Promise<CartDetails> {
             sku,
             pricePaise: price,
             image,
-            sizeName: variantName || undefined,
+            sizeName: sizeName || variantName || undefined,
+            colorName,
+            colorCode,
+            variantLabel,
             stock,
           });
 

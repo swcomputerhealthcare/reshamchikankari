@@ -25,6 +25,7 @@ export default function SitePreloader({ children }: { children: React.ReactNode 
 
     if (hasSeen === "true" || prefersReduced) {
       setIsFinished(true);
+      start();
       return;
     }
 
@@ -117,7 +118,7 @@ export default function SitePreloader({ children }: { children: React.ReactNode 
       <>
         <div
           aria-hidden="true"
-          className="fixed inset-0 w-screen h-[100dvh] z-[999999] bg-[#FAF7F2] text-[#161616] flex flex-col justify-between p-6 sm:p-12 overflow-hidden select-none pointer-events-auto"
+          className="fixed inset-0 w-screen h-[100dvh] z-[999999] bg-[#FFF9F4] text-[#161616] flex flex-col justify-between p-6 sm:p-12 overflow-hidden select-none pointer-events-auto"
         >
           <div className="flex-1 flex flex-col items-center justify-center text-center">
             <span className="text-[10px] font-sans font-bold uppercase tracking-[0.3em] text-[#E694AA] mb-3">
@@ -146,7 +147,7 @@ export default function SitePreloader({ children }: { children: React.ReactNode 
               delay: 0.2,
               ease: [0.76, 0, 0.24, 1],
             }}
-            className="fixed inset-0 w-screen h-[100dvh] z-[999999] bg-[#FAF7F2] text-[#161616] flex flex-col justify-between p-6 sm:p-12 md:p-16 overflow-hidden select-none touch-none pointer-events-auto"
+            className="fixed inset-0 w-screen h-[100dvh] z-[999999] bg-[#FFF9F4] text-[#161616] flex flex-col justify-between p-6 sm:p-12 md:p-16 overflow-hidden select-none touch-none pointer-events-auto"
             style={{ paddingBottom: "calc(2rem + env(safe-area-inset-bottom, 0px))" }}
           >
             {/* Top Eyebrow Detail */}

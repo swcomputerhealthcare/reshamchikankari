@@ -103,16 +103,20 @@ export default function WalletClient({ wallet, transactions, payoutMethods: init
     }
 
     const amountPaise = Math.round(amountRupees * 100);
-    if (amountPaise < 10000) {
-      setWithdrawError("Minimum withdrawal amount is ₹100.");
+    if (amountPaise < 100) {
+      setWithdrawError("Minimum withdrawal amount is ₹1.");
+      return;
+    }
+    if (wallet.availableBalancePaise <= 0) {
+      setWithdrawError("Your available balance is ₹0. You need store credit balance to request a payout.");
       return;
     }
     if (amountPaise > wallet.availableBalancePaise) {
-      setWithdrawError("Cannot withdraw more than your available balance.");
+      setWithdrawError(`Cannot withdraw ₹${amountRupees.toFixed(2)}. Your available balance is ₹${(wallet.availableBalancePaise / 100).toFixed(2)}.`);
       return;
     }
     if (!activeMethodId) {
-      setWithdrawError("Please choose or add a payout destination.");
+      setWithdrawError("Please select or add a verified payout destination below.");
       return;
     }
 
@@ -143,7 +147,7 @@ export default function WalletClient({ wallet, transactions, payoutMethods: init
       {/* 1. Header Overview & Balance Cards */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
         <div className="md:col-span-4 space-y-4">
-          <span className="text-[10px] tracking-widest uppercase font-bold text-[#77716A] block pl-0.5">
+          <span className="text-[10px] tracking-widest uppercase font-bold text-[#324027] block pl-0.5">
             RC WALLET BALANCE
           </span>
           <h2 className="font-display text-5xl text-brand-black font-light leading-none">
@@ -155,17 +159,17 @@ export default function WalletClient({ wallet, transactions, payoutMethods: init
         </div>
 
         {/* Available to Spend/Withdraw card */}
-        <div className="md:col-span-4 bg-white border border-brand-black/5 p-6 rounded-2xl shadow-xs flex flex-col justify-between h-40">
+        <div className="md:col-span-4 bg-white border border-[#324027]/15 p-6 rounded-2xl shadow-xs flex flex-col justify-between h-40">
           <div>
             <span className="text-[9px] tracking-wider uppercase font-bold text-neutral-400 block mb-1">
               Available to Spend & Withdraw
             </span>
-            <span className="font-sans text-2xl font-bold text-[#3F5031]">
+            <span className="font-sans text-2xl font-bold text-[#324027]">
               ₹{(wallet.availableBalancePaise / 100).toLocaleString("en-IN")}
             </span>
           </div>
-          <div className="text-[10px] text-neutral-400 flex items-center gap-1 font-medium pl-0.5 uppercase tracking-wider">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#3F5031]" />
+          <div className="text-[10px] text-[#324027] flex items-center gap-1 font-bold pl-0.5 uppercase tracking-wider">
+            <ShieldCheck className="w-3.5 h-3.5 text-[#324027]" />
             100% Cash Withdrawable
           </div>
         </div>
@@ -191,26 +195,26 @@ export default function WalletClient({ wallet, transactions, payoutMethods: init
         {/* Left Column: Withdrawal Form and Payout Management */}
         <div className="lg:col-span-7 space-y-10">
           {/* A. Withdrawal Form */}
-          <div className="bg-[#FFF9F4] border border-brand-black/5 p-6 sm:p-8 rounded-2xl space-y-6">
-            <h3 className="font-display text-xl text-brand-black border-b border-brand-black/5 pb-3">
+          <div className="bg-[#F7F9F5] border border-[#324027]/15 p-6 sm:p-8 rounded-2xl space-y-6">
+            <h3 className="font-display text-xl text-brand-black border-b border-[#324027]/10 pb-3">
               Request Payout / Withdrawal
             </h3>
 
             {withdrawError && (
-              <div className="p-4 bg-brand-pink/10 border border-brand-pink/20 text-brand-pink text-xs font-semibold rounded-lg">
-                ⚠️ {withdrawError}
+              <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-xl flex items-start gap-2">
+                <span>⚠️ {withdrawError}</span>
               </div>
             )}
 
             {withdrawSuccess && (
-              <div className="p-4 bg-[#3F5031]/10 border border-[#3F5031]/20 text-[#3F5031] text-xs font-semibold rounded-lg">
-                ✓ Payout requested successfully. Payout funds are locked in processing.
+              <div className="p-4 bg-[#324027]/10 border border-[#324027]/20 text-[#324027] text-xs font-semibold rounded-xl flex items-start gap-2">
+                <span>✓ Payout requested successfully. Payout funds are locked in processing.</span>
               </div>
             )}
 
             <form onSubmit={handleWithdrawalRequest} className="space-y-6 text-xs">
               <div className="space-y-2">
-                <label className="block uppercase tracking-widest text-[9px] font-bold text-neutral-500">
+                <label className="block uppercase tracking-widest text-[9px] font-bold text-neutral-600">
                   Withdrawal Amount (INR)
                 </label>
                 <div className="relative">
@@ -218,24 +222,24 @@ export default function WalletClient({ wallet, transactions, payoutMethods: init
                   <input
                     type="number"
                     step="0.01"
-                    min="100"
-                    placeholder="Enter amount (min ₹100)"
+                    min="1"
+                    placeholder="Enter amount (e.g. ₹500)"
                     value={withdrawAmount}
                     onChange={(e) => setWithdrawAmount(e.target.value)}
-                    className="w-full pl-8 pr-4 py-3 bg-white border border-brand-black/10 focus:border-brand-black focus:outline-hidden transition-colors rounded-lg text-sm font-semibold"
+                    className="w-full pl-8 pr-4 py-3.5 bg-white border border-[#324027]/20 focus:border-[#324027] focus:outline-none transition-colors rounded-xl text-sm font-semibold text-brand-black"
                   />
                 </div>
               </div>
 
               {/* Destination method selector */}
               <div className="space-y-3">
-                <label className="block uppercase tracking-widest text-[9px] font-bold text-neutral-500">
+                <label className="block uppercase tracking-widest text-[9px] font-bold text-neutral-600">
                   Select Payout Destination
                 </label>
 
                 {payoutMethods.length === 0 ? (
-                  <p className="text-neutral-400 italic py-2 pl-0.5">
-                    No verified payout destinations found. Add a UPI/Bank account below.
+                  <p className="text-neutral-500 italic py-2 pl-0.5">
+                    No verified payout destinations found. Add a UPI or Bank account below first.
                   </p>
                 ) : (
                   <div className="space-y-2">
@@ -245,21 +249,21 @@ export default function WalletClient({ wallet, transactions, payoutMethods: init
                         onClick={() => setActiveMethodId(m.id)}
                         className={`flex items-center justify-between p-4 border rounded-xl cursor-pointer transition-all select-none ${
                           activeMethodId === m.id
-                            ? "border-brand-black bg-brand-black/5"
-                            : "border-brand-black/10 hover:border-brand-black/20"
+                            ? "border-[#324027] bg-[#324027]/5 ring-1 ring-[#324027]"
+                            : "border-brand-black/10 hover:border-brand-black/20 bg-white"
                         }`}
                       >
                         <div className="flex items-center gap-3">
                           {m.type === "UPI" ? (
-                            <Smartphone className="w-4 h-4 text-brand-sage" />
+                            <Smartphone className="w-4 h-4 text-[#324027]" />
                           ) : (
-                            <Landmark className="w-4 h-4 text-brand-sage" />
+                            <Landmark className="w-4 h-4 text-[#324027]" />
                           )}
                           <div>
                             <span className="font-semibold text-brand-black">
                               {m.type === "UPI" ? "UPI Payout" : "Bank Transfer"}
                             </span>
-                            <span className="text-[10px] text-neutral-400 block mt-0.5">
+                            <span className="text-[10px] text-neutral-500 block mt-0.5">
                               {m.type === "UPI" ? m.upiId : `Acc •••• ${m.bankAccountLast4}`} ({m.accountHolderName})
                             </span>
                           </div>
@@ -269,7 +273,7 @@ export default function WalletClient({ wallet, transactions, payoutMethods: init
                           name="payout_destination"
                           checked={activeMethodId === m.id}
                           onChange={() => setActiveMethodId(m.id)}
-                          className="accent-brand-black cursor-pointer"
+                          className="accent-[#324027] cursor-pointer"
                         />
                       </label>
                     ))}
@@ -277,23 +281,23 @@ export default function WalletClient({ wallet, transactions, payoutMethods: init
                 )}
               </div>
 
-              <Button
+              <button
                 type="submit"
-                variant="primary"
-                disabled={isPending || wallet.availableBalancePaise < 10000}
-                className="w-full py-3.5 tracking-wider font-semibold uppercase flex items-center justify-center gap-1.5"
+                disabled={isPending}
+                className="w-full py-4 tracking-widest font-bold uppercase text-xs text-white bg-[#324027] hover:bg-[#25301d] transition-all rounded-xl shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {isPending ? (
                   <>
-                    <Loader2 className="w-4.5 h-4.5 animate-spin" />
-                    Processing...
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>Processing Payout...</span>
                   </>
                 ) : (
                   <>
-                    Request Withdrawal <ArrowRight className="w-3.5 h-3.5" />
+                    <span>Request Withdrawal</span>
+                    <ArrowRight className="w-4 h-4" />
                   </>
                 )}
-              </Button>
+              </button>
             </form>
           </div>
 
@@ -305,7 +309,7 @@ export default function WalletClient({ wallet, transactions, payoutMethods: init
               </h3>
               <button
                 onClick={() => setIsAddOpen(!isAddOpen)}
-                className="text-[10px] text-[#3F5031] font-bold uppercase tracking-widest hover:underline cursor-pointer border-none bg-transparent"
+                className="text-[10px] text-[#7C7A5A] font-bold uppercase tracking-widest hover:underline cursor-pointer border-none bg-transparent"
               >
                 {isAddOpen ? "Close Form" : "[ Add Method ]"}
               </button>
@@ -453,7 +457,7 @@ export default function WalletClient({ wallet, transactions, payoutMethods: init
                           {dateStr}
                         </span>
                       </div>
-                      <span className={`font-sans text-sm font-bold ${isCredit ? "text-[#3F5031]" : "text-neutral-500"}`}>
+                      <span className={`font-sans text-sm font-bold ${isCredit ? "text-[#7C7A5A]" : "text-neutral-500"}`}>
                         {isCredit ? "+" : ""}₹{(tx.amountPaise / 100).toLocaleString("en-IN")}
                       </span>
                     </div>
@@ -483,7 +487,7 @@ export default function WalletClient({ wallet, transactions, payoutMethods: init
                   });
 
                   let statusBg = "bg-neutral-100 text-neutral-600";
-                  if (w.status === "COMPLETED") statusBg = "bg-[#3F5031]/10 text-[#3F5031]";
+                  if (w.status === "COMPLETED") statusBg = "bg-[#7C7A5A]/10 text-[#7C7A5A]";
                   if (w.status === "FAILED" || w.status === "CANCELLED") statusBg = "bg-red-50 text-red-600";
 
                   return (

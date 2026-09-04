@@ -64,20 +64,20 @@ export default async function PatronVoicesPage() {
   }
 
   return (
-    <div className="bg-[#FFF9F4] text-[#1b1c19] min-h-screen font-sans selection:bg-[#3F5031] selection:text-[#FFF9F4] py-12 sm:py-20">
+    <div className="bg-[#FFF9F4] text-[#1b1c19] min-h-screen font-sans selection:bg-[#7C7A5A] selection:text-[#FFF9F4] py-12 sm:py-20">
       <Container className="max-w-6xl">
         {/* Editorial Hero Header */}
         <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-24 space-y-4">
-          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.25em] text-[#E58FA7]">
+          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.25em] text-[#E694AA]">
             TESTIMONIALS & REFLECTIONS
           </span>
-          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl text-[#3F5031] tracking-tight">
+          <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl text-[#7C7A5A] tracking-tight">
             PATRON VOICES
           </h1>
-          <p className="font-sans text-sm sm:text-base text-[#44483f] max-w-xl mx-auto leading-relaxed">
+          <p className="font-sans text-sm sm:text-base text-[#69727D] max-w-xl mx-auto leading-relaxed">
             Reflections from connoisseurs of fine Lucknowi craftsmanship across the globe.
           </p>
-          <div className="h-px w-20 bg-[#3F5031]/30 mx-auto pt-2" />
+          <div className="h-px w-20 bg-[#7C7A5A]/30 mx-auto pt-2" />
         </div>
 
         {/* Featured Patron Spotlights Grid */}
@@ -85,12 +85,12 @@ export default async function PatronVoicesPage() {
           {FEATURED_PATRONS.map((patron) => (
             <div
               key={patron.id}
-              className="bg-[#efeee9]/60 border border-[#161616]/10 rounded-2xl p-8 flex flex-col justify-between text-left relative overflow-hidden group hover:border-[#3F5031]/30 transition-all duration-300 shadow-xs"
+              className="bg-[#F8F2EC] border border-[#ECE9E2] rounded-2xl p-8 flex flex-col justify-between text-left relative overflow-hidden group hover:border-[#7C7A5A]/30 transition-all duration-300 shadow-xs"
             >
-              <Quote className="w-10 h-10 text-[#3F5031]/15 mb-4 group-hover:text-[#3F5031]/30 transition-colors" />
+              <Quote className="w-10 h-10 text-[#7C7A5A]/15 mb-4 group-hover:text-[#7C7A5A]/30 transition-colors" />
 
               <div className="space-y-4 flex-1">
-                <div className="flex items-center gap-1 text-[#E58FA7]">
+                <div className="flex items-center gap-1 text-[#E2D89B]">
                   {Array.from({ length: patron.rating }).map((_, i) => (
                     <Star key={i} className="w-4 h-4 fill-current stroke-none" />
                   ))}
@@ -101,16 +101,16 @@ export default async function PatronVoicesPage() {
                 </p>
               </div>
 
-              <div className="pt-6 mt-6 border-t border-[#161616]/10">
-                <p className="font-sans text-sm font-bold text-[#3F5031]">{patron.name}</p>
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-[#75786e] mt-0.5">
+              <div className="pt-6 mt-6 border-t border-[#ECE9E2]">
+                <p className="font-sans text-sm font-bold text-[#7C7A5A]">{patron.name}</p>
+                <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-[#69727D] mt-0.5">
                   <span>{patron.location}</span>
                   <span>·</span>
-                  <span className="flex items-center gap-1 text-[#3F5031]">
-                    <CheckCircle2 className="w-3 h-3 text-[#3F5031]" /> Verified Patron
+                  <span className="flex items-center gap-1 text-[#7C7A5A]">
+                    <CheckCircle2 className="w-3 h-3 text-[#7C7A5A]" /> Verified Patron
                   </span>
                 </div>
-                <p className="text-[10px] text-[#75786e]/80 mt-1 italic">{patron.garment}</p>
+                <p className="text-[10px] text-[#69727D]/80 mt-1 italic">{patron.garment}</p>
               </div>
             </div>
           ))}
@@ -118,30 +118,30 @@ export default async function PatronVoicesPage() {
 
         {/* Database Community Reviews Grid if available */}
         {dbReviews.length > 0 && (
-          <div className="mt-16 pt-16 border-t border-[#161616]/10 text-left">
-            <h2 className="font-display text-2xl sm:text-3xl text-[#3F5031] mb-8">
+          <div className="mt-16 pt-16 border-t border-[#ECE9E2] text-left">
+            <h2 className="font-display text-2xl sm:text-3xl text-[#7C7A5A] mb-8">
               Recent Reviews from Our Community
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {dbReviews.map((rev) => (
                 <div
                   key={rev.id}
-                  className="p-6 bg-white/70 rounded-xl border border-[#161616]/10 space-y-3"
+                  className="p-6 bg-white rounded-xl border border-[#ECE9E2] space-y-3"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-[#E58FA7]">
+                    <div className="flex items-center gap-1 text-[#E2D89B]">
                       {Array.from({ length: rev.rating || 5 }).map((_, i) => (
                         <Star key={i} className="w-3.5 h-3.5 fill-current stroke-none" />
                       ))}
                     </div>
                     {rev.isVerified && (
-                      <span className="text-[9px] uppercase tracking-wider font-semibold text-[#3F5031]">
+                      <span className="text-[9px] uppercase tracking-wider font-semibold text-[#7C7A5A]">
                         Verified Purchase
                       </span>
                     )}
                   </div>
                   <p className="text-sm text-[#161616] leading-relaxed">&ldquo;{rev.body}&rdquo;</p>
-                  <p className="text-xs font-semibold text-[#75786e]">
+                  <p className="text-xs font-semibold text-[#69727D]">
                     — {rev.userName || "Valued Patron"}
                   </p>
                 </div>
@@ -151,14 +151,14 @@ export default async function PatronVoicesPage() {
         )}
 
         {/* Call to Action Footer */}
-        <div className="mt-20 p-10 bg-[#3F5031] text-[#FFF9F4] rounded-3xl text-center space-y-4">
+        <div className="mt-20 p-10 bg-[#7C7A5A] text-[#FFF9F4] rounded-3xl text-center space-y-4 shadow-md">
           <h3 className="font-display text-2xl sm:text-3xl">Are you a Resham Chikankari Patron?</h3>
           <p className="text-xs sm:text-sm text-[#FFF9F4]/80 max-w-lg mx-auto leading-relaxed">
             We welcome your craft reflections and stories. Explore our collection and share your experience with our community.
           </p>
           <div className="pt-2">
             <Link href="/shop">
-              <button className="px-8 py-3.5 bg-[#FFF9F4] text-[#3F5031] font-sans text-xs font-semibold uppercase tracking-[0.15em] rounded-full hover:bg-[#E58FA7] hover:text-[#FFF9F4] transition-all cursor-pointer border-none">
+              <button className="px-8 py-3.5 bg-[#FFF9F4] text-[#7C7A5A] font-sans text-xs font-semibold uppercase tracking-[0.15em] rounded-full hover:bg-[#E694AA] hover:text-[#FFF9F4] transition-all cursor-pointer border-none">
                 Explore the Collection
               </button>
             </Link>

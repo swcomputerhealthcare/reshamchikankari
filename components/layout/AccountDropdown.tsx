@@ -103,7 +103,7 @@ export default function AccountDropdown({ user, variant = "default" }: AccountDr
             className="rounded-full object-cover aspect-square border border-brand-black/10"
           />
         ) : (
-          <div className="w-[18px] h-[18px] rounded-full bg-[#3F5031]/10 text-[#3F5031] flex items-center justify-center font-bold text-[8px] border border-[#3F5031]/20">
+          <div className="w-[18px] h-[18px] rounded-full bg-brand-sage/10 text-brand-sage flex items-center justify-center font-bold text-[8px] border border-brand-sage/20">
             {firstName.charAt(0).toUpperCase()}
           </div>
         )}

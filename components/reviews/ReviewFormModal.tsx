@@ -4,13 +4,16 @@ import React, { useState, useTransition } from "react";
 import { Star, X, Check, Sparkles } from "lucide-react";
 import Button from "@/components/ui/button";
 
+import { submitPublicReviewAction } from "@/actions/review";
+
 interface ReviewFormModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess?: () => void;
+  productId?: string;
 }
 
-export default function ReviewFormModal({ isOpen, onClose, onSuccess }: ReviewFormModalProps) {
+export default function ReviewFormModal({ isOpen, onClose, onSuccess, productId }: ReviewFormModalProps) {
   const [authorName, setAuthorName] = useState("");
   const [rating, setRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
@@ -29,10 +32,17 @@ export default function ReviewFormModal({ isOpen, onClose, onSuccess }: ReviewFo
     }
 
     startTransition(async () => {
-      try {
-        // Simulate/submit review via server/offline handler
+      const res = await submitPublicReviewAction(
+        authorName.trim(),
+        rating,
+        body.trim(),
+        photoUrl.trim(),
+        productId
+      );
+
+      if (res.success) {
         setStatusMsg({
-          text: "Thank you! Your story has been submitted for moderation.",
+          text: res.message || "Thank you! Your story has been submitted for moderation.",
           isError: false,
         });
         setTimeout(() => {
@@ -42,9 +52,9 @@ export default function ReviewFormModal({ isOpen, onClose, onSuccess }: ReviewFo
           setStatusMsg(null);
           if (onSuccess) onSuccess();
           onClose();
-        }, 2000);
-      } catch (err) {
-        setStatusMsg({ text: "Failed to submit review. Please try again.", isError: true });
+        }, 1800);
+      } else {
+        setStatusMsg({ text: res.error || "Failed to submit review. Please try again.", isError: true });
       }
     });
   };

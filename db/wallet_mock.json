@@ -9,6 +9,31 @@
     }
   },
   "transactions": [],
-  "payoutMethods": [],
+  "payoutMethods": [
+    {
+      "id": "paym_slpf9d22t",
+      "userId": "52c3b85d-bacf-4e58-8fb6-b443a63aaa10",
+      "type": "UPI",
+      "accountHolderName": "Satyajit Patil",
+      "upiId": "8999263389@fan",
+      "bankAccountLast4": null,
+      "ifsc": null,
+      "isVerified": true,
+      "createdAt": "2026-09-01T22:38:06.106Z",
+      "updatedAt": "2026-09-01T22:38:06.106Z"
+    },
+    {
+      "id": "paym_9z3mld3q3",
+      "userId": "52c3b85d-bacf-4e58-8fb6-b443a63aaa10",
+      "type": "UPI",
+      "accountHolderName": "satu",
+      "upiId": "8999263389@fam",
+      "bankAccountLast4": null,
+      "ifsc": null,
+      "isVerified": true,
+      "createdAt": "2026-09-01T22:38:40.138Z",
+      "updatedAt": "2026-09-01T22:38:40.138Z"
+    }
+  ],
   "withdrawalRequests": []
 }

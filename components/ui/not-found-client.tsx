@@ -66,8 +66,8 @@ export default function NotFoundClient() {
                 <path d="M50 35 C63 33, 63 37, 50 35 Z" fill="rgba(230, 148, 170, 0.25)" stroke="#FFF9F4" strokeWidth="0.8" />
 
                 {/* Diagonal decorative leaves */}
-                <path d="M42 44 C34 44, 35 38, 42 44 Z" fill="#3F5031" stroke="#FFF9F4" strokeWidth="0.8" />
-                <path d="M58 52 C66 52, 65 46, 58 52 Z" fill="#3F5031" stroke="#FFF9F4" strokeWidth="0.8" />
+                <path d="M42 44 C34 44, 35 38, 42 44 Z" fill="#7C7A5A" stroke="#FFF9F4" strokeWidth="0.8" />
+                <path d="M58 52 C66 52, 65 46, 58 52 Z" fill="#7C7A5A" stroke="#FFF9F4" strokeWidth="0.8" />
 
                 {/* Tiny embroidered French knot dots (Tepchi stitches) */}
                 <circle cx="50" cy="18" r="1.2" fill="#E694AA" />

@@ -7,11 +7,13 @@ const gildaDisplay = Gilda_Display({
   weight: "400",
   variable: "--font-gilda-display",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
+  display: "swap",
 });
 
 // Gilda Display has no Devanagari coverage, so चिकनकारी would fall back to a
@@ -64,7 +66,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
         "font-sans"
       )}
     >
-      <body className="min-h-full flex flex-col text-brand-black bg-[#FAF7F2]">
+      <body className="min-h-full flex flex-col text-brand-black bg-[#FFF9F4]">
         <WishlistProvider initialWishlistIds={wishlistIds}>
           <CartProvider initialCart={cartDetails}>
             <PrefetchManager />

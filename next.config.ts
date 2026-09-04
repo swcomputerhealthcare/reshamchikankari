@@ -3,14 +3,10 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
-    // Required so the pre-existing LotusJourney motif can keep serving the brand
-    // lotus vector (/images/lotus2.svg) through next/image. The footer lockup
-    // passes `unoptimized` and does not depend on this flag.
-    // contentDispositionType "attachment" keeps any SVG from being rendered inline
-    // as a document, which is the XSS vector this flag otherwise opens up.
-    // NOTE: the flag is global, so it also applies to the remote pattern below —
-    // an SVG proxied from that host would be served from our own origin. If
-    // LotusJourney is ever switched to `unoptimized` too, remove both lines.
+    formats: ["image/avif", "image/webp"],
+    deviceSizes: [360, 430, 640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    minimumCacheTTL: 31536000,
     dangerouslyAllowSVG: true,
     contentDispositionType: "attachment",
     remotePatterns: [
@@ -19,6 +15,48 @@ const nextConfig: NextConfig = {
         hostname: "lh3.googleusercontent.com",
       },
     ],
+  },
+  async redirects() {
+    return [
+      {
+        source: "/collections",
+        destination: "/shop",
+        permanent: true,
+      },
+      {
+        source: "/shop/everyday-cotton",
+        destination: "/shop",
+        permanent: true,
+      },
+      {
+        source: "/shop/festive-georgette",
+        destination: "/shop",
+        permanent: true,
+      },
+      {
+        source: "/shop/the-pastel-edit",
+        destination: "/shop",
+        permanent: true,
+      },
+      {
+        source: "/shop/pastel-edit",
+        destination: "/shop",
+        permanent: true,
+      },
+    ];
+  },
+  async headers() {
+    return [
+      {
+        source: "/images/:path*",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=31536000, immutable",
+          },
+        ],
+      },
+    ];
   },
 };
 

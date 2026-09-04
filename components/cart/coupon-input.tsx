@@ -45,7 +45,7 @@ export default function CouponInput({ appliedCode, subtotalPaise }: CouponInputP
   return (
     <div className="space-y-3 font-sans text-xs border-t border-brand-black/5 pt-6">
       {success ? (
-        <div className="bg-[#3F5031]/5 text-[#3F5031] p-3.5 border border-[#3F5031]/10 flex items-center justify-between rounded-full px-5 text-[11px] font-medium">
+        <div className="bg-[#7C7A5A]/10 text-[#7C7A5A] p-3.5 border border-[#7C7A5A]/20 flex items-center justify-between rounded-full px-5 text-[11px] font-medium">
           <div>
             <span className="font-bold tracking-wider uppercase">{appliedCode || code}</span> applied successfully
           </div>

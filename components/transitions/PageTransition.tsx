@@ -40,6 +40,13 @@ export function PageTransitionProvider({
   const [isTransitioning, setIsTransitioning] = useState(false);
   const navigating = useRef(false);
 
+  // Guarantee scrolling is unlocked whenever currentPathname changes
+  React.useEffect(() => {
+    setIsTransitioning(false);
+    navigating.current = false;
+    start();
+  }, [currentPathname, start]);
+
   const navigate = (href: string) => {
     // Ignore navigation to current pathname or if already navigating
     if (navigating.current || href === currentPathname) return;
@@ -80,9 +87,9 @@ export function PageTransitionProvider({
               }}
             />
 
-            {/* Layer 2: Deep Brand Green Main Curtain (z-[9999]) */}
+            {/* Layer 2: Muted Sage Main Curtain (z-[9999]) */}
             <motion.div
-              className="fixed inset-0 z-[9999] pointer-events-none bg-[#3F5031] flex flex-col justify-between p-6 sm:p-12 overflow-hidden select-none"
+              className="fixed inset-0 z-[9999] pointer-events-none bg-[#7C7A5A] flex flex-col justify-between p-6 sm:p-12 overflow-hidden select-none"
               initial={{ clipPath: "inset(100% 0 0 0)" }}
               animate={{ clipPath: "inset(0% 0 0 0)" }}
               exit={{ clipPath: "inset(0 0 100% 0)" }}

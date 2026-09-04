@@ -52,18 +52,18 @@ export default function TimelineAnimation({ entries }: TimelineAnimationProps) {
               }`}
             >
               {/* Timeline Dot Node */}
-              <div className="absolute left-4 sm:left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-[#FAF7F2] border-2 border-[#E694AA] flex items-center justify-center z-20 shadow-sm">
+              <div className="absolute left-4 sm:left-1/2 -translate-x-1/2 w-6 h-6 rounded-full bg-[#F8F2EC] border-2 border-[#E694AA] flex items-center justify-center z-20 shadow-sm">
                 <div className="w-2 h-2 rounded-full bg-[#E694AA]" />
               </div>
 
               {/* Content Card (Left or Right Symmetrical Side) */}
               <div className={`w-full sm:w-1/2 pl-12 sm:pl-0 ${isEven ? "sm:pr-12 text-left" : "sm:pl-12 text-left"}`}>
-                <div className="bg-[#FAF7F2] p-6 sm:p-8 rounded-[16px] border border-[#161616]/10 shadow-lg space-y-3">
+                <div className="bg-[#F8F2EC] p-6 sm:p-8 rounded-[16px] border border-[#ECE9E2] shadow-sm space-y-3">
                   <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.25em] text-[#E694AA] block">
                     {entry.date}
                   </span>
 
-                  <h3 className="font-display text-2xl sm:text-3xl text-[#3F5031]">
+                  <h3 className="font-display text-2xl sm:text-3xl text-[#7C7A5A]">
                     {entry.title}
                   </h3>
 

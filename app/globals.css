@@ -15,14 +15,19 @@
 @theme {
   --color-brand-offwhite: #FFF9F4;
   --color-brand-black: #000000;
+  --color-brand-white: #FFFFFF;
   --color-brand-pink: #E694AA;
-  --color-brand-sage: #3F5031;
-  --color-brand-maroon: #800020;
-
-  /* Two genuinely new surfaces. Deliberately NOT adding near-duplicates of
-     offwhite / pink / black — the established values above stay authoritative. */
-  --color-brand-cream: #F4EFE7;
-  --color-brand-sage-muted: #59684B;
+  --color-brand-sage: #7C7A5A;
+  --color-brand-dusty-rose: #B66F79;
+  --color-brand-cream: #F8F2EC;
+  --color-brand-plum: #8F548C;
+  --color-brand-sky: #AFC4E4;
+  --color-brand-sand: #ECE9E2;
+  --color-brand-gold: #E2D89B;
+  --color-brand-lavender: #DAAEDA;
+  --color-brand-slate: #69727D;
+  --color-brand-maroon: #8F548C;
+  --color-brand-sage-muted: #656346;
 
   --font-display: var(--font-gilda-display);
   --font-sans: var(--font-inter);
@@ -100,22 +105,22 @@ body {
 :root {
   --background: #FFF9F4;
   --foreground: #000000;
-  --card: #FFF9F4;
+  --card: #FFFFFF;
   --card-foreground: #000000;
-  --popover: #FFF9F4;
+  --popover: #FFFFFF;
   --popover-foreground: #000000;
-  --primary: #3F5031;
+  --primary: #7C7A5A;
   --primary-foreground: #FFF9F4;
-  --secondary: #FFF9F4;
-  --secondary-foreground: #3F5031;
-  --muted: #fbf5ee;
-  --muted-foreground: #7C7A5A;
+  --secondary: #F8F2EC;
+  --secondary-foreground: #7C7A5A;
+  --muted: #F8F2EC;
+  --muted-foreground: #69727D;
   --accent: #E694AA;
-  --accent-foreground: #FFF9F4;
+  --accent-foreground: #000000;
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: #ECE9E2;
+  --input: #ECE9E2;
+  --ring: #7C7A5A;
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -195,8 +200,8 @@ body {
 }
 
 @utility bg-brand-sage-section {
-  background-color: #3F5031;
-  background-image: linear-gradient(rgba(63, 80, 49, 0.955), rgba(63, 80, 49, 0.955)), url('/images/bg.webp');
+  background-color: #7C7A5A;
+  background-image: linear-gradient(rgba(124, 122, 90, 0.955), rgba(124, 122, 90, 0.955)), url('/images/bg.webp');
   background-repeat: repeat-y;
   background-size: 100% auto;
   background-position: center top;
@@ -204,6 +209,7 @@ body {
 }
 
 @utility bg-brand-cream-section {
+  background-color: #F8F2EC;
   background-image: url('/images/bg.webp');
   background-repeat: repeat-y;
   background-size: 100% auto;
@@ -233,7 +239,7 @@ body {
   background: transparent;
 }
 .scrollbar-custom::-webkit-scrollbar-thumb {
-  background-color: rgba(63, 80, 49, 0.35);
+  background-color: rgba(124, 122, 90, 0.4);
   border-radius: 999px;
 }
 

@@ -7,6 +7,14 @@ import { products, categories, productVariants, productImages } from "@/db/schem
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 
+const imageInputSchema = z.object({
+  url: z.string().min(1, "Image URL is required"),
+  publicId: z.string().optional(),
+  altText: z.string().optional(),
+  isPrimary: z.boolean().default(false),
+  sortOrder: z.number().default(0),
+});
+
 const productInputSchema = z.object({
   name: z.string().min(1, "Name is required"),
   slug: z.string().min(1, "Slug is required"),
@@ -16,7 +24,8 @@ const productInputSchema = z.object({
   pricePaise: z.number().int().positive("Price must be positive"),
   compareAtPricePaise: z.number().int().positive().optional().nullable(),
   isActive: z.boolean().default(true),
-  image: z.string().url("Must be a valid URL").optional().nullable(),
+  image: z.string().optional().nullable(),
+  images: z.array(imageInputSchema).optional(),
   fabric: z.string().optional().nullable(),
   color: z.string().optional().nullable(),
   washCare: z.string().optional().nullable(),
@@ -32,7 +41,7 @@ const categoryInputSchema = z.object({
   name: z.string().min(1, "Name is required"),
   slug: z.string().min(1, "Slug is required"),
   description: z.string().optional(),
-  image: z.string().url("Must be a valid URL").optional(),
+  image: z.string().optional(),
   isActive: z.boolean().default(true),
 });
 
@@ -72,13 +81,30 @@ export async function createProductAction(formData: z.infer<typeof productInputS
       isActive: data.isActive,
     });
 
-    if (data.image) {
+    if (data.images && data.images.length > 0) {
+      for (const img of data.images) {
+        await db.insert(productImages).values({
+          id: `img_${Math.random().toString(36).substring(2, 11)}`,
+          productId: id,
+          url: img.url,
+          imageUrl: img.url,
+          publicId: img.publicId || "manual",
+          alt: img.altText || data.name,
+          altText: img.altText || data.name,
+          isPrimary: img.isPrimary,
+          sortOrder: img.sortOrder,
+        });
+      }
+    } else if (data.image) {
       await db.insert(productImages).values({
         id: `img_${Math.random().toString(36).substring(2, 11)}`,
         productId: id,
         url: data.image,
+        imageUrl: data.image,
         publicId: "manual",
         alt: data.name,
+        altText: data.name,
+        isPrimary: true,
         sortOrder: 0,
       });
     }
@@ -94,10 +120,20 @@ export async function createProductAction(formData: z.infer<typeof productInputS
       isActive: true,
     });
 
+    const adminUser = await requireAdmin();
+
     revalidatePath("/shop");
     revalidatePath("/admin/products");
+    
+    const { logger } = await import("@/lib/logger");
+    logger.info({
+      message: `Product created: ${data.name} (${id})`,
+      userId: adminUser.id,
+      context: { productId: id, sku: data.sku },
+    });
+
     return { success: true, id };
-  } catch (error) {
+  } catch (error: any) {
     console.error("DB Create Product failed:", error);
     return { success: false, error: "Failed to create product in database." };
   }
@@ -136,6 +172,23 @@ export async function updateProductAction(id: string, formData: Partial<z.infer<
     updateData.updatedAt = new Date();
 
     await db.update(products).set(updateData).where(eq(products.id, id));
+
+    if (formData.images) {
+      await db.delete(productImages).where(eq(productImages.productId, id));
+      for (const img of formData.images) {
+        await db.insert(productImages).values({
+          id: `img_${Math.random().toString(36).substring(2, 11)}`,
+          productId: id,
+          url: img.url,
+          imageUrl: img.url,
+          publicId: img.publicId || "manual",
+          alt: img.altText || formData.name || "Product image",
+          altText: img.altText || formData.name || "Product image",
+          isPrimary: img.isPrimary,
+          sortOrder: img.sortOrder,
+        });
+      }
+    }
 
     revalidatePath(`/product/${formData.slug || ""}`);
     revalidatePath("/shop");
@@ -198,6 +251,50 @@ export async function createCategoryAction(formData: z.infer<typeof categoryInpu
   } catch (error) {
     console.error("DB Create Category failed:", error);
     return { success: false, error: "Failed to create category." };
+  }
+}
+
+export async function updateCategoryAction(id: string, formData: Partial<z.infer<typeof categoryInputSchema>>) {
+  await requireAdmin();
+
+  if (!hasDatabase()) {
+    return { success: true };
+  }
+
+  try {
+    const updateData: Record<string, unknown> = {};
+    if (formData.name) updateData.name = formData.name;
+    if (formData.slug) updateData.slug = formData.slug.toLowerCase();
+    if (formData.description !== undefined) updateData.description = formData.description;
+    if (formData.image !== undefined) updateData.image = formData.image;
+    if (formData.isActive !== undefined) updateData.isActive = formData.isActive;
+
+    await db.update(categories).set(updateData).where(eq(categories.id, id));
+
+    revalidatePath("/shop");
+    revalidatePath("/admin/categories");
+    return { success: true };
+  } catch (error: any) {
+    console.error("DB Update Category failed:", error);
+    return { success: false, error: "Failed to update category." };
+  }
+}
+
+export async function deleteCategoryAction(id: string) {
+  await requireAdmin();
+
+  if (!hasDatabase()) {
+    return { success: true };
+  }
+
+  try {
+    await db.delete(categories).where(eq(categories.id, id));
+    revalidatePath("/shop");
+    revalidatePath("/admin/categories");
+    return { success: true };
+  } catch (error: any) {
+    console.error("DB Delete Category failed:", error);
+    return { success: false, error: "Failed to delete category. Products may be associated with it." };
   }
 }
 
@@ -337,21 +434,37 @@ export async function deleteProductAction(id: string) {
 
 export async function updateProductVariantAction(
   variantId: string,
-  data: { stock: number; isAvailable: boolean; sku: string; inventoryQuantity: number }
+  data: {
+    stock: number;
+    isAvailable: boolean;
+    sku: string;
+    inventoryQuantity: number;
+    colorName?: string | null;
+    colorCode?: string | null;
+    size?: string | null;
+    pricePaise?: number | null;
+  }
 ) {
   await requireAdmin();
   if (!hasDatabase()) return { success: true };
 
   try {
+    const updateData: Record<string, any> = {
+      stock: data.stock,
+      inventoryQuantity: data.inventoryQuantity,
+      isAvailable: data.isAvailable,
+      sku: data.sku.toUpperCase(),
+      updatedAt: new Date(),
+    };
+
+    if (data.colorName !== undefined) updateData.colorName = data.colorName;
+    if (data.colorCode !== undefined) updateData.colorCode = data.colorCode;
+    if (data.size !== undefined) updateData.size = data.size;
+    if (data.pricePaise !== undefined) updateData.pricePaise = data.pricePaise;
+
     await db
       .update(productVariants)
-      .set({
-        stock: data.stock,
-        inventoryQuantity: data.inventoryQuantity,
-        isAvailable: data.isAvailable,
-        sku: data.sku.toUpperCase(),
-        updatedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(productVariants.id, variantId));
 
     revalidatePath("/shop");
@@ -364,7 +477,17 @@ export async function updateProductVariantAction(
 
 export async function createProductVariantAction(
   productId: string,
-  data: { name: string; sku: string; stock: number; isAvailable: boolean; inventoryQuantity: number }
+  data: {
+    name: string;
+    sku: string;
+    stock: number;
+    isAvailable: boolean;
+    inventoryQuantity: number;
+    colorName?: string | null;
+    colorCode?: string | null;
+    size?: string | null;
+    pricePaise?: number | null;
+  }
 ) {
   await requireAdmin();
   if (!hasDatabase()) return { success: true };
@@ -376,6 +499,10 @@ export async function createProductVariantAction(
       productId,
       sku: data.sku.toUpperCase(),
       name: data.name,
+      colorName: data.colorName || null,
+      colorCode: data.colorCode || null,
+      size: data.size || null,
+      pricePaise: data.pricePaise || null,
       stock: data.stock,
       inventoryQuantity: data.inventoryQuantity,
       isAvailable: data.isAvailable,
@@ -386,6 +513,54 @@ export async function createProductVariantAction(
   } catch (error: any) {
     console.error("Create variant failed:", error);
     return { success: false, error: "Failed to create variant." };
+  }
+}
+
+export async function batchGenerateVariantsAction(
+  productId: string,
+  baseSku: string,
+  colors: { name: string; hex: string }[],
+  sizes: string[],
+  defaultStock = 10,
+  basePricePaise?: number
+) {
+  await requireAdmin();
+  if (!hasDatabase()) return { success: true };
+
+  try {
+    const createdIds: string[] = [];
+
+    for (const color of colors) {
+      for (const size of sizes) {
+        const colorSkuPart = color.name.replace(/[^a-zA-Z0-9]/g, "").substring(0, 3).toUpperCase();
+        const sku = `${baseSku.toUpperCase()}-${colorSkuPart}-${size.toUpperCase()}`;
+        const name = `${color.name} / ${size}`;
+
+        const id = `var_${Math.random().toString(36).substring(2, 11)}`;
+        await db.insert(productVariants).values({
+          id,
+          productId,
+          sku,
+          name,
+          colorName: color.name,
+          colorCode: color.hex,
+          size,
+          pricePaise: basePricePaise || null,
+          stock: defaultStock,
+          inventoryQuantity: defaultStock,
+          isAvailable: true,
+        });
+
+        createdIds.push(id);
+      }
+    }
+
+    revalidatePath("/shop");
+    revalidatePath("/admin/products");
+    return { success: true, count: createdIds.length };
+  } catch (error: any) {
+    console.error("Batch generate variants failed:", error);
+    return { success: false, error: "Failed to generate variant matrix." };
   }
 }
 

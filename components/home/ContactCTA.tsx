@@ -1,5 +1,3 @@
-'use client';
-
 import React from "react";
 import Link from "next/link";
 import Container from "@/components/ui/container";
@@ -10,7 +8,7 @@ export default function ContactCTA() {
   return (
     <section
       id="contact"
-      className="relative z-10 w-full flex flex-col justify-center py-20 sm:py-28 bg-[#FAF7F2] text-[#161616] border-t border-[#161616]/10 text-center overflow-hidden select-none"
+      className="relative z-10 w-full flex flex-col justify-center py-20 sm:py-28 bg-[#F8F2EC] text-[#161616] border-t border-[#ECE9E2] text-center overflow-hidden select-none"
     >
       <Container className="max-w-4xl mx-auto relative z-20">
         <ScrollReveal direction="up">

@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { orders, orderTimeline } from "@/db/schema/order";
 import { eq, desc } from "drizzle-orm";
 import OrderFulfillmentCard from "@/components/admin/order-fulfillment-card";
+import OrderRefundModal from "@/components/admin/order-refund-modal";
 import { ArrowLeft, Clock, MapPin, User, Receipt } from "lucide-react";
 
 interface AdminOrderDetailPageProps {
@@ -28,6 +29,8 @@ export default async function AdminOrderDetailPage(props: AdminOrderDetailPagePr
   let order = null;
   const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
 
+  let existingRefunds: any[] = [];
+
   if (isDbAvailable) {
     try {
       order = await db.query.orders.findFirst({
@@ -40,6 +43,9 @@ export default async function AdminOrderDetailPage(props: AdminOrderDetailPagePr
           },
         },
       });
+
+      const { refunds } = await import("@/db/schema/refund");
+      existingRefunds = await db.select().from(refunds).where(eq(refunds.orderId, id));
     } catch (e) {
       console.error("Failed to query order details:", e);
     }
@@ -162,10 +168,29 @@ export default async function AdminOrderDetailPage(props: AdminOrderDetailPagePr
             </div>
           </div>
 
-          {/* RIGHT COLUMN: Customer, Shipping, Pricing, and Action Form */}
+          {/* RIGHT COLUMN: Refund Modal, Fulfillment, Customer, Shipping, Pricing */}
           <div className="lg:col-span-4 space-y-8">
+            {/* Real Refund Modal */}
+            <OrderRefundModal
+              orderId={order.id}
+              orderNumber={order.orderNumber}
+              totalPaise={order.totalPaise}
+              paymentStatus={order.paymentStatus}
+              existingRefunds={existingRefunds}
+            />
+
             {/* Fulfillment controls */}
-            <OrderFulfillmentCard orderId={order.id} currentStatus={order.status} />
+            <OrderFulfillmentCard
+              orderId={order.id}
+              currentStatus={order.status}
+              fulfillmentStatus={order.fulfillmentStatus}
+              shiprocketOrderId={order.shiprocketOrderId}
+              shiprocketShipmentId={order.shiprocketShipmentId}
+              awbCode={order.awbCode}
+              courierName={order.courierName}
+              trackingUrl={order.trackingUrl}
+              shippingError={order.shippingError}
+            />
 
             {/* Customer info card */}
             <div className="bg-white border border-brand-black/5 p-6 rounded-xs shadow-xs text-xs space-y-4">

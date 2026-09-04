@@ -26,5 +26,15 @@ export const paymentsRelations = relations(payments, ({ one }) => ({
   }),
 }));
 
+export const processedWebhooks = pgTable("processed_webhooks", {
+  id: text("id").primaryKey(),
+  provider: text("provider").notNull(),
+  eventType: text("event_type").notNull(),
+  processedAt: timestamp("processed_at").notNull().defaultNow(),
+});
+
 export type Payment = typeof payments.$inferSelect;
 export type NewPayment = typeof payments.$inferInsert;
+export type ProcessedWebhook = typeof processedWebhooks.$inferSelect;
+export type NewProcessedWebhook = typeof processedWebhooks.$inferInsert;
+

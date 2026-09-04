@@ -90,7 +90,7 @@ export default async function AdminDashboardPage() {
 
       chartData = last7Days.map((dateStr) => {
         const dayOrders = allRecentOrders.filter(
-          (o) => o.createdAt.toISOString().split("T")[0] === dateStr
+          (o) => new Date(o.createdAt).toISOString().split("T")[0] === dateStr
         );
         const revenue = dayOrders
           .filter((o) => o.paymentStatus === "PAID")
@@ -201,7 +201,7 @@ export default async function AdminDashboardPage() {
 
           {/* AOV Card */}
           <div className="bg-white border border-brand-black/5 p-6 rounded-xs shadow-xs flex items-center gap-4">
-            <div className="h-10 w-10 bg-[#3F5031]/10 text-brand-sage flex items-center justify-center rounded-xs flex-shrink-0">
+            <div className="h-10 w-10 bg-brand-sage/10 text-brand-sage flex items-center justify-center rounded-xs flex-shrink-0">
               <BadgeCent className="h-5 w-5" />
             </div>
             <div>
@@ -303,14 +303,15 @@ export default async function AdminDashboardPage() {
               </thead>
               <tbody className="divide-y divide-neutral-100">
                 {recentOrdersList.map((ord) => {
-                  const [_, m, d] = ord.createdAt.toDateString().split(" ");
+                  const dateObj = new Date(ord.createdAt);
+                  const [_, m, d] = dateObj.toDateString().split(" ");
                   return (
                     <tr key={ord.id} className="hover:bg-neutral-50/50">
                       <td className="py-4 pr-4 font-sans font-semibold text-brand-black">
                         #{ord.orderNumber}
                       </td>
                       <td className="py-4 px-4 text-neutral-500 font-sans">
-                        {d} {m} {ord.createdAt.getFullYear()}
+                        {d} {m} {dateObj.getFullYear()}
                       </td>
                       <td className="py-4 px-4 font-semibold text-brand-black">
                         ₹{(ord.totalPaise / 100).toLocaleString("en-IN")}

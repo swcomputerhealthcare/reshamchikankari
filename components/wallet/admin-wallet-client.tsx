@@ -185,7 +185,7 @@ export default function AdminWalletClient({ withdrawals: initialWithdrawals }: A
                         <td className="p-4">
                           <span className={`inline-block text-[8px] uppercase tracking-wider font-bold rounded-full px-2 py-0.5 ${
                             w.status === "COMPLETED"
-                              ? "bg-[#3F5031]/10 text-[#3F5031]"
+                              ? "bg-[#7C7A5A]/10 text-[#7C7A5A]"
                               : w.status === "FAILED" || w.status === "CANCELLED"
                               ? "bg-red-50 text-red-600"
                               : "bg-amber-50 text-amber-600"
@@ -199,7 +199,7 @@ export default function AdminWalletClient({ withdrawals: initialWithdrawals }: A
                               <button
                                 onClick={() => handleApprove(w.id)}
                                 disabled={isPending}
-                                className="text-[10px] text-[#3F5031] font-bold uppercase tracking-widest hover:underline cursor-pointer border-none bg-transparent"
+                                className="text-[10px] text-[#7C7A5A] font-bold uppercase tracking-widest hover:underline cursor-pointer border-none bg-transparent"
                               >
                                 Approve
                               </button>
@@ -240,7 +240,7 @@ export default function AdminWalletClient({ withdrawals: initialWithdrawals }: A
             )}
 
             {creditSuccess && (
-              <div className="p-3.5 bg-[#3F5031]/10 border border-[#3F5031]/20 text-[#3F5031] text-xs font-semibold rounded-lg">
+              <div className="p-3.5 bg-[#7C7A5A]/10 border border-[#7C7A5A]/20 text-[#7C7A5A] text-xs font-semibold rounded-lg">
                 ✓ Wallet credited successfully.
               </div>
             )}

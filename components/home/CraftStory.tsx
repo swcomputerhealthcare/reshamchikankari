@@ -10,7 +10,7 @@ import ScrollReveal from "@/components/performance/ScrollReveal";
 
 export default function CraftStory() {
   return (
-    <section id="craft" className="relative z-30 w-full py-16 sm:py-24 lg:py-32 bg-[#FAF7F2] text-[#161616] border-t border-[#161616]/10 overflow-visible">
+    <section id="craft" className="relative z-30 w-full py-16 sm:py-24 lg:py-32 bg-[#F8F2EC] text-[#161616] border-t border-[#ECE9E2] overflow-visible">
       <Container>
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
           
@@ -18,7 +18,7 @@ export default function CraftStory() {
           <ScrollReveal direction="left" className="lg:col-span-3 order-2 lg:order-1">
             <div className="flex flex-col gap-6 sm:gap-8">
               {/* Image 1 (Top Left) */}
-              <div className="relative aspect-[3/4] w-full bg-[#FFF9F4] border border-[#161616]/10 p-2 rounded-xl shadow-xs overflow-hidden group">
+              <div className="relative aspect-[3/4] w-full bg-[#FFF9F4] border border-[#ECE9E2] p-2 rounded-xl shadow-xs overflow-hidden group">
                 <div className="relative w-full h-full overflow-hidden rounded-lg">
                   <Image
                     src="/images/reshamchikankari/New%20folder%205/IMG_3230.JPG"
@@ -31,7 +31,7 @@ export default function CraftStory() {
               </div>
 
               {/* Image 2 (Bottom Left) */}
-              <div className="relative aspect-[3/4] w-full bg-[#FFF9F4] border border-[#161616]/10 p-2 rounded-xl shadow-xs overflow-hidden lg:translate-x-2 group">
+              <div className="relative aspect-[3/4] w-full bg-[#FFF9F4] border border-[#ECE9E2] p-2 rounded-xl shadow-xs overflow-hidden lg:translate-x-2 group">
                 <div className="relative w-full h-full overflow-hidden rounded-lg">
                   <Image
                     src="/images/reshamchikankari/New%20folder%206/IMG_3115.JPG"
@@ -94,7 +94,7 @@ export default function CraftStory() {
                   <span>100% Handcrafted</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[#3F5031]" />
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#7C7A5A]" />
                   <span>Lucknow Artisans</span>
                 </div>
               </div>
@@ -118,7 +118,7 @@ export default function CraftStory() {
           <ScrollReveal direction="right" className="lg:col-span-3 order-3">
             <div className="flex flex-col gap-6 sm:gap-8 lg:mt-6">
               {/* Image 3 (Top Right) */}
-              <div className="relative aspect-[3/4] w-full bg-[#FFF9F4] border border-[#161616]/10 p-2 rounded-xl shadow-xs overflow-hidden group">
+              <div className="relative aspect-[3/4] w-full bg-[#FFF9F4] border border-[#ECE9E2] p-2 rounded-xl shadow-xs overflow-hidden group">
                 <div className="relative w-full h-full overflow-hidden rounded-lg">
                   <Image
                     src="/images/reshamchikankari/New%20folder%203/IMG_3001.JPG"
@@ -131,7 +131,7 @@ export default function CraftStory() {
               </div>
 
               {/* Image 4 (Bottom Right) */}
-              <div className="relative aspect-[3/4] w-full bg-[#FFF9F4] border border-[#161616]/10 p-2 rounded-xl shadow-xs overflow-hidden lg:-translate-x-2 group">
+              <div className="relative aspect-[3/4] w-full bg-[#FFF9F4] border border-[#ECE9E2] p-2 rounded-xl shadow-xs overflow-hidden lg:-translate-x-2 group">
                 <div className="relative w-full h-full overflow-hidden rounded-lg">
                   <Image
                     src="/images/reshamchikankari/New%20folder%2021/IMG_3192.JPG"

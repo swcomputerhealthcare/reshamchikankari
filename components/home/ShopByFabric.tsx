@@ -1,5 +1,3 @@
-'use client';
-
 import React from "react";
 import Image from "next/image";
 import Container from "@/components/ui/container";
@@ -49,7 +47,7 @@ export default function ShopByFabric() {
   return (
     <section
       id="fabrics"
-      className="relative z-10 w-full flex flex-col justify-center py-16 sm:py-24 lg:py-28 bg-[#FAF7F2] text-[#161616] border-t border-[#161616]/10 overflow-hidden select-none"
+      className="relative z-10 w-full flex flex-col justify-center py-16 sm:py-24 lg:py-28 bg-[#F8F2EC] text-[#161616] border-t border-[#ECE9E2] overflow-hidden select-none"
     >
       <Container>
         {/* Section Header */}
@@ -61,7 +59,7 @@ export default function ShopByFabric() {
             <h2 className="font-display text-4xl sm:text-5xl lg:text-6xl text-[#161616] leading-tight">
               Shop by Fabric
             </h2>
-            <div className="w-16 h-[1px] bg-[#161616]/15 my-4" />
+            <div className="w-16 h-[1px] bg-[#ECE9E2] my-4" />
             <p className="font-sans text-xs sm:text-sm text-neutral-600 leading-relaxed">
               Discover the character of each hand-embroidered textile, carefully chosen for movement, breathability, and Awadh grace.
             </p>
@@ -82,23 +80,6 @@ export default function ShopByFabric() {
           ))}
         </div>
       </Container>
-
-      {/* Decorative Lotus Motif at 36 Degree Angle in Bottom-Right Corner */}
-      <div
-        className="absolute right-0 bottom-0 translate-x-[30%] translate-y-[30%] pointer-events-none select-none z-40"
-        aria-hidden="true"
-      >
-        <div className="w-[clamp(220px,22vw,300px)] aspect-square opacity-95 rotate-[-36deg]">
-          <Image
-            src="/images/lotus2.svg"
-            alt="Lotus Decorative Motif"
-            fill
-            priority
-            unoptimized
-            className="object-contain filter drop-shadow-[0_12px_28px_rgba(0,0,0,0.18)] brightness-110"
-          />
-        </div>
-      </div>
     </section>
   );
 }

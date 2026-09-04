@@ -91,7 +91,7 @@ export default function SignupPage() {
         
         <div className="w-full max-w-md p-6 sm:p-10 bg-[#FFF9F4] border border-brand-black/5 shadow-xs">
           <div className="text-center mb-8">
-            <span className="text-[9px] uppercase tracking-widest text-[#3F5031] font-bold block mb-2">
+            <span className="text-[9px] uppercase tracking-widest text-[#7C7A5A] font-bold block mb-2">
               Atelier Registration
             </span>
             <h1 className="font-display text-4xl text-brand-black mb-2 font-light">Create Account</h1>
@@ -117,7 +117,7 @@ export default function SignupPage() {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#3F5031] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
+                className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
                 placeholder="Namrata Singh"
               />
             </div>
@@ -133,7 +133,7 @@ export default function SignupPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#3F5031] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
+                className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
                 placeholder="name@example.com"
               />
             </div>
@@ -148,7 +148,7 @@ export default function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#3F5031] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
+                className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
                 placeholder="••••••••"
               />
             </div>

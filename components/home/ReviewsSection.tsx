@@ -69,7 +69,7 @@ export default function ReviewsSection({ initialReviews = [] }: ReviewsSectionPr
   return (
     <section
       id="reviews"
-      className="relative z-10 w-full flex flex-col justify-center py-20 sm:py-28 bg-[#3F5031] text-[#FAF7F2] border-t border-[#FAF7F2]/15 text-center overflow-hidden select-none"
+      className="relative z-10 w-full flex flex-col justify-center py-20 sm:py-28 bg-brand-sage-section text-brand-offwhite border-t border-brand-offwhite/15 text-center overflow-hidden select-none"
     >
       <Container className="w-full relative z-20 flex flex-col items-center">
         <ScrollReveal direction="up" className="w-full flex flex-col items-center">
@@ -96,7 +96,7 @@ export default function ReviewsSection({ initialReviews = [] }: ReviewsSectionPr
 
           {/* 3. Editorial Navigation Drag Hint & CTA Button (Normal Document Flow Below Carousel) */}
           <div className="flex flex-col items-center mt-3 sm:mt-5 space-y-4">
-            <p className="text-[10px] uppercase font-bold tracking-[0.25em] text-[#FAF7F2]/60 font-sans">
+            <p className="text-[10px] uppercase font-bold tracking-[0.25em] text-[#FFF9F4]/70 font-sans">
               ← Drag to explore patron stories →
             </p>
 

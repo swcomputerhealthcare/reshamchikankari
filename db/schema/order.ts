@@ -24,6 +24,23 @@ export const orders = pgTable("orders", {
   couponId: text("coupon_id"), // Reference to coupons table if needed
   shippingAddressSnapshot: jsonb("shipping_address_snapshot").notNull(),
   billingAddressSnapshot: jsonb("billing_address_snapshot"), // Target schema
+  
+  // Shiprocket & Fulfillment Fields
+  fulfillmentStatus: text("fulfillment_status").notNull().default("PENDING"),
+  shiprocketOrderId: text("shiprocket_order_id"),
+  shiprocketShipmentId: text("shiprocket_shipment_id"),
+  awbCode: text("awb_code"),
+  courierName: text("courier_name"),
+  courierCompanyId: integer("courier_company_id"),
+  trackingUrl: text("tracking_url"),
+  pickupScheduledAt: timestamp("pickup_scheduled_at"),
+  shippedAt: timestamp("shipped_at"),
+  deliveredAt: timestamp("delivered_at"),
+  cancelledAt: timestamp("cancelled_at"),
+  lastTrackingUpdate: timestamp("last_tracking_update"),
+  shippingError: text("shipping_error"),
+  shippingCreatedAt: timestamp("shipping_created_at"),
+
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -56,6 +73,22 @@ export const orderTimeline = pgTable("order_timeline", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+export const shipmentTrackingEvents = pgTable("shipment_tracking_events", {
+  id: text("id").primaryKey(),
+  orderId: text("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  shipmentId: text("shipment_id"),
+  awbCode: text("awb_code"),
+  status: text("status").notNull(),
+  statusCode: text("status_code"),
+  location: text("location"),
+  description: text("description"),
+  eventTime: timestamp("event_time").notNull().defaultNow(),
+  rawEventReference: jsonb("raw_event_reference"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const ordersRelations = relations(orders, ({ one, many }) => ({
   user: one(profiles, {
     fields: [orders.userId],
@@ -63,6 +96,7 @@ export const ordersRelations = relations(orders, ({ one, many }) => ({
   }),
   items: many(orderItems),
   timeline: many(orderTimeline),
+  trackingEvents: many(shipmentTrackingEvents),
 }));
 
 export const orderItemsRelations = relations(orderItems, ({ one }) => ({
@@ -87,10 +121,20 @@ export const orderTimelineRelations = relations(orderTimeline, ({ one }) => ({
   }),
 }));
 
+export const shipmentTrackingEventsRelations = relations(shipmentTrackingEvents, ({ one }) => ({
+  order: one(orders, {
+    fields: [shipmentTrackingEvents.orderId],
+    references: [orders.id],
+  }),
+}));
+
 export type Order = typeof orders.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 export type OrderTimeline = typeof orderTimeline.$inferSelect;
+export type ShipmentTrackingEvent = typeof shipmentTrackingEvents.$inferSelect;
 export type NewOrder = typeof orders.$inferInsert;
 export type NewOrderItem = typeof orderItems.$inferInsert;
 export type NewOrderTimeline = typeof orderTimeline.$inferInsert;
+export type NewShipmentTrackingEvent = typeof shipmentTrackingEvents.$inferInsert;
+
 

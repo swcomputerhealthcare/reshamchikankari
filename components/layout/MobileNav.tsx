@@ -95,7 +95,7 @@ export default function MobileNav({ user, variant = "default" }: MobileNavProps)
           {cartCount > 0 && (
             <span
               className={`absolute -top-1 -right-1 rounded-full w-4.5 h-4.5 inline-flex items-center justify-center text-[9px] font-mono font-bold leading-none select-none text-center ${
-                variant === "dark" ? "bg-[#FFF9F4] text-[#3F5031]" : "bg-[#161616] text-[#FFF9F4]"
+                variant === "dark" ? "bg-[#FFF9F4] text-brand-sage" : "bg-[#161616] text-[#FFF9F4]"
               }`}
             >
               {cartCount}
@@ -156,25 +156,25 @@ export default function MobileNav({ user, variant = "default" }: MobileNavProps)
                 {isShopExpanded && (
                   <div className="pl-4 pb-2 space-y-3 normal-case text-xs text-neutral-600 font-medium tracking-wide border-l-2 border-brand-pink/30 ml-2">
                     <Link
-                      href="/shop?category=everyday-cotton"
+                      href="/shop/kurtis-kurtas"
                       onClick={() => setIsOpen(false)}
                       className="block hover:text-brand-pink transition-colors uppercase text-[10px] tracking-wider"
                     >
-                      Everyday Cotton
+                      Kurtis & Kurtas
                     </Link>
                     <Link
-                      href="/shop?category=festive-georgette"
+                      href="/shop/coord-sets"
                       onClick={() => setIsOpen(false)}
                       className="block hover:text-brand-pink transition-colors uppercase text-[10px] tracking-wider"
                     >
-                      Festive Georgette
+                      Co-ord Sets
                     </Link>
                     <Link
-                      href="/shop?category=pastel-edit"
+                      href="/shop/bottom-wear"
                       onClick={() => setIsOpen(false)}
                       className="block hover:text-brand-pink transition-colors uppercase text-[10px] tracking-wider"
                     >
-                      The Pastel Edit
+                      Bottom Wear
                     </Link>
                     <Link
                       href="/shop"

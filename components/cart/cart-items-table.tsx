@@ -22,6 +22,8 @@ interface CartItem {
   pricePaise: number;
   image: string;
   sizeName?: string;
+  colorName?: string;
+  variantLabel?: string;
   stock: number;
 }
 
@@ -113,8 +115,9 @@ export default function CartItemsTable({
     );
   }
 
-  // Calculate order totals
-  const shippingCostPaise = subtotalPaise >= 400000 ? 0 : 15000;
+  // Calculate order totals (Free above ₹4000 or for ₹1 test items)
+  const isTestCart = items.some((item) => item.sku?.includes("TEST") || item.slug?.includes("test") || item.pricePaise <= 500);
+  const shippingCostPaise = (subtotalPaise >= 400000 || isTestCart) ? 0 : 15000;
   const totalCostPaise = subtotalPaise - discountPaise + shippingCostPaise;
 
   return (
@@ -180,7 +183,7 @@ export default function CartItemsTable({
                         </Link>
                         <div className="text-[11px] text-[#6f6f68] mt-1 space-y-0.5 font-sans font-normal">
                           <p>Product No. {productNo}</p>
-                          <p>Size: {item.sizeName || "One Size"} | Fabric: {fabricName}</p>
+                          <p>{item.variantLabel ? `Variant: ${item.variantLabel}` : `Size: ${item.sizeName || "One Size"}`} | Fabric: {fabricName}</p>
                         </div>
                       </div>
 
@@ -251,7 +254,7 @@ export default function CartItemsTable({
                           {item.name}
                         </h3>
                         <p className="text-[10px] text-[#6f6f68] mt-1">
-                          Size: {item.sizeName || "One Size"} | Fabric: {fabricName}
+                          {item.variantLabel ? `Variant: ${item.variantLabel}` : `Size: ${item.sizeName || "One Size"}`} | Fabric: {fabricName}
                         </p>
                         <p className="text-[10px] text-[#6f6f68] mt-0.5">No. {productNo}</p>
                       </div>

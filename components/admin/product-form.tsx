@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createProductAction } from "@/actions/catalog";
 import Button from "@/components/ui/button";
+import ImageManager, { ManagedImage } from "@/components/admin/image-manager";
 
 interface CategoryOption {
   id: string;
@@ -24,7 +25,7 @@ export default function ProductForm({ categories }: ProductFormProps) {
   const [price, setPrice] = useState("");
   const [comparePrice, setComparePrice] = useState("");
   const [description, setDescription] = useState("");
-  const [image, setImage] = useState("");
+  const [images, setImages] = useState<ManagedImage[]>([]);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -65,7 +66,7 @@ export default function ProductForm({ categories }: ProductFormProps) {
         pricePaise,
         compareAtPricePaise,
         isActive: true,
-        image: image || undefined,
+        images,
       });
 
       if (!res.success) {
@@ -180,37 +181,25 @@ export default function ProductForm({ categories }: ProductFormProps) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        {/* Compare-at Price */}
-        <div className="space-y-2">
-          <label htmlFor="comparePrice" className="block text-xs uppercase tracking-wider text-neutral-600 font-bold">
-            Compare At Price (₹ - Optional)
-          </label>
-          <input
-            id="comparePrice"
-            type="number"
-            step="0.01"
-            value={comparePrice}
-            onChange={(e) => setComparePrice(e.target.value)}
-            placeholder="e.g. 2499.00"
-            className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 focus:border-brand-black focus:outline-none text-sm font-sans"
-          />
-        </div>
+      {/* Compare-at Price */}
+      <div className="space-y-2 max-w-sm">
+        <label htmlFor="comparePrice" className="block text-xs uppercase tracking-wider text-neutral-600 font-bold">
+          Compare At Price (₹ - Optional)
+        </label>
+        <input
+          id="comparePrice"
+          type="number"
+          step="0.01"
+          value={comparePrice}
+          onChange={(e) => setComparePrice(e.target.value)}
+          placeholder="e.g. 2499.00"
+          className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 focus:border-brand-black focus:outline-none text-sm font-sans"
+        />
+      </div>
 
-        {/* Image URL */}
-        <div className="space-y-2">
-          <label htmlFor="image" className="block text-xs uppercase tracking-wider text-neutral-600 font-bold">
-            Product Image URL (Optional)
-          </label>
-          <input
-            id="image"
-            type="url"
-            value={image}
-            onChange={(e) => setImage(e.target.value)}
-            placeholder="https://example.com/image.jpg"
-            className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 focus:border-brand-black focus:outline-none text-sm font-sans"
-          />
-        </div>
+      {/* Image Upload & Reorder System */}
+      <div className="bg-neutral-50/50 p-6 border border-neutral-200 rounded-xs">
+        <ImageManager images={images} onChange={setImages} />
       </div>
 
       {/* Description */}

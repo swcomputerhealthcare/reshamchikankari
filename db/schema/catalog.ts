@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, boolean, integer, index } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, boolean, integer, real, index } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 export const categories = pgTable("categories", {
@@ -35,6 +35,11 @@ export const products = pgTable("products", {
   featured: boolean("featured").notNull().default(false), // target schema
   isActive: boolean("is_active").notNull().default(true),
   productNumber: integer("product_number"),
+  weightKg: real("weight_kg").notNull().default(0.5),
+  lengthCm: integer("length_cm").notNull().default(30),
+  breadthCm: integer("breadth_cm").notNull().default(25),
+  heightCm: integer("height_cm").notNull().default(5),
+  hsnCode: text("hsn_code").notNull().default("6204"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => {
@@ -53,6 +58,7 @@ export const productImages = pgTable("product_images", {
   publicId: text("public_id"), // make it nullable
   alt: text("alt"), // keep for compatibility
   altText: text("alt_text"), // target schema
+  colorName: text("color_name"), // optional color tag for image filter
   sortOrder: integer("sort_order").notNull().default(0),
   isPrimary: boolean("is_primary").notNull().default(false), // target schema
   width: integer("width"), // target schema
@@ -70,7 +76,11 @@ export const productVariants = pgTable("product_variants", {
     .notNull()
     .references(() => products.id, { onDelete: "cascade" }),
   sku: text("sku").notNull().unique(),
-  name: text("name").notNull(), // e.g. "S", "M", "L"
+  name: text("name").notNull(), // e.g. "S", "M", "L" or "Pink / S"
+  colorName: text("color_name"), // e.g. "Peach Pink", "Sky Blue"
+  colorCode: text("color_code"), // e.g. "#E98FA8"
+  size: text("size"), // e.g. "S", "M", "L", "XL"
+  imageId: text("image_id"), // optional linked product image ID
   pricePaise: integer("price_paise"),
   compareAtPricePaise: integer("compare_at_price_paise"), // target schema
   stock: integer("stock").notNull().default(0), // keep for compatibility

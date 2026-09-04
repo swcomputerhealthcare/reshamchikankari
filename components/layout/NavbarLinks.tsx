@@ -26,7 +26,7 @@ export default function NavbarLinks({ variant = "default" }: { variant?: "defaul
     : "text-brand-black/80 hover:text-brand-black transition-colors duration-200 whitespace-nowrap";
 
   return (
-    <div className="flex items-center gap-7 text-[11px] uppercase tracking-[0.16em] font-medium font-sans relative whitespace-nowrap">
+    <div className="flex items-center gap-4 lg:gap-5 xl:gap-7 text-[11px] uppercase tracking-[0.16em] font-medium font-sans relative whitespace-nowrap">
       {/* HOME */}
       <TransitionLink
         href="/"
@@ -63,30 +63,30 @@ export default function NavbarLinks({ variant = "default" }: { variant?: "defaul
             >
               {/* Dropdown Layout */}
               <div className="flex flex-col text-[10px] uppercase tracking-wider font-semibold font-sans">
-                <span className="px-5 py-1 text-[9px] text-[#3F5031] tracking-widest font-bold block mb-1">
-                  Collections
+                <span className="px-5 py-1 text-[9px] text-brand-sage tracking-widest font-bold block mb-1">
+                  Categories
                 </span>
                 
                 <TransitionLink
-                  href="/shop/everyday-cotton"
+                  href="/shop/kurtis-kurtas"
                   onClick={() => setIsShopOpen(false)}
                   className="px-5 py-2.5 hover:bg-brand-black/5 hover:text-brand-sage transition-colors text-left text-neutral-700"
                 >
-                  Everyday Cotton
+                  Kurtis & Kurtas
                 </TransitionLink>
                 <TransitionLink
-                  href="/shop/festive-georgette"
+                  href="/shop/coord-sets"
                   onClick={() => setIsShopOpen(false)}
                   className="px-5 py-2.5 hover:bg-brand-black/5 hover:text-brand-sage transition-colors text-left text-neutral-700"
                 >
-                  Festive Georgette
+                  Co-ord Sets
                 </TransitionLink>
                 <TransitionLink
-                  href="/shop/the-pastel-edit"
+                  href="/shop/bottom-wear"
                   onClick={() => setIsShopOpen(false)}
                   className="px-5 py-2.5 hover:bg-brand-black/5 hover:text-brand-sage transition-colors text-left text-neutral-700"
                 >
-                  The Pastel Edit
+                  Bottom Wear
                 </TransitionLink>
 
                 <div className="border-t border-brand-black/5 my-1.5"></div>

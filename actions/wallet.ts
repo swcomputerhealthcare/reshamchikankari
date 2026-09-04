@@ -132,32 +132,60 @@ export async function requestWithdrawalAction(amountPaise: number, payoutMethodI
   const currentUser = await requireUser();
   const wallet = await getOrCreateWallet(currentUser.id);
 
-  if (amountPaise < 10000) {
-    return { success: false, error: "Minimum withdrawal amount is ₹100." };
+  if (amountPaise < 100) {
+    return { success: false, error: "Minimum withdrawal amount is ₹1." };
   }
   if (amountPaise > wallet.availableBalancePaise) {
     return { success: false, error: "Insufficient available balance to withdraw." };
   }
 
   // Verify payout method ownership
-  let methodExists = false;
+  let targetMethod: any = null;
   if (!hasDatabase()) {
     const store = readMockStore();
-    methodExists = store.payoutMethods.some((m: any) => m.id === payoutMethodId && m.userId === currentUser.id);
+    targetMethod = store.payoutMethods.find((m: any) => m.id === payoutMethodId && m.userId === currentUser.id);
   } else {
-    const method = await db.select().from(payoutMethods).where(eq(payoutMethods.id, payoutMethodId)).limit(1);
-    methodExists = !!method[0] && method[0].userId === currentUser.id;
+    const methods = await db.select().from(payoutMethods).where(eq(payoutMethods.id, payoutMethodId)).limit(1);
+    targetMethod = methods[0] && methods[0].userId === currentUser.id ? methods[0] : null;
   }
 
-  if (!methodExists) {
+  if (!targetMethod) {
     return { success: false, error: "Invalid payout destination method." };
   }
 
-  const idempotencyKey = `idemp_${currentUser.id}_${Date.now()}`;
+  const idempotencyKey = `payout_${currentUser.id}_${Date.now()}`;
   try {
+    // 1. Lock wallet funds in DB
     const req = await lockWalletFunds(wallet.id, amountPaise, payoutMethodId, idempotencyKey);
-    revalidatePath("/account/wallet");
-    return { success: true, withdrawal: req };
+
+    // 2. Call RazorpayX Payout API
+    const { executeRazorpayXPayout } = await import("@/lib/razorpay-services");
+    const payoutRes = await executeRazorpayXPayout(
+      req.id,
+      amountPaise,
+      {
+        type: targetMethod.type as "UPI" | "BANK",
+        accountHolderName: targetMethod.accountHolderName,
+        upiId: targetMethod.upiId,
+        bankAccountLast4: targetMethod.bankAccountLast4,
+        ifsc: targetMethod.ifsc,
+      },
+      idempotencyKey
+    );
+
+    if (payoutRes.success) {
+      if (payoutRes.status === "processed" || payoutRes.status === "completed") {
+        await completeWalletWithdrawal(req.id, payoutRes.payoutId || `pout_${Date.now()}`);
+      }
+      revalidatePath("/account/wallet");
+      revalidatePath("/admin/wallet");
+      return { success: true, withdrawal: { ...req, status: payoutRes.status || "PROCESSING" } };
+    } else {
+      // Payout failed immediately: release locked funds back to user
+      await releaseWalletFunds(req.id, "RAZORPAYX_ERROR", payoutRes.error || "Payout service error");
+      revalidatePath("/account/wallet");
+      return { success: false, error: payoutRes.error || "Failed to initiate RazorpayX payout." };
+    }
   } catch (err: any) {
     return { success: false, error: err.message || "Failed to process withdrawal." };
   }

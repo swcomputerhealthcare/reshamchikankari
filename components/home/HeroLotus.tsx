@@ -37,7 +37,7 @@ export default function HeroLotus() {
           trigger: homeEl,
           start: "top top",
           end: "bottom 30%",
-          scrub: 0.3,
+          scrub: true,
         },
       });
     }, rotationRef);

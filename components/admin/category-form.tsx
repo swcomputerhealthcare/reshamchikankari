@@ -100,15 +100,33 @@ export default function CategoryForm() {
 
       <div className="space-y-1">
         <label htmlFor="cat-image" className="block text-[10px] uppercase tracking-wider text-neutral-600 font-bold">
-          Image URL (Optional)
+          Category Banner Image
         </label>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append("file", file);
+            const { uploadAdminImageAction } = await import("@/actions/upload");
+            const res = await uploadAdminImageAction(formData);
+            if (res.success && res.image) {
+              setImage(res.image.url);
+            } else {
+              setError(res.error || "Failed to upload image.");
+            }
+          }}
+          className="w-full text-xs font-sans file:mr-3 file:py-1 file:px-3 file:border-0 file:text-[10px] file:font-bold file:bg-brand-sage file:text-white file:rounded-xs file:uppercase file:cursor-pointer"
+        />
         <input
           id="cat-image"
           type="url"
           value={image}
           onChange={(e) => setImage(e.target.value)}
-          placeholder="https://example.com/cat.jpg"
-          className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 focus:border-brand-black focus:outline-none text-xs font-sans"
+          placeholder="https://example.com/cat.jpg (or upload file above)"
+          className="w-full px-3 py-2 bg-neutral-50 border border-neutral-200 focus:border-brand-black focus:outline-none text-xs font-sans mt-1"
         />
       </div>
 

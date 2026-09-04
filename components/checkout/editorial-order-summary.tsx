@@ -149,13 +149,13 @@ export default function EditorialOrderSummary({
   });
 
   return (
-    <div className="bg-[#FAF7F2] border border-[#161616]/10 p-6 sm:p-8 rounded-2xl shadow-xs space-y-6 text-left font-sans select-none">
-      <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#3F5031] border-b border-[#161616]/10 pb-4">
+    <div className="bg-[#F8F2EC] border border-[#ECE9E2] p-6 sm:p-8 rounded-2xl shadow-xs space-y-6 text-left font-sans select-none">
+      <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#7C7A5A] border-b border-[#ECE9E2] pb-4">
         ORDER SUMMARY
       </h2>
 
       {/* Pricing Rows */}
-      <div className="space-y-3.5 border-b border-[#161616]/10 pb-6 text-xs text-neutral-700">
+      <div className="space-y-3.5 border-b border-[#ECE9E2] pb-6 text-xs text-neutral-700">
         {/* Bag Subtotal */}
         <div className="flex justify-between items-center">
           <span className="text-neutral-600">Bag Subtotal</span>
@@ -172,7 +172,7 @@ export default function EditorialOrderSummary({
               animate={{ opacity: 1, y: 0 }}
               exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: -6 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
-              className="flex justify-between items-center text-[#3F5031] font-semibold"
+              className="flex justify-between items-center text-[#7C7A5A] font-semibold"
             >
               <span className="flex items-center gap-1.5">
                 <Tag className="w-3.5 h-3.5 text-[#E694AA]" />
@@ -186,7 +186,7 @@ export default function EditorialOrderSummary({
         {/* Estimated Shipping */}
         <div className="flex justify-between items-center">
           <span className="text-neutral-600">Estimated Shipping</span>
-          <span className="font-semibold text-[#3F5031] uppercase text-[11px] tracking-wider">
+          <span className="font-semibold text-[#7C7A5A] uppercase text-[11px] tracking-wider">
             {shippingPaise === 0 ? "FREE" : `₹${(shippingPaise / 100).toLocaleString("en-IN")}`}
           </span>
         </div>
@@ -201,7 +201,7 @@ export default function EditorialOrderSummary({
 
         {/* Wallet Deduction */}
         {appliedWalletPaise > 0 && (
-          <div className="flex justify-between items-center text-[#3F5031] font-semibold">
+          <div className="flex justify-between items-center text-[#7C7A5A] font-semibold">
             <span>RC Wallet Applied</span>
             <span>&minus; ₹{(appliedWalletPaise / 100).toLocaleString("en-IN")}</span>
           </div>
@@ -215,7 +215,7 @@ export default function EditorialOrderSummary({
       </div>
 
       {/* Applied Coupon / Coupon Entry Box (No nested <form> tag) */}
-      <div className="border-b border-[#161616]/10 pb-6 space-y-2.5">
+      <div className="border-b border-[#ECE9E2] pb-6 space-y-2.5">
         <span className="text-[10px] font-mono font-bold tracking-[0.2em] uppercase text-neutral-500 block">
           PROMOTIONAL COUPON
         </span>
@@ -227,13 +227,13 @@ export default function EditorialOrderSummary({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.3 }}
-            className="bg-[#FFF9F4] border border-[#3F5031]/20 p-3.5 rounded-xl flex items-center justify-between text-xs"
+            className="bg-[#FFF9F4] border border-[#7C7A5A]/20 p-3.5 rounded-xl flex items-center justify-between text-xs"
           >
             <div className="flex items-center gap-2">
-              <span className="w-4 h-4 bg-[#3F5031] text-[#FFF9F4] rounded-full flex items-center justify-center text-[10px]">
+              <span className="w-4 h-4 bg-[#7C7A5A] text-[#FFF9F4] rounded-full flex items-center justify-center text-[10px]">
                 <Check className="w-2.5 h-2.5 stroke-[3]" />
               </span>
-              <span className="font-mono font-bold tracking-wider text-[#3F5031] uppercase">
+              <span className="font-mono font-bold tracking-wider text-[#7C7A5A] uppercase">
                 {appliedCode}
               </span>
               <span className="text-[10px] text-neutral-500 font-medium">applied</span>
@@ -267,13 +267,13 @@ export default function EditorialOrderSummary({
                 }}
                 placeholder="Enter coupon code (e.g. FESTIVE500)"
                 disabled={isPending}
-                className="flex-1 px-4 py-2.5 bg-white border border-[#161616]/15 rounded-xl text-xs font-mono uppercase tracking-wider text-[#161616] focus:outline-none focus:ring-1 focus:ring-[#3F5031] disabled:opacity-50 placeholder:text-neutral-400 placeholder:normal-case placeholder:font-sans"
+                className="flex-1 px-4 py-2.5 bg-white border border-[#ECE9E2] rounded-xl text-xs font-mono uppercase tracking-wider text-[#161616] focus:outline-none focus:ring-1 focus:ring-[#7C7A5A] disabled:opacity-50 placeholder:text-neutral-400 placeholder:normal-case placeholder:font-sans"
               />
               <button
                 type="button"
                 onClick={handleApplyCoupon}
                 disabled={isPending || !couponCodeInput.trim()}
-                className="px-5 py-2.5 bg-[#161616] hover:bg-[#3F5031] text-[#FFF9F4] text-[10px] font-bold uppercase tracking-widest rounded-xl transition-colors disabled:opacity-40 cursor-pointer border-none flex items-center gap-1.5"
+                className="px-5 py-2.5 bg-[#161616] hover:bg-[#7C7A5A] text-[#FFF9F4] text-[10px] font-bold uppercase tracking-widest rounded-xl transition-colors disabled:opacity-40 cursor-pointer border-none flex items-center gap-1.5"
               >
                 {isPending ? (
                   <>
@@ -345,7 +345,7 @@ export default function EditorialOrderSummary({
                   animate={{ opacity: 1, y: 0 }}
                   exit={prefersReducedMotion ? { opacity: 0 } : { opacity: 0, y: 4 }}
                   transition={{ duration: 0.3, delay: 0.1 }}
-                  className="text-[11px] font-sans font-semibold text-[#3F5031] mt-0.5 block"
+                  className="text-[11px] font-sans font-semibold text-[#7C7A5A] mt-0.5 block"
                 >
                   You save ₹{formattedSavings}
                 </motion.span>
@@ -363,7 +363,7 @@ export default function EditorialOrderSummary({
               variant="primary"
               isLoading={isCheckoutPending}
               disabled={isCheckoutPending}
-              className="w-full py-4 text-xs tracking-[0.18em] uppercase font-bold bg-[#3F5031] hover:bg-black text-[#FFF9F4] rounded-xl transition-all border-none"
+              className="w-full py-4 text-xs tracking-[0.18em] uppercase font-bold bg-[#7C7A5A] hover:bg-black text-[#FFF9F4] rounded-xl transition-all border-none"
             >
               {isCheckoutPending
                 ? "PROCESSING..."
@@ -377,7 +377,7 @@ export default function EditorialOrderSummary({
             </Button>
 
             <div className="flex justify-center items-center gap-2 text-[10px] uppercase font-mono tracking-wider text-neutral-400">
-              <Lock className="w-3 h-3 text-[#3F5031]" /> 256-Bit Encrypted Transaction
+              <Lock className="w-3 h-3 text-[#7C7A5A]" /> 256-Bit Encrypted Transaction
             </div>
           </div>
         )}

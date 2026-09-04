@@ -6,13 +6,26 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface ProductGalleryProps {
-  images: { id: string; url: string; alt?: string | null }[];
+  images: { id: string; url: string; alt?: string | null; colorName?: string | null }[];
+  selectedColor?: string | null;
 }
 
-export default function ProductGallery({ images }: ProductGalleryProps) {
+export default function ProductGallery({ images, selectedColor }: ProductGalleryProps) {
   const [activeIdx, setActiveIdx] = useState(0);
 
-  if (!images || images.length === 0) {
+  // Filter images by selected color if provided and matching images exist
+  const displayImages = React.useMemo(() => {
+    if (!selectedColor) return images;
+    const matching = images.filter((img) => img.colorName === selectedColor);
+    return matching.length > 0 ? matching : images;
+  }, [images, selectedColor]);
+
+  // Reset activeIdx when selectedColor changes
+  React.useEffect(() => {
+    setActiveIdx(0);
+  }, [selectedColor]);
+
+  if (!displayImages || displayImages.length === 0) {
     return (
       <div className="relative w-full aspect-[3/4] bg-neutral-100 border border-brand-black/5 flex items-center justify-center text-xs text-neutral-400 font-sans rounded-none">
         No image available
@@ -20,14 +33,14 @@ export default function ProductGallery({ images }: ProductGalleryProps) {
     );
   }
 
-  const activeImage = images[activeIdx];
+  const activeImage = displayImages[activeIdx] || displayImages[0];
 
   const handlePrev = () => {
-    setActiveIdx((prev) => (prev === 0 ? images.length - 1 : prev - 1));
+    setActiveIdx((prev) => (prev === 0 ? displayImages.length - 1 : prev - 1));
   };
 
   const handleNext = () => {
-    setActiveIdx((prev) => (prev === images.length - 1 ? 0 : prev + 1));
+    setActiveIdx((prev) => (prev === displayImages.length - 1 ? 0 : prev + 1));
   };
 
   return (
@@ -66,7 +79,7 @@ export default function ProductGallery({ images }: ProductGalleryProps) {
         </AnimatePresence>
 
         {/* Arrow Navigation */}
-        {images.length > 1 && (
+        {displayImages.length > 1 && (
           <>
             {/* Left Arrow */}
             <button
@@ -88,16 +101,16 @@ export default function ProductGallery({ images }: ProductGalleryProps) {
 
             {/* Page Counter Indicator */}
             <div className="absolute bottom-4 right-4 bg-brand-black/85 text-brand-offwhite text-[9px] tracking-widest px-2.5 py-1 font-sans font-semibold uppercase">
-              {activeIdx + 1} / {images.length}
+              {activeIdx + 1} / {displayImages.length}
             </div>
           </>
         )}
       </div>
 
       {/* Thumbnails list */}
-      {images.length > 1 && (
+      {displayImages.length > 1 && (
         <div className="flex gap-2.5 overflow-x-auto py-1">
-          {images.map((img, idx) => (
+          {displayImages.map((img, idx) => (
             <button
               key={img.id}
               onClick={() => setActiveIdx(idx)}

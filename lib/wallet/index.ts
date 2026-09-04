@@ -65,6 +65,19 @@ export async function getOrCreateWallet(userId: string) {
     return existing[0];
   }
 
+  // Ensure profiles record exists first to satisfy foreign key constraint
+  try {
+    const { profiles } = await import("@/db/schema/auth");
+    await db.insert(profiles).values({
+      id: userId,
+      fullName: "Valued Customer",
+      email: `${userId}@user.com`,
+      role: "CUSTOMER",
+    }).onConflictDoNothing();
+  } catch (profileErr) {
+    console.warn("Profile auto-insert warning for wallet creation:", profileErr);
+  }
+
   const newWalletId = `wall_${Math.random().toString(36).substring(2, 11)}`;
   await db.insert(walletAccounts).values({
     id: newWalletId,

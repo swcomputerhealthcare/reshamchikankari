@@ -163,13 +163,13 @@ export default function ProductListController({
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full bg-white border border-brand-black/10 rounded-xs pl-10 pr-4 py-2.5 text-xs tracking-wide uppercase font-semibold text-brand-black focus:outline-none focus:border-brand-sage focus:ring-1 focus:ring-brand-sage"
+            className="w-full bg-white border border-brand-black/15 rounded-xs pl-10 pr-4 py-3 text-sm tracking-wide uppercase font-semibold text-brand-black focus:outline-none focus:border-brand-sage focus:ring-1 focus:ring-brand-sage"
           />
         </div>
 
         {/* Category Filter */}
         <div className="flex items-center gap-3">
-          <span className="text-[10px] uppercase font-bold tracking-widest text-neutral-400">
+          <span className="text-xs uppercase font-bold tracking-widest text-neutral-500">
             Category
           </span>
           <select
@@ -178,7 +178,7 @@ export default function ProductListController({
               setSelectedCategory(e.target.value);
               setCurrentPage(1);
             }}
-            className="bg-white border border-brand-black/10 rounded-xs px-3 py-2 text-xs font-semibold uppercase tracking-wider text-brand-black focus:outline-none focus:border-brand-sage"
+            className="bg-white border border-brand-black/15 rounded-xs px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-brand-black focus:outline-none focus:border-brand-sage"
           >
             <option value="all">All Categories</option>
             {categories.map((cat) => (
@@ -191,8 +191,8 @@ export default function ProductListController({
       </div>
 
       {/* Table & Cards */}
-      <div className="bg-white border border-brand-black/5 p-6 rounded-xs shadow-xs">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-500 mb-6">
+      <div className="bg-white border border-brand-black/5 p-6 sm:p-8 rounded-xs shadow-xs">
+        <h2 className="text-base font-bold uppercase tracking-wider text-brand-black mb-6">
           Products Directory ({filteredProducts.length})
         </h2>
 
@@ -204,81 +204,81 @@ export default function ProductListController({
           <>
             {/* Desktop Table View */}
             <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-neutral-100 text-neutral-400 uppercase tracking-widest text-[9px] font-bold">
-                    <th className="py-3.5 pr-4">Product details</th>
-                    <th className="py-3.5 px-4">SKU</th>
-                    <th className="py-3.5 px-4">Category</th>
-                    <th className="py-3.5 px-4">Price</th>
-                    <th className="py-3.5 px-4">Status</th>
-                    <th className="py-3.5 pl-4 text-right">Actions</th>
+                  <tr className="border-b border-neutral-200 text-neutral-500 uppercase tracking-widest text-xs font-bold bg-neutral-50/50">
+                    <th className="py-4 pr-4 pl-3">Product Details</th>
+                    <th className="py-4 px-4">SKU</th>
+                    <th className="py-4 px-4">Category</th>
+                    <th className="py-4 px-4">Price</th>
+                    <th className="py-4 px-4">Status</th>
+                    <th className="py-4 pl-4 pr-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {paginatedProducts.map((prod) => (
-                    <tr key={prod.id} className="hover:bg-neutral-50/50">
-                      <td className="py-4 pr-4 flex items-center gap-3">
-                        <div className="relative h-10 w-10 bg-neutral-50 border border-neutral-100 flex-shrink-0">
+                    <tr key={prod.id} className="hover:bg-neutral-50/80 transition-colors">
+                      <td className="py-4 pr-4 pl-3 flex items-center gap-3.5">
+                        <div className="relative h-12 w-12 bg-neutral-50 border border-neutral-200 rounded-xs overflow-hidden flex-shrink-0">
                           {prod.images[0]?.url ? (
                             <Image
                               src={prod.images[0].url}
                               alt={prod.name}
-                              width={40}
-                              height={40}
+                              width={48}
+                              height={48}
                               className="h-full w-full object-cover"
                             />
                           ) : (
-                            <span className="text-[9px] text-neutral-300 flex items-center justify-center h-full">N/A</span>
+                            <span className="text-xs text-neutral-300 flex items-center justify-center h-full">N/A</span>
                           )}
                         </div>
                         <div>
-                          <div className="font-semibold text-brand-black">{prod.name}</div>
-                          <div className="text-[9px] text-neutral-400 lowercase">{prod.slug}</div>
+                          <div className="font-bold text-brand-black text-sm">{prod.name}</div>
+                          <div className="text-xs text-neutral-400 font-mono lowercase">{prod.slug}</div>
                         </div>
                       </td>
-                      <td className="py-4 px-4 font-sans font-semibold text-brand-black">
+                      <td className="py-4 px-4 font-sans font-bold text-brand-black text-sm">
                         {prod.sku}
                       </td>
-                      <td className="py-4 px-4 text-neutral-500 uppercase font-semibold text-[10px] tracking-wide">
+                      <td className="py-4 px-4 text-neutral-600 uppercase font-bold text-xs tracking-wider">
                         {categoryMap.get(prod.categoryId) || "Unassigned"}
                       </td>
-                      <td className="py-4 px-4 font-semibold text-brand-black">
+                      <td className="py-4 px-4 font-bold text-brand-black text-sm">
                         ₹{(prod.pricePaise / 100).toLocaleString("en-IN")}
                       </td>
                       <td className="py-4 px-4">
                         <ProductToggle id={prod.id} initialActive={prod.isActive} />
                       </td>
-                      <td className="py-4 pl-4 text-right space-x-3">
+                      <td className="py-4 pl-4 pr-3 text-right space-x-3">
                         <Link
                           href={`/admin/products/${prod.id}`}
-                          className="inline-flex items-center gap-1 text-[10px] font-bold text-brand-pink hover:text-brand-black uppercase tracking-wider transition-colors"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-brand-pink hover:text-brand-black uppercase tracking-wider transition-colors py-1 px-1.5"
                         >
-                          <Edit className="h-3.5 w-3.5" />
+                          <Edit className="h-4 w-4" />
                           <span>Edit</span>
                         </Link>
                         <button
                           onClick={() => handleDuplicate(prod.id)}
                           disabled={isPending}
-                          className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-brand-black uppercase tracking-wider transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-500 hover:text-brand-black uppercase tracking-wider transition-colors cursor-pointer py-1 px-1.5"
                         >
-                          <Copy className="h-3.5 w-3.5" />
+                          <Copy className="h-4 w-4" />
                           <span>Duplicate</span>
                         </button>
                         <button
                           onClick={() => handleArchive(prod.id)}
                           disabled={isPending || !prod.isActive}
-                          className="inline-flex items-center gap-1 text-[10px] font-bold text-neutral-400 hover:text-brand-black uppercase tracking-wider transition-colors disabled:opacity-50 cursor-pointer"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-neutral-500 hover:text-brand-black uppercase tracking-wider transition-colors disabled:opacity-40 cursor-pointer py-1 px-1.5"
                         >
-                          <Archive className="h-3.5 w-3.5" />
+                          <Archive className="h-4 w-4" />
                           <span>Archive</span>
                         </button>
                         <button
                           onClick={() => setDeleteConfirmId(prod.id)}
                           disabled={isPending}
-                          className="inline-flex items-center gap-1 text-[10px] font-bold text-red-400 hover:text-red-700 uppercase tracking-wider transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1.5 text-xs font-bold text-red-500 hover:text-red-700 uppercase tracking-wider transition-colors cursor-pointer py-1 px-1.5"
                         >
-                          <Trash2 className="h-3.5 w-3.5" />
+                          <Trash2 className="h-4 w-4" />
                           <span>Delete</span>
                         </button>
                       </td>

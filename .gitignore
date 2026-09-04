@@ -44,3 +44,11 @@ next-env.d.ts
 claude-skills
 .agents
 
+
+# Ruflo local secrets and runtime data
+.env
+.env.local
+.env.*.local
+.claude-flow/data/
+.claude-flow/logs/
+.claude-flow/sessions/

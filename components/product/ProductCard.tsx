@@ -20,13 +20,60 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
   const [isPending, startTransition] = useTransition();
   const { addItemOptimistic } = useCart();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [selectedVarId, setSelectedVarId] = useState(product.variants[0]?.id || "");
   const [isAddedToCart, setIsAddedToCart] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
+  // Extract unique colors if product has multi-color variants
+  const uniqueColors = React.useMemo(() => {
+    const map = new Map<string, { name: string; code: string }>();
+    product.variants.forEach((v) => {
+      if (v.colorName) {
+        if (!map.has(v.colorName)) {
+          map.set(v.colorName, {
+            name: v.colorName,
+            code: v.colorCode || "#E98FA8",
+          });
+        }
+      }
+    });
+    return Array.from(map.values());
+  }, [product.variants]);
+
+  const hasMultipleColors = uniqueColors.length > 1;
+
+  const [activeColor, setActiveColor] = useState<string | null>(() => {
+    return hasMultipleColors ? uniqueColors[0].name : null;
+  });
+
+  // Filter variants and images for active color if multi-color
+  const displayedVariants = React.useMemo(() => {
+    if (!hasMultipleColors || !activeColor) return product.variants;
+    return product.variants.filter((v) => v.colorName === activeColor);
+  }, [product.variants, hasMultipleColors, activeColor]);
+
+  const [selectedVarId, setSelectedVarId] = useState(() => {
+    return displayedVariants[0]?.id || product.variants[0]?.id || "";
+  });
+
+  const handleColorClick = (colorName: string) => {
+    setActiveColor(colorName);
+    setCurrentImageIndex(0);
+    const matching = product.variants.find((v) => v.colorName === colorName && v.stock > 0)
+      || product.variants.find((v) => v.colorName === colorName);
+    if (matching) {
+      setSelectedVarId(matching.id);
+    }
+  };
+
+  const activeColorImages = React.useMemo(() => {
+    if (!activeColor) return product.images;
+    const filtered = product.images.filter((img) => img.colorName === activeColor);
+    return filtered.length > 0 ? filtered : product.images;
+  }, [product.images, activeColor]);
+
   // Map product images
-  const images = product.images && product.images.length > 0
-    ? product.images.map((img) => img.url)
+  const images = activeColorImages && activeColorImages.length > 0
+    ? activeColorImages.map((img) => img.url)
     : ["/images/chikankari_hero.png"];
 
   // Auto-switch product image every 6 seconds (6000ms) for performance & calm cadence
@@ -134,7 +181,7 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
                   setCurrentImageIndex(index);
                 }}
                 className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer border-none ${
-                  index === currentImageIndex ? "bg-[#3F5031] w-4" : "bg-[#3F5031]/30 w-1.5"
+                  index === currentImageIndex ? "bg-brand-sage w-4" : "bg-brand-sage/30 w-1.5"
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
               />
@@ -178,8 +225,8 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
 
         {/* Rating and review info */}
         <div className="flex items-center gap-1.5 text-xs">
-          <div className="flex items-center text-amber-500">
-            <Star className="h-3.5 w-3.5 fill-amber-500 text-amber-500" />
+          <div className="flex items-center text-[#E2D89B]">
+            <Star className="h-3.5 w-3.5 fill-[#E2D89B] text-[#E2D89B]" />
             <span className="ml-1 text-xs font-semibold text-brand-black">{rating}</span>
           </div>
           <span className="text-[10px] text-neutral-400 font-medium">
@@ -199,16 +246,46 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
           )}
         </div>
 
+        {/* Color Swatches (Multi-Color Products Only) */}
+        {hasMultipleColors && (
+          <div className="flex items-center gap-1.5 pt-0.5">
+            {uniqueColors.map((c) => {
+              const isSelected = activeColor === c.name;
+              return (
+                <button
+                  key={c.name}
+                  type="button"
+                  title={c.name}
+                  aria-label={`Select color ${c.name}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleColorClick(c.name);
+                  }}
+                  className={`w-3.5 h-3.5 rounded-full border border-black/15 transition-all cursor-pointer ${
+                    isSelected ? "ring-2 ring-brand-black ring-offset-1 scale-110 shadow-xs" : "hover:scale-105 opacity-80"
+                  }`}
+                  style={{ backgroundColor: c.code }}
+                />
+              );
+            })}
+            <span className="text-[10px] text-neutral-500 uppercase tracking-wider ml-1 font-medium">
+              {activeColor}
+            </span>
+          </div>
+        )}
+
         {/* Size Variant Selector */}
-        {product.variants.length > 0 && (
+        {displayedVariants.length > 0 && (
           <div className="space-y-1.5 pt-1">
             <span className="text-[9px] uppercase tracking-widest text-neutral-400 font-bold block">
               Select Size
             </span>
             <div className="flex flex-wrap gap-1.5">
-              {product.variants.map((v) => {
+              {displayedVariants.map((v) => {
                 const isSelected = selectedVarId === v.id;
                 const isOutOfStock = v.stock === 0;
+                const displaySize = v.size || (v.name.includes("/") ? v.name.split("/")[1].trim() : v.name);
                 return (
                   <button
                     key={v.id}
@@ -225,7 +302,7 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
                         : "bg-transparent text-neutral-600 border-brand-black/10 hover:border-brand-black"
                     }`}
                   >
-                    {v.name}
+                    {displaySize}
                   </button>
                 );
               })}

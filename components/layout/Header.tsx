@@ -21,7 +21,7 @@ export default async function Header({ variant = "default" }: HeaderProps) {
         {/* Desktop grid layout: 5 cols (left) | 2 cols (center) | 5 cols (right) */}
         <div className="hidden lg:grid grid-cols-12 items-center w-full">
           {/* Left Navigation (Home, Shop dropdown, Our Story, Reviews, Contact) */}
-          <div className="col-span-5 flex items-center gap-7 whitespace-nowrap">
+          <div className="col-span-5 flex items-center gap-4 lg:gap-5 xl:gap-7 whitespace-nowrap">
             <NavbarLinks variant={variant} />
           </div>
 
@@ -38,7 +38,7 @@ export default async function Header({ variant = "default" }: HeaderProps) {
           </div>
 
           {/* Right Utilities (Search, AccountDropdown, Wishlist, Cart) */}
-          <div className="col-span-5 flex items-center justify-end gap-6 whitespace-nowrap">
+          <div className="col-span-5 flex items-center justify-end gap-3 lg:gap-4 xl:gap-6 whitespace-nowrap">
             <HeaderSearch variant={variant} />
             <AccountDropdown user={user} variant={variant} />
             

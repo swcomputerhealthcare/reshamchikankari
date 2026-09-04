@@ -15,6 +15,9 @@ export interface CartItem {
   pricePaise: number;
   image: string;
   sizeName?: string;
+  colorName?: string;
+  colorCode?: string;
+  variantLabel?: string;
   stock: number;
 }
 
@@ -92,7 +95,10 @@ export function CartProvider({
 
     // Find size and stock details
     const variant = product.variants?.find((v: any) => v.id === variantId);
-    const sizeName = variant?.name;
+    const sizeName = variant?.size || variant?.name;
+    const colorName = variant?.colorName;
+    const colorCode = variant?.colorCode;
+    const variantLabel = [colorName, sizeName].filter(Boolean).join(" · ") || variant?.name;
     const stock = variant?.stock ?? 10;
 
     let updatedItems = [...cart.items];
@@ -117,6 +123,9 @@ export function CartProvider({
         pricePaise: product.pricePaise,
         image: product.images?.[0]?.url || "/images/chikankari_hero.png",
         sizeName,
+        colorName,
+        colorCode,
+        variantLabel,
         stock,
       });
     }

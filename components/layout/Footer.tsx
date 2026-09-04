@@ -27,16 +27,18 @@ export default function Footer() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 pb-12">
           {/* Left Column: Brand Mark & Minimal Editorial Newsletter */}
           <div className="lg:col-span-5 space-y-5 text-left">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-4 sm:gap-5">
               <Image
                 src="/images/logo.webp"
                 alt="Resham Chikankari Brand Seal"
-                width={72}
-                height={72}
-                className="w-14 h-14 object-contain filter brightness-125 shrink-0"
+                width={120}
+                height={120}
+                unoptimized
+                priority
+                className="w-20 h-20 sm:w-24 sm:h-24 object-contain filter brightness-125 drop-shadow-md shrink-0"
               />
               <div>
-                <span className="text-[10px] uppercase font-bold tracking-[0.25em] text-brand-pink block">
+                <span className="text-[10px] sm:text-[11px] uppercase font-bold tracking-[0.25em] text-brand-pink block">
                   ATELIER GAZETTE
                 </span>
                 <h3 className="font-display text-xl sm:text-2xl font-semibold text-brand-offwhite leading-snug mt-0.5">
@@ -118,8 +120,8 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
-                  <Link href="/collections" className="hover:text-brand-pink transition-colors">
-                    Festive Edit
+                  <Link href="/shop" className="hover:text-brand-pink transition-colors">
+                    All Collections
                   </Link>
                 </li>
               </ul>
@@ -185,9 +187,19 @@ export default function Footer() {
           </div>
         </div>
 
-        {/* 03 — BRAND SIGNATURE (Single-line Restrained Wordmark Signature) */}
-        <div className="border-t border-brand-offwhite/10 py-6 sm:py-8 text-center overflow-hidden">
-          <h2 className="font-display font-semibold uppercase tracking-[0.22em] text-[clamp(1.5rem,4.2vw,4rem)] text-brand-offwhite/80 leading-none select-none">
+        {/* 03 — BRAND SIGNATURE & LOTUS EMBLEM */}
+        <div className="border-t border-brand-offwhite/10 pt-8 pb-6 sm:py-10 text-center flex flex-col items-center justify-center overflow-hidden relative">
+          <div className="w-16 sm:w-20 lg:w-24 aspect-square mb-4 opacity-90 transition-transform duration-500 hover:scale-105 select-none pointer-events-none">
+            <Image
+              src="/images/lotus2.svg"
+              alt="Resham Chikankari Lotus Emblem"
+              width={120}
+              height={120}
+              unoptimized
+              className="w-full h-full object-contain filter drop-shadow-[0_4px_12px_rgba(0,0,0,0.25)] brightness-110"
+            />
+          </div>
+          <h2 className="font-display font-semibold uppercase tracking-[0.22em] text-[clamp(1.5rem,4.2vw,4rem)] text-brand-offwhite/85 leading-none select-none">
             RESHAM CHIKANKARI
           </h2>
         </div>

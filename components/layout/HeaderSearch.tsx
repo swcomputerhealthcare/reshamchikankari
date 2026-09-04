@@ -125,7 +125,7 @@ export default function HeaderSearch({ variant = "default" }: { variant?: "defau
             </div>
 
             <div className="max-w-3xl mx-auto mt-4 px-8 text-left">
-              <span className="text-[9px] uppercase tracking-widest text-[#3F5031] font-bold block mb-1">
+              <span className="text-[9px] uppercase tracking-widest text-brand-sage font-bold block mb-1">
                 Popular Searches
               </span>
               <div className="flex flex-wrap gap-2 pt-1 font-sans text-[10px] uppercase tracking-wider font-semibold">
@@ -134,7 +134,7 @@ export default function HeaderSearch({ variant = "default" }: { variant?: "defau
                     setQuery("Cotton");
                     inputRef.current?.focus();
                   }}
-                  className="px-3 py-1 bg-brand-black/5 hover:bg-[#3F5031]/10 text-neutral-600 hover:text-[#3F5031] transition-colors cursor-pointer border-none rounded-none"
+                  className="px-3 py-1 bg-brand-black/5 hover:bg-brand-sage/10 text-neutral-600 hover:text-brand-sage transition-colors cursor-pointer border-none rounded-none"
                 >
                   Cotton
                 </button>
@@ -143,7 +143,7 @@ export default function HeaderSearch({ variant = "default" }: { variant?: "defau
                     setQuery("Georgette");
                     inputRef.current?.focus();
                   }}
-                  className="px-3 py-1 bg-brand-black/5 hover:bg-[#3F5031]/10 text-neutral-600 hover:text-[#3F5031] transition-colors cursor-pointer border-none rounded-none"
+                  className="px-3 py-1 bg-brand-black/5 hover:bg-brand-sage/10 text-neutral-600 hover:text-brand-sage transition-colors cursor-pointer border-none rounded-none"
                 >
                   Georgette
                 </button>
@@ -152,7 +152,7 @@ export default function HeaderSearch({ variant = "default" }: { variant?: "defau
                     setQuery("Pastel");
                     inputRef.current?.focus();
                   }}
-                  className="px-3 py-1 bg-brand-black/5 hover:bg-[#3F5031]/10 text-neutral-600 hover:text-[#3F5031] transition-colors cursor-pointer border-none rounded-none"
+                  className="px-3 py-1 bg-brand-black/5 hover:bg-brand-sage/10 text-neutral-600 hover:text-brand-sage transition-colors cursor-pointer border-none rounded-none"
                 >
                   Pastel
                 </button>

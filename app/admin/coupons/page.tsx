@@ -61,6 +61,7 @@ export default async function AdminCouponsPage() {
                     <th className="py-3.5 px-4">Min Order</th>
                     <th className="py-3.5 px-4">Usages</th>
                     <th className="py-3.5 px-4">Status</th>
+                    <th className="py-3.5 pl-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
@@ -89,6 +90,22 @@ export default async function AdminCouponsPage() {
                       </td>
                       <td className="py-4 px-4">
                         <CouponToggle id={coup.id} initialActive={coup.isActive} />
+                      </td>
+                      <td className="py-4 pl-4 text-right">
+                        <form
+                          action={async () => {
+                            'use server';
+                            const { deleteCouponAction } = await import("@/actions/coupon");
+                            await deleteCouponAction(coup.id);
+                          }}
+                        >
+                          <button
+                            type="submit"
+                            className="text-xs font-bold text-red-500 hover:text-red-700 uppercase tracking-wider cursor-pointer"
+                          >
+                            Delete
+                          </button>
+                        </form>
                       </td>
                     </tr>
                   ))}

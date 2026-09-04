@@ -16,8 +16,10 @@ export const refunds = pgTable("refunds", {
     .references(() => profiles.id, { onDelete: "restrict" }),
   amountPaise: integer("amount_paise").notNull(),
   reason: text("reason").notNull(),
-  status: text("status").notNull().default("PENDING"), // 'PENDING' | 'COMPLETED' | 'FAILED'
+  status: text("status").notNull().default("PENDING"), // 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED'
   refundMethod: text("refund_method").notNull(), // 'original_payment_method' | 'rc_wallet'
+  razorpayRefundId: text("razorpay_refund_id"),
+  idempotencyKey: text("idempotency_key"),
   walletTransactionId: text("wallet_transaction_id")
     .references(() => walletTransactions.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),

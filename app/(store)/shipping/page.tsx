@@ -95,7 +95,7 @@ export default function ShippingPage() {
               <p className="text-neutral-700 text-xs sm:text-sm leading-relaxed">
                 Exchange requests must be raised within 5 days of receiving your order.
               </p>
-              <p className="text-neutral-700 text-xs sm:text-sm leading-relaxed font-semibold text-[#3F5031]">
+              <p className="text-neutral-700 text-xs sm:text-sm leading-relaxed font-semibold text-[#7C7A5A]">
                 We currently offer exchanges only. We do not accept returns for refunds, unless the product received is defective, damaged, or incorrect.
               </p>
               <p className="text-neutral-700 text-xs sm:text-sm leading-relaxed">

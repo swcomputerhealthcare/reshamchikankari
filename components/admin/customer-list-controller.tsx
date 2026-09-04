@@ -56,14 +56,14 @@ export default function CustomerListController({ initialCustomers }: CustomerLis
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="w-full bg-white border border-brand-black/10 rounded-xs pl-10 pr-4 py-2.5 text-xs tracking-wide uppercase font-semibold text-brand-black focus:outline-none focus:border-brand-sage"
+            className="w-full bg-white border border-brand-black/15 rounded-xs pl-10 pr-4 py-3 text-sm tracking-wide uppercase font-semibold text-brand-black focus:outline-none focus:border-brand-sage"
           />
         </div>
       </div>
 
       {/* Directory table */}
-      <div className="bg-white border border-brand-black/5 p-6 rounded-xs shadow-xs">
-        <h2 className="text-sm font-semibold uppercase tracking-wider text-neutral-500 mb-6">
+      <div className="bg-white border border-brand-black/5 p-6 sm:p-8 rounded-xs shadow-xs">
+        <h2 className="text-base font-bold uppercase tracking-wider text-brand-black mb-6">
           Registered Customers ({filteredCustomers.length})
         </h2>
 
@@ -74,46 +74,46 @@ export default function CustomerListController({ initialCustomers }: CustomerLis
         ) : (
           <>
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full text-left border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-neutral-100 text-neutral-400 uppercase tracking-widest text-[9px] font-bold">
-                    <th className="py-3.5 pr-4">Customer Details</th>
-                    <th className="py-3.5 px-4">Contact</th>
-                    <th className="py-3.5 px-4">Joined Date</th>
-                    <th className="py-3.5 px-4">Orders count</th>
-                    <th className="py-3.5 px-4">Total spent</th>
-                    <th className="py-3.5 pl-4 text-right">Actions</th>
+                  <tr className="border-b border-neutral-200 text-neutral-500 uppercase tracking-widest text-xs font-bold bg-neutral-50/50">
+                    <th className="py-4 pr-4 pl-3">Customer Details</th>
+                    <th className="py-4 px-4">Contact Information</th>
+                    <th className="py-4 px-4">Joined Date</th>
+                    <th className="py-4 px-4">Orders Count</th>
+                    <th className="py-4 px-4">Total Spent</th>
+                    <th className="py-4 pl-4 pr-3 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-neutral-100">
                   {paginatedCustomers.map((cust) => {
                     const [_, m, d] = new Date(cust.createdAt).toDateString().split(" ");
                     return (
-                      <tr key={cust.id} className="hover:bg-neutral-50/50">
-                        <td className="py-4 pr-4">
-                          <div className="font-semibold text-brand-black text-sm">
-                            {cust.fullName || "Guest User"}
+                      <tr key={cust.id} className="hover:bg-neutral-50/80 transition-colors">
+                        <td className="py-4 pr-4 pl-3">
+                          <div className="font-bold text-brand-black text-sm">
+                            {cust.fullName || "Guest Customer"}
                           </div>
                         </td>
-                        <td className="py-4 px-4 text-neutral-500 font-sans">
-                          <div>{cust.email || "-"}</div>
-                          <div className="text-[10px] text-neutral-400">{cust.phone || "-"}</div>
+                        <td className="py-4 px-4 text-neutral-600 font-sans text-sm">
+                          <div className="font-semibold text-brand-black">{cust.email || "-"}</div>
+                          <div className="text-xs text-neutral-400">{cust.phone || "-"}</div>
                         </td>
-                        <td className="py-4 px-4 text-neutral-500 font-sans">
+                        <td className="py-4 px-4 text-neutral-600 font-sans text-sm">
                           {d} {m} {new Date(cust.createdAt).getFullYear()}
                         </td>
-                        <td className="py-4 px-4 font-semibold text-brand-black font-sans">
-                          {cust.orderCount} orders
+                        <td className="py-4 px-4 font-bold text-brand-black font-sans text-sm">
+                          {cust.orderCount} {cust.orderCount === 1 ? "order" : "orders"}
                         </td>
-                        <td className="py-4 px-4 font-semibold text-brand-black font-sans">
+                        <td className="py-4 px-4 font-bold text-brand-black font-sans text-sm">
                           ₹{(cust.totalSpent / 100).toLocaleString("en-IN")}
                         </td>
-                        <td className="py-4 pl-4 text-right">
+                        <td className="py-4 pl-4 pr-3 text-right">
                           <Link
                             href={`/admin/customers/${cust.id}`}
-                            className="text-xs font-semibold text-brand-pink hover:text-brand-black transition-colors uppercase tracking-wider"
+                            className="inline-block text-xs font-bold text-brand-pink hover:text-brand-black transition-colors uppercase tracking-wider py-1 px-2 border border-brand-pink/20 hover:border-brand-black rounded-xs"
                           >
-                            View details
+                            View Details →
                           </Link>
                         </td>
                       </tr>
