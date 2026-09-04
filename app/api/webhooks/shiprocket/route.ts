@@ -11,8 +11,13 @@ export const dynamic = "force-dynamic";
 export async function POST(req: Request) {
   try {
     const rawBody = await req.text();
-    const signature = req.headers.get("x-shiprocket-signature") || req.headers.get("x-api-key") || "";
-    const secret = env.SHIPROCKET_WEBHOOK_SECRET || "shiprocket_wh_secret_reshamk_test";
+    const signature =
+      req.headers.get("x-shiprocket-signature") ||
+      req.headers.get("x-api-key") ||
+      req.headers.get("token") ||
+      req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
+      "";
+    const secret = process.env.SHIPROCKET_WEBHOOK_SECRET || env.SHIPROCKET_WEBHOOK_SECRET || "shiprocket_wh_secret_reshamk_test";
 
     // Optional token validation if header is passed
     if (signature && secret && signature !== secret) {
