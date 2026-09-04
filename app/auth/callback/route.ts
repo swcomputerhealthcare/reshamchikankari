@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Open redirect protection: restrict paths to internal ecommerce pages
-      const allowedPaths = ["/account", "/orders", "/wishlist", "/checkout"];
+      const allowedPaths = ["/account", "/orders", "/wishlist", "/checkout", "/cart", "/shop", "/product", "/login"];
       const isAllowed =
         redirectUrl.pathname === "/" ||
         allowedPaths.some((p) => redirectUrl.pathname.startsWith(p));
