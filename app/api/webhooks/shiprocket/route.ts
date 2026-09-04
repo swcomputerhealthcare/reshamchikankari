@@ -8,6 +8,10 @@ import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
+export async function GET() {
+  return NextResponse.json({ success: true, message: "Shiprocket webhook endpoint is active." }, { status: 200 });
+}
+
 export async function POST(req: Request) {
   try {
     const rawBody = await req.text();
@@ -21,14 +25,23 @@ export async function POST(req: Request) {
 
     // Optional token validation if header is passed
     if (signature && secret && signature !== secret) {
-      // If signature is provided and doesn't match, log warning but continue in dev mode
       if (env.NODE_ENV === "production") {
         console.warn("Shiprocket Webhook Signature Mismatch:", signature);
         return NextResponse.json({ error: "Unauthorized webhook signature" }, { status: 401 });
       }
     }
 
-    const payload = JSON.parse(rawBody);
+    // Handle empty ping or health-check requests from Shiprocket
+    if (!rawBody || rawBody.trim() === "") {
+      return NextResponse.json({ success: true, message: "Webhook ping received." }, { status: 200 });
+    }
+
+    let payload: Record<string, any> = {};
+    try {
+      payload = JSON.parse(rawBody);
+    } catch {
+      return NextResponse.json({ success: true, message: "Test payload received." }, { status: 200 });
+    }
 
     // Shiprocket tracking webhook payload fields
     const orderNumber = payload.order_id || payload.channel_order_id;
