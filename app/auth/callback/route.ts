@@ -3,9 +3,37 @@ import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
 
 export async function GET(request: NextRequest) {
-  const { searchParams } = new URL(request.url);
+  const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  const next = searchParams.get("next") ?? "/";
+  const next = searchParams.get("next") ?? "/account";
+
+  // Validate redirect destination
+  let redirectUrl = new URL("/account", origin);
+  if (next.startsWith("/")) {
+    redirectUrl = new URL(next, origin);
+  } else {
+    try {
+      const parsed = new URL(next);
+      if (parsed.origin === origin) {
+        redirectUrl = parsed;
+      }
+    } catch {
+      // Ignore URL parsing errors
+    }
+  }
+
+  // Open redirect protection: restrict paths to internal ecommerce pages
+  const allowedPaths = ["/account", "/orders", "/wishlist", "/checkout", "/cart", "/shop", "/product", "/login"];
+  const isAllowed =
+    redirectUrl.pathname === "/" ||
+    allowedPaths.some((p) => redirectUrl.pathname.startsWith(p));
+
+  if (!isAllowed) {
+    redirectUrl = new URL("/account", origin);
+  }
+
+  // Prepare redirect response so session cookies can be attached with Path=/
+  const response = NextResponse.redirect(redirectUrl);
 
   if (code) {
     const cookieStore = await cookies();
@@ -26,9 +54,14 @@ export async function GET(request: NextRequest) {
             return cookieStore.getAll();
           },
           setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options),
-            );
+            cookiesToSet.forEach(({ name, value, options }) => {
+              const opts = {
+                ...options,
+                path: "/",
+              };
+              cookieStore.set(name, value, opts);
+              response.cookies.set(name, value, opts);
+            });
           },
         },
       },
@@ -36,50 +69,16 @@ export async function GET(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
-      // Validate redirect destination
-      const origin = request.nextUrl.origin;
-      let redirectUrl = new URL("/", origin);
-
-      if (next.startsWith("/")) {
-        redirectUrl = new URL(next, origin);
-      } else {
-        try {
-          const parsedNext = new URL(next);
-          if (parsedNext.origin === origin) {
-            redirectUrl = parsedNext;
-          }
-        } catch {
-          // Fallback to default
-        }
-      }
-
-      // Open redirect protection: restrict paths to internal ecommerce pages
-      const allowedPaths = ["/account", "/orders", "/wishlist", "/checkout", "/cart", "/shop", "/product", "/login"];
-      const isAllowed =
-        redirectUrl.pathname === "/" ||
-        allowedPaths.some((p) => redirectUrl.pathname.startsWith(p));
-
-      if (!isAllowed) {
-        redirectUrl = new URL("/", origin);
-      }
-
-      const response = NextResponse.redirect(redirectUrl);
-      // Ensure all session cookies from cookieStore are attached to the redirect response
-      cookieStore.getAll().forEach((cookie) => {
-        response.cookies.set(cookie.name, cookie.value);
-      });
       return response;
     }
+    console.error("Supabase OAuth code exchange failed:", error.message);
   }
 
-  // Diagnostic log for OAuth callback failures (safe error logging on server side)
-  console.error("Supabase OAuth code exchange failed or missing code.");
-
-  // Redirect to login page with a safe generic user message
+  // If code exchange failed, redirect to login page with a descriptive message
   return NextResponse.redirect(
     new URL(
-      "/login?error=Unable to sign in with Google. Please try again.",
-      request.nextUrl.origin,
-    ),
+      "/login?error=Unable to complete Google sign in. Please try again.",
+      origin
+    )
   );
 }
