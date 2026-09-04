@@ -60,6 +60,7 @@ CREATE POLICY "Admins full control on orders" ON "orders" FOR ALL USING (
 -- 5. Catalog (Public Read, Admin Write)
 ALTER TABLE IF EXISTS "products" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS "product_variants" ENABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS "product_images" ADD COLUMN IF NOT EXISTS "color_name" text;
 ALTER TABLE IF EXISTS "product_images" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE IF EXISTS "categories" ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS "Public read products" ON "products";
