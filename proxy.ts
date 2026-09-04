@@ -11,33 +11,41 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          supabaseResponse = NextResponse.next({
-            request: {
-              headers: requestHeaders,
-            },
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://woavdlhvmjikobigadqc.supabase.co";
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_ADKS42lpLMQX__UratAPsg_8jhAD-ND";
+
+  try {
+    const supabase = createServerClient(
+      supabaseUrl,
+      supabaseKey,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value),
+            );
+            supabaseResponse = NextResponse.next({
+              request: {
+                headers: requestHeaders,
+              },
+            });
+            cookiesToSet.forEach(({ name, value, options }) =>
+              supabaseResponse.cookies.set(name, value, options),
+            );
+          },
         },
       },
-    },
-  );
+    );
 
-  // Triggers refresh-token rotation and writes the new cookies via setAll.
-  await supabase.auth.getUser();
+    // Triggers refresh-token rotation and writes the new cookies via setAll.
+    await supabase.auth.getUser();
+  } catch (err) {
+    // Prevent unhandled middleware exceptions from crashing the entire app with 500
+    console.warn("Middleware proxy auth error:", err);
+  }
 
   return supabaseResponse;
 }
@@ -45,12 +53,14 @@ export async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except for the ones starting with:
+     * Match all request paths except for:
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - images (public images)
+     * - api/webhooks (third party webhooks like Razorpay, Shiprocket)
+     * - api/cron (background cron jobs)
      */
-    "/((?!_next/static|_next/image|favicon.ico|images).*)",
+    "/((?!_next/static|_next/image|favicon.ico|images|api/webhooks|api/cron).*)",
   ],
 };

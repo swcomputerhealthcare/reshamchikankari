@@ -34,6 +34,15 @@ const schema = {
 };
 
 
-const client = postgres(env.DATABASE_URL, { prepare: false });
+const connectionString = (env.DATABASE_URL || "").replace(/['"]/g, "").trim();
+const isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
+
+const client = postgres(connectionString, {
+  prepare: false,
+  ssl: isLocal ? false : "require",
+  max: 10,
+  idle_timeout: 20,
+  connect_timeout: 10,
+});
 
 export const db = drizzle(client, { schema });
