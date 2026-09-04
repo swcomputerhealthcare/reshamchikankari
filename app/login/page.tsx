@@ -12,6 +12,8 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [isSigningUp, setIsSigningUp] = useState(false);
+  const [createdMessage, setCreatedMessage] = useState("");
   
   // Google button states: "idle" | "loading" | "redirecting" | "error"
   const [googleState, setGoogleState] = useState<"idle" | "loading" | "redirecting" | "error">("idle");
@@ -32,6 +34,7 @@ function LoginForm() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setCreatedMessage("");
     setIsLoading(true);
 
     try {
@@ -55,6 +58,49 @@ function LoginForm() {
       setError(message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleSignup = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      setError("Please enter both email and password to create an account.");
+      return;
+    }
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+
+    setError("");
+    setCreatedMessage("");
+    setIsSigningUp(true);
+
+    try {
+      const supabase = createClient();
+      const { data, error: signUpError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: email.split("@")[0],
+          },
+          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackURL)}`,
+        },
+      });
+
+      if (signUpError) {
+        setError(signUpError.message || "Failed to create account. Please try again.");
+      } else if (data?.session) {
+        window.location.href = callbackURL;
+      } else {
+        setCreatedMessage("Account created successfully! If email confirmation is enabled, please verify your email or click Sign In.");
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "An unexpected error occurred during account creation.";
+      setError(message);
+    } finally {
+      setIsSigningUp(false);
     }
   };
 
@@ -100,6 +146,12 @@ function LoginForm() {
         </p>
       </div>
 
+      {createdMessage && (
+        <div className="bg-[#7C7A5A]/10 text-[#5C5A3A] text-xs p-3 mb-6 border border-[#7C7A5A]/20 font-sans tracking-wide">
+          {createdMessage}
+        </div>
+      )}
+
       {successMessage && (
         <div className="bg-[#7C7A5A]/5 text-[#7C7A5A] text-xs p-3 mb-6 border border-[#7C7A5A]/15 font-sans tracking-wide">
           {successMessage}
@@ -124,7 +176,7 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            disabled={isLoading || googleState !== "idle"}
+            disabled={isLoading || isSigningUp || googleState !== "idle"}
             className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
             placeholder="name@example.com"
           />
@@ -148,21 +200,34 @@ function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            disabled={isLoading || googleState !== "idle"}
+            disabled={isLoading || isSigningUp || googleState !== "idle"}
             className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
             placeholder="••••••••"
           />
         </div>
 
-        <Button
-          variant="primary"
-          type="submit"
-          disabled={isLoading || googleState !== "idle"}
-          className="w-full py-3.5 !bg-brand-black hover:!bg-neutral-800 text-brand-offwhite text-xs uppercase tracking-widest font-bold font-sans !rounded-none transition-colors mt-2"
-          isLoading={isLoading}
-        >
-          Sign In
-        </Button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+          <Button
+            variant="primary"
+            type="submit"
+            disabled={isLoading || isSigningUp || googleState !== "idle"}
+            className="w-full py-3.5 !bg-brand-black hover:!bg-neutral-800 text-brand-offwhite text-xs uppercase tracking-widest font-bold font-sans !rounded-none transition-colors"
+            isLoading={isLoading}
+          >
+            Sign In
+          </Button>
+
+          <Button
+            variant="outline"
+            type="button"
+            onClick={handleSignup}
+            disabled={isLoading || isSigningUp || googleState !== "idle"}
+            className="w-full py-3.5 !border-brand-black/30 hover:!border-brand-black hover:!bg-brand-black/5 text-brand-black text-xs uppercase tracking-widest font-bold font-sans !rounded-none transition-colors"
+            isLoading={isSigningUp}
+          >
+            Create Account
+          </Button>
+        </div>
       </form>
 
       <div className="relative my-8 text-center">
@@ -206,11 +271,8 @@ function LoginForm() {
       </button>
 
       <div className="mt-8 text-center border-t border-brand-black/5 pt-6">
-        <p className="font-sans text-xs text-neutral-600">
-          New to Resham Chikankari?{" "}
-          <Link href="/signup" className="font-semibold text-brand-black hover:text-[#E694AA] transition-colors">
-            Create Account
-          </Link>
+        <p className="font-sans text-[11px] text-neutral-500 tracking-wide">
+          Direct authentication powered by Resham Chikankari &amp; Supabase.
         </p>
       </div>
     </div>

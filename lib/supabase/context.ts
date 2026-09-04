@@ -106,11 +106,24 @@ export async function createSupabaseContext(
         } = await ssrClient.auth.getSession();
         const token = session?.access_token ?? "";
 
-        const supabase = createContextClient({
-          auth: { token },
-          env: nextEnv,
-        });
-        const supabaseAdmin = createAdminClient({ env: nextEnv });
+        let supabase: any = ssrClient;
+        try {
+          if (token) {
+            supabase = createContextClient({
+              auth: { token },
+              env: nextEnv,
+            });
+          }
+        } catch {
+          supabase = ssrClient;
+        }
+
+        let supabaseAdmin: any = ssrClient;
+        try {
+          supabaseAdmin = createAdminClient({ env: nextEnv });
+        } catch {
+          supabaseAdmin = ssrClient;
+        }
 
         return {
           data: {
@@ -159,11 +172,22 @@ export async function createSupabaseContext(
     return { data: null, error };
   }
 
-  const supabase = createContextClient({
-    auth: { token: auth!.token },
-    env,
-  });
-  const supabaseAdmin = createAdminClient({ env });
+  let supabase: any = ssrClient;
+  try {
+    supabase = createContextClient({
+      auth: { token: auth!.token },
+      env,
+    });
+  } catch {
+    supabase = ssrClient;
+  }
+
+  let supabaseAdmin: any = ssrClient;
+  try {
+    supabaseAdmin = createAdminClient({ env });
+  } catch {
+    supabaseAdmin = ssrClient;
+  }
 
   return {
     data: {
