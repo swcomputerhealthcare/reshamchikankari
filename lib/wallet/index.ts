@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { walletAccounts, walletTransactions, payoutMethods, withdrawalRequests } from "@/db/schema/wallet";
+import { walletAccounts, walletTransactions, withdrawalRequests } from "@/db/schema/wallet";
 import { eq, and } from "drizzle-orm";
 import fs from "fs";
 import path from "path";

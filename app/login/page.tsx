@@ -243,7 +243,7 @@ export default function LoginPage() {
             </h2>
             <div className="w-12 h-[1px] bg-[#E694AA]"></div>
             <p className="font-sans text-xs text-white/80 leading-relaxed">
-              Every garment in our collection represents hours of intricate hand-embroidery by women artisans, keeping Lucknow's beautiful shadow-work craft alive.
+              Every garment in our collection represents hours of intricate hand-embroidery by women artisans, keeping Lucknow&apos;s beautiful shadow-work craft alive.
             </p>
           </div>
         </div>

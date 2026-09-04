@@ -47,7 +47,7 @@ export function WishlistProvider({
         );
         return { success: false, wishlisted: isCurrentlyWishlisted };
       }
-    } catch (err) {
+    } catch {
       // Revert on error
       setWishlistIds((prev) =>
         isCurrentlyWishlisted ? [...prev, productId] : prev.filter((id) => id !== productId)

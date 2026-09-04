@@ -154,7 +154,7 @@ export default function PrivacyPolicyPage() {
 
           <section className="space-y-3">
             <h3 className="font-display text-xl text-brand-black font-semibold">
-              Children's Privacy
+              Children&apos;s Privacy
             </h3>
             <p>
               Our products and services are intended for purchase by adults or with the involvement of a parent/guardian. We do not knowingly collect personal information from children for independent purchases.

@@ -191,7 +191,7 @@ function updateProductList(products: any[]) {
 
 // Process lib/catalog/index.ts
 const catalogPath = path.join(process.cwd(), "lib", "catalog", "index.ts");
-let catalogContent = fs.readFileSync(catalogPath, "utf-8");
+const catalogContent = fs.readFileSync(catalogPath, "utf-8");
 
 const mockStart = catalogContent.indexOf("export const MOCK_PRODUCTS: CatalogProductInput[] = ");
 const mockEnd = catalogContent.indexOf(";\n\n// Helper to determine if DB connection");
@@ -217,7 +217,7 @@ if (mockStart !== -1 && mockEnd !== -1) {
 
 // Process db/seed.ts
 const seedPath = path.join(process.cwd(), "db", "seed.ts");
-let seedContent = fs.readFileSync(seedPath, "utf-8");
+const seedContent = fs.readFileSync(seedPath, "utf-8");
 
 const seedStart = seedContent.indexOf("const productsList = ");
 const seedEnd = seedContent.indexOf(";\n\nasync function main()");

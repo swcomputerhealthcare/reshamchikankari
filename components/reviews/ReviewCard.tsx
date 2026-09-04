@@ -68,7 +68,7 @@ export default function ReviewCard({ review, className = "", style }: ReviewCard
           </div>
 
           <p className="text-xs sm:text-[13px] text-[#161616]/90 font-sans leading-relaxed italic line-clamp-3 mb-3">
-            "{review.body}"
+            &ldquo;{review.body}&rdquo;
           </p>
         </div>
 

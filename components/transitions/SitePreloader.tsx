@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLenisContext } from "@/components/providers/SmoothScrollProvider";
@@ -15,6 +15,19 @@ export default function SitePreloader({ children }: { children: React.ReactNode 
   
   const rafRef = useRef<number | null>(null);
   const startTimeRef = useRef<number | null>(null);
+
+  const triggerExitSequence = useCallback(() => {
+    // 1. Fade brand content gently (1700ms - 1900ms hold, then fade)
+    setIsExiting(true);
+
+    // 2. Slide curtain panel upward (1900ms - 2600ms exit)
+    setTimeout(() => {
+      sessionStorage.setItem("rc_preloader_seen", "true");
+      setIsFinished(true);
+      setShowPreloader(false);
+      start(); // Unlock Lenis smooth scroll
+    }, 950); // 250ms content fade + 700ms curtain slide
+  }, [start]);
 
   useEffect(() => {
     setIsMounted(true);
@@ -97,20 +110,7 @@ export default function SitePreloader({ children }: { children: React.ReactNode 
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
       clearTimeout(safetyTimer);
     };
-  }, [stop]);
-
-  const triggerExitSequence = () => {
-    // 1. Fade brand content gently (1700ms - 1900ms hold, then fade)
-    setIsExiting(true);
-
-    // 2. Slide curtain panel upward (1900ms - 2600ms exit)
-    setTimeout(() => {
-      sessionStorage.setItem("rc_preloader_seen", "true");
-      setIsFinished(true);
-      setShowPreloader(false);
-      start(); // Unlock Lenis smooth scroll
-    }, 950); // 250ms content fade + 700ms curtain slide
-  };
+  }, [stop, triggerExitSequence]);
 
   if (!isMounted) {
     // SSR initial shell: completely render full-screen ivory cover to prevent white flash

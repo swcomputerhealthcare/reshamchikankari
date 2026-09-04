@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { db } from "@/db";
 import { products, productVariants, productImages } from "@/db/schema/catalog";
-import { eq, inArray } from "drizzle-orm";
+import { inArray } from "drizzle-orm";
 import { MOCK_PRODUCTS } from "@/lib/catalog";
 import { validateCouponCode } from "@/lib/coupon";
 

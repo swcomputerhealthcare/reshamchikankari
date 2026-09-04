@@ -157,7 +157,7 @@ export async function POST(req: Request) {
           }
 
           if (matchingRefund && matchingRefund.status !== "COMPLETED") {
-            let walletTxId: string | null = matchingRefund.walletTransactionId;
+            const walletTxId: string | null = matchingRefund.walletTransactionId;
 
             if (matchingRefund.refundMethod === "rc_wallet" && matchingRefund.userId) {
               const userWallet = await getOrCreateWallet(matchingRefund.userId);

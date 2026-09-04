@@ -2,8 +2,7 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import { CreditCard, Truck, Wallet, CheckCircle2, ShieldCheck, ArrowRight, ShoppingBag } from "lucide-react";
-import Link from "next/link";
+import { Truck, Wallet } from "lucide-react";
 
 // --- SVG Icons ---
 
@@ -25,18 +24,6 @@ const CheckCircleIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const MastercardIcon = (props: React.SVGProps<SVGSVGElement>) => (
-  <svg
-    {...props}
-    xmlns="http://www.w3.org/2000/svg"
-    viewBox="0 0 24 24"
-    width="36"
-    height="24"
-  >
-    <circle cx="8" cy="12" r="7" fill="#EA001B"></circle>
-    <circle cx="16" cy="12" r="7" fill="#F79E1B" fillOpacity="0.8"></circle>
-  </svg>
-);
 
 const RazorpayIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg
@@ -142,11 +129,11 @@ const ConfettiExplosion = () => {
             key={i}
             className="absolute w-2.5 h-4 rounded-xs"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${-20 + Math.random() * 10}%`,
+              left: `${(i * 37) % 100}%`,
+              top: `${-20 + ((i * 13) % 10)}%`,
               backgroundColor: colors[i % colors.length],
-              transform: `rotate(${Math.random() * 360}deg)`,
-              animation: `fall ${2.5 + Math.random() * 2.5}s ${Math.random() * 2}s linear forwards`,
+              transform: `rotate(${(i * 47) % 360}deg)`,
+              animation: `fall ${2.5 + ((i * 7) % 25) / 10}s ${((i * 11) % 20) / 10}s linear forwards`,
             }}
           />
         ))}

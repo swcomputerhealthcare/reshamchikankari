@@ -272,9 +272,8 @@ const RadialArcCard = ({
             )}
           </div>
 
-          {/* Short Review Body */}
           <p className="text-[11px] sm:text-xs text-[#161616]/90 font-sans leading-relaxed italic line-clamp-3 mb-2">
-            "{review.body}"
+            &ldquo;{review.body}&rdquo;
           </p>
         </div>
 

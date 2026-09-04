@@ -101,7 +101,7 @@ export function CartProvider({
     const variantLabel = [colorName, sizeName].filter(Boolean).join(" · ") || variant?.name;
     const stock = variant?.stock ?? 10;
 
-    let updatedItems = [...cart.items];
+    const updatedItems = [...cart.items];
     const existingIndex = updatedItems.findIndex(
       (item) => item.productId === product.id && item.variantId === variantId
     );

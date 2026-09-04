@@ -59,9 +59,8 @@ export default function ReviewMarquee({ reviews }: ReviewMarqueeProps) {
                 )}
               </div>
 
-              {/* 2. Review Body Quote */}
               <p className="text-xs sm:text-sm text-neutral-800 font-sans leading-relaxed italic relative z-10 mb-6 line-clamp-3">
-                "{review.body}"
+                &ldquo;{review.body}&rdquo;
               </p>
 
               {/* 3. Footer: Patron Avatar & Name */}

@@ -472,7 +472,7 @@ export async function GET() {
     });
 
     // Write the full lib/catalog/index.ts file statically
-    let mockProductsCode = `export const MOCK_PRODUCTS: CatalogProductInput[] = ${JSON.stringify(products, null, 2)};`;
+    const mockProductsCode = `export const MOCK_PRODUCTS: CatalogProductInput[] = ${JSON.stringify(products, null, 2)};`;
 
     const libContent = `import { db } from "@/db";
 import { categories, products, type Category, type Product, type ProductImage, type ProductVariant } from "@/db/schema/catalog";

@@ -1,5 +1,4 @@
 import { shiprocketFetch } from "./client";
-import { env } from "@/lib/validation/env";
 import type {
   ServiceabilityResponse,
   AssignAWBResponse,
