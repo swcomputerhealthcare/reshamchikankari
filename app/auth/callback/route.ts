@@ -9,9 +9,17 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const cookieStore = await cookies();
+    const supabaseUrl =
+      process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      "https://woavdlhvmjikobigadqc.supabase.co";
+    const supabaseKey =
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+      "sb_publishable_ADKS42lpLMQX__UratAPsg_8jhAD-ND";
+
     const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!,
+      supabaseUrl,
+      supabaseKey,
       {
         cookies: {
           getAll() {
@@ -55,7 +63,12 @@ export async function GET(request: NextRequest) {
         redirectUrl = new URL("/", origin);
       }
 
-      return NextResponse.redirect(redirectUrl);
+      const response = NextResponse.redirect(redirectUrl);
+      // Ensure all session cookies from cookieStore are attached to the redirect response
+      cookieStore.getAll().forEach((cookie) => {
+        response.cookies.set(cookie.name, cookie.value);
+      });
+      return response;
     }
   }
 

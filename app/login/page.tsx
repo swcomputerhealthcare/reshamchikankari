@@ -42,10 +42,13 @@ function LoginForm() {
       });
 
       if (authError) {
-        setError(authError.message || "Invalid email or password.");
+        if (authError.message?.toLowerCase().includes("email not confirmed")) {
+          setError("Your email has not been confirmed yet. Please verify your email or confirm your user in the Supabase Dashboard.");
+        } else {
+          setError(authError.message || "Invalid email or password.");
+        }
       } else {
-        router.push(callbackURL);
-        router.refresh();
+        window.location.href = callbackURL;
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "An unexpected error occurred.";

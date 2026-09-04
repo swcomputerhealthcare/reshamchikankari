@@ -9,15 +9,21 @@ import type {
   AuthModeWithKey,
   SupabaseContext,
   SupabaseEnv,
+  UserClaims,
 } from "@supabase/server";
 
 function resolveNextEnv(): Partial<SupabaseEnv> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const publishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    "https://woavdlhvmjikobigadqc.supabase.co";
+  const publishableKey =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    "sb_publishable_ADKS42lpLMQX__UratAPsg_8jhAD-ND";
   const secretKey = process.env.SUPABASE_SECRET_KEY;
 
   return {
-    url: url ?? undefined,
+    url,
     publishableKeys: publishableKey ? { default: publishableKey } : {},
     secretKeys: secretKey ? { default: secretKey } : {},
   };
@@ -73,6 +79,69 @@ export async function createSupabaseContext(
     },
   );
 
+  const isUserAuth =
+    options.auth === "user" ||
+    (Array.isArray(options.auth) && options.auth.includes("user"));
+
+  // For user auth from SSR cookie storage, authenticate via Supabase Auth directly.
+  // This supports all signing algorithms (HS256 and ES256) seamlessly without asymmetric JWKS mismatch.
+  if (isUserAuth) {
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await ssrClient.auth.getUser();
+
+      if (user && !userError) {
+        const userClaims: UserClaims = {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          appMetadata: user.app_metadata,
+          userMetadata: user.user_metadata,
+        };
+
+        const {
+          data: { session },
+        } = await ssrClient.auth.getSession();
+        const token = session?.access_token ?? "";
+
+        const supabase = createContextClient({
+          auth: { token },
+          env: nextEnv,
+        });
+        const supabaseAdmin = createAdminClient({ env: nextEnv });
+
+        return {
+          data: {
+            authMode: "user",
+            userClaims,
+            jwtClaims: user.app_metadata as any,
+            supabase,
+            supabaseAdmin,
+          },
+          error: null,
+        };
+      }
+
+      // If user auth was explicitly requested and failed, return unauthorized error
+      if (options.auth === "user") {
+        return {
+          data: null,
+          error: userError || new Error("User session not found or expired"),
+        };
+      }
+    } catch (e: any) {
+      if (options.auth === "user") {
+        return {
+          data: null,
+          error: e instanceof Error ? e : new Error("Failed to authenticate user"),
+        };
+      }
+    }
+  }
+
+  // Fallback to token/secret key verification for service role or machine-to-machine calls
   const {
     data: { session },
   } = await ssrClient.auth.getSession();
