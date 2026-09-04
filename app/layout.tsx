@@ -48,6 +48,8 @@ import SmoothScrollProvider from "@/components/providers/SmoothScrollProvider";
 import { PageTransitionProvider } from "@/components/transitions/PageTransition";
 import SitePreloader from "@/components/transitions/SitePreloader";
 
+import AuthCodeHandler from "@/components/auth/AuthCodeHandler";
+
 export default async function RootLayout({ children }: LayoutProps<"/">) {
   const [cartDetails, wishlistIds] = await Promise.all([
     getCartDetails(),
@@ -67,6 +69,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       )}
     >
       <body className="min-h-full flex flex-col text-brand-black bg-[#FFF9F4]">
+        <AuthCodeHandler />
         <WishlistProvider initialWishlistIds={wishlistIds}>
           <CartProvider initialCart={cartDetails}>
             <PrefetchManager />
