@@ -129,7 +129,7 @@ function LoginForm() {
 
     try {
       const supabase = createClient();
-      const currentOrigin = typeof window !== "undefined" ? window.location.origin : "https://www.reshamchikankari.com";
+      const currentOrigin = typeof window !== "undefined" && window.location.origin ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL || "https://www.reshamchikankari.com");
       const redirectToUrl = `${currentOrigin}/auth/callback?next=${encodeURIComponent(callbackURL)}`;
       
       const { error: authError } = await supabase.auth.signInWithOAuth({
