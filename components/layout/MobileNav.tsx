@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Menu, X, ChevronDown, Heart, ShoppingBag, User as UserIcon, LogOut } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -239,9 +240,21 @@ export default function MobileNav({ user, variant = "default" }: MobileNavProps)
               {user ? (
                 <div className="space-y-4 text-left">
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-brand-black text-brand-offwhite flex items-center justify-center font-bold text-xs">
-                      {user.name ? user.name[0].toUpperCase() : "U"}
-                    </div>
+                    {user.image ? (
+                      <div className="relative w-10 h-10 rounded-full overflow-hidden border border-brand-black/15 shrink-0 shadow-2xs">
+                        <Image
+                          src={user.image}
+                          alt={user.name || user.email}
+                          fill
+                          sizes="40px"
+                          className="object-cover"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-brand-black text-brand-offwhite flex items-center justify-center font-bold text-xs shrink-0 font-display">
+                        {user.name ? user.name[0].toUpperCase() : (user.email ? user.email[0].toUpperCase() : "U")}
+                      </div>
+                    )}
                     <div className="overflow-hidden">
                       <h4 className="font-display text-base text-brand-black truncate">
                         {user.name || user.email}

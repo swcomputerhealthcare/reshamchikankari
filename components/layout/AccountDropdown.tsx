@@ -83,32 +83,34 @@ export default function AccountDropdown({ user, variant = "default" }: AccountDr
   }
 
   const displayName = user.name || user.email;
-  const firstName = user.name ? user.name.split(" ")[0] : "User";
+  const initial = (user.name || user.email || "U").charAt(0).toUpperCase();
   const isActive = pathname.startsWith("/account");
 
   return (
     <div className="relative inline-block text-left" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className={`hover:text-brand-pink transition-colors duration-200 flex items-center gap-1.5 text-[11px] uppercase tracking-widest font-medium font-sans cursor-pointer select-none border-none bg-transparent p-0 ${
-          isActive ? "text-brand-pink font-bold" : (variant === "dark" ? "text-[#FFF9F4]" : "text-brand-black")
+        aria-label="User Account Menu"
+        className={`hover:opacity-85 transition-all duration-200 flex items-center gap-1.5 cursor-pointer select-none border-none bg-transparent p-0.5 rounded-full ${
+          isActive ? "ring-2 ring-brand-pink/50" : ""
         }`}
       >
         {user.image ? (
-          <Image
-            src={user.image}
-            alt={displayName}
-            width={18}
-            height={18}
-            className="rounded-full object-cover aspect-square border border-brand-black/10"
-          />
+          <div className="relative w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full overflow-hidden border border-brand-black/15 shadow-2xs">
+            <Image
+              src={user.image}
+              alt={displayName}
+              fill
+              sizes="30px"
+              className="object-cover"
+            />
+          </div>
         ) : (
-          <div className="w-[18px] h-[18px] rounded-full bg-brand-sage/10 text-brand-sage flex items-center justify-center font-bold text-[8px] border border-brand-sage/20">
-            {firstName.charAt(0).toUpperCase()}
+          <div className="w-7 h-7 sm:w-7.5 sm:h-7.5 rounded-full bg-brand-black text-brand-offwhite flex items-center justify-center font-bold text-xs border border-brand-black/15 shadow-2xs font-display">
+            {initial}
           </div>
         )}
-        <span>{firstName}</span>
-        <span className="text-[8px] transition-transform duration-200 select-none">
+        <span className={`text-[8px] transition-transform duration-200 select-none ${variant === "dark" ? "text-brand-offwhite/60" : "text-neutral-400"}`}>
           {isOpen ? "▲" : "▼"}
         </span>
       </button>
@@ -123,13 +125,30 @@ export default function AccountDropdown({ user, variant = "default" }: AccountDr
             className="absolute right-0 mt-3.5 w-60 bg-[#FFF9F4] border border-brand-black/10 shadow-lg rounded-xl py-4 z-50 focus:outline-none origin-top-right"
           >
           {/* Header */}
-          <div className="px-5 pb-3 border-b border-brand-black/5">
-            <h4 className="font-display text-base text-brand-black truncate">
-              {displayName}
-            </h4>
-            <p className="font-sans text-[10px] text-neutral-400 truncate mt-0.5">
-              {user.email}
-            </p>
+          <div className="px-5 pb-3 border-b border-brand-black/5 flex items-center gap-3">
+            {user.image ? (
+              <div className="relative w-9 h-9 rounded-full overflow-hidden border border-brand-black/15 shrink-0">
+                <Image
+                  src={user.image}
+                  alt={displayName}
+                  fill
+                  sizes="36px"
+                  className="object-cover"
+                />
+              </div>
+            ) : (
+              <div className="w-9 h-9 rounded-full bg-brand-black text-brand-offwhite flex items-center justify-center font-bold text-sm shrink-0 font-display">
+                {initial}
+              </div>
+            )}
+            <div className="overflow-hidden">
+              <h4 className="font-display text-sm text-brand-black truncate">
+                {displayName}
+              </h4>
+              <p className="font-sans text-[10px] text-neutral-400 truncate mt-0.5">
+                {user.email}
+              </p>
+            </div>
           </div>
 
           {/* Menu Items */}
@@ -139,6 +158,12 @@ export default function AccountDropdown({ user, variant = "default" }: AccountDr
               className="block px-3 py-2.5 text-neutral-600 hover:text-brand-pink hover:bg-brand-black/5 transition-colors"
             >
               My Account
+            </Link>
+            <Link
+              href="/account/orders"
+              className="block px-3 py-2.5 text-neutral-600 hover:text-brand-pink hover:bg-brand-black/5 transition-colors"
+            >
+              My Orders
             </Link>
             <Link
               href="/account/wishlist"
@@ -152,9 +177,6 @@ export default function AccountDropdown({ user, variant = "default" }: AccountDr
             >
               My Wallet
             </Link>
-            <span className="block px-3 py-2.5 text-neutral-300 cursor-not-allowed select-none">
-              My Orders <span className="text-[9px] lowercase font-normal text-neutral-400 italic font-sans">(Soon)</span>
-            </span>
           </div>
 
           {/* Footer / Logout */}
