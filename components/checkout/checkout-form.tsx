@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
-import { createOrderAction, verifyRazorpayPaymentAction, type AddressData } from "@/actions/order";
+import { createOrderAction, verifyRazorpayPaymentAction, checkOrderPaymentStatusAction, type AddressData } from "@/actions/order";
 import { type CartDetails } from "@/lib/cart";
 import Button from "@/components/ui/button";
 import { ShieldCheck, Lock, AlertCircle, Check, CreditCard, Truck, Wallet } from "lucide-react";
@@ -183,6 +183,15 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
             return;
           }
 
+          let pollInterval: NodeJS.Timeout | null = null;
+
+          const cleanupPoller = () => {
+            if (pollInterval) {
+              clearInterval(pollInterval);
+              pollInterval = null;
+            }
+          };
+
           const options = {
             key: result.razorpayKeyId,
             amount: result.amountPaise,
@@ -191,6 +200,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
             description: `Order #${result.orderNumber}`,
             order_id: result.razorpayOrderId,
             handler: async function (response: any) {
+              cleanupPoller();
               startTransition(async () => {
                 try {
                   const verifyRes = await verifyRazorpayPaymentAction(
@@ -218,17 +228,40 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
               color: "#7C7A5A",
             },
             modal: {
-              ondismiss: function () {
-                setError("Payment cancelled. You can retry paying whenever you are ready.");
+              ondismiss: async function () {
+                cleanupPoller();
+                // Check if payment completed via webhook or QR scan before showing cancellation
+                try {
+                  const statusCheck = await checkOrderPaymentStatusAction(result.orderId!);
+                  if (statusCheck.isPaid && statusCheck.orderNumber) {
+                    router.push(`/checkout/success?orderNumber=${statusCheck.orderNumber}`);
+                    return;
+                  }
+                } catch { }
+                setError("Payment window closed. If you already completed payment in your UPI app, please refresh or check My Orders.");
               },
             },
           };
 
           const rzp = new (window as any).Razorpay(options);
           rzp.on("payment.failed", function (response: any) {
+            cleanupPoller();
             setError(response.error?.description || "Payment process failed. Please try again.");
           });
           rzp.open();
+
+          // Real-time status poller: poll every 2.5s for instant redirect as soon as QR is scanned and paid
+          pollInterval = setInterval(async () => {
+            try {
+              const statusCheck = await checkOrderPaymentStatusAction(result.orderId!);
+              if (statusCheck.isPaid && statusCheck.orderNumber) {
+                cleanupPoller();
+                try { rzp.close(); } catch {}
+                router.push(`/checkout/success?orderNumber=${statusCheck.orderNumber}`);
+              }
+            } catch { }
+          }, 2500);
+
         } else if (result.orderNumber) {
           router.push(`/checkout/success?orderNumber=${result.orderNumber}`);
         }

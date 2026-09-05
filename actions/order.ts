@@ -522,3 +522,36 @@ export async function updateOrderStatusAction(
   }
 }
 
+export async function checkOrderPaymentStatusAction(orderId: string) {
+  try {
+    const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+    if (isDbAvailable) {
+      const { eq, or } = await import("drizzle-orm");
+      const [order] = await db
+        .select({
+          id: orders.id,
+          orderNumber: orders.orderNumber,
+          status: orders.status,
+          paymentStatus: orders.paymentStatus,
+        })
+        .from(orders)
+        .where(or(eq(orders.id, orderId), eq(orders.orderNumber, orderId)))
+        .limit(1);
+
+      if (order && (order.paymentStatus === "PAID" || order.status === "CONFIRMED")) {
+        try {
+          const { clearCart } = await import("@/lib/cart");
+          const { cookies } = await import("next/headers");
+          await clearCart();
+          (await cookies()).delete("applied_coupon");
+        } catch { }
+
+        return { success: true, isPaid: true, orderNumber: order.orderNumber };
+      }
+    }
+    return { success: true, isPaid: false };
+  } catch (err: any) {
+    return { success: false, error: err?.message || "Failed to check order status." };
+  }
+}
+
