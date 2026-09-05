@@ -51,16 +51,22 @@ export async function GET(request: NextRequest) {
       {
         cookies: {
           getAll() {
-            return cookieStore.getAll();
+            const reqCookies = request.cookies.getAll();
+            const storeCookies = cookieStore.getAll();
+            const map = new Map<string, any>();
+            reqCookies.forEach((c) => map.set(c.name, c));
+            storeCookies.forEach((c) => map.set(c.name, c));
+            return Array.from(map.values());
           },
           setAll(cookiesToSet) {
             cookiesToSet.forEach(({ name, value, options }) => {
               const opts = {
                 ...options,
                 path: "/",
+                sameSite: "lax" as const,
               };
-              cookieStore.set(name, value, opts);
-              response.cookies.set(name, value, opts);
+              try { cookieStore.set(name, value, opts); } catch {}
+              try { response.cookies.set(name, value, opts); } catch {}
             });
           },
         },

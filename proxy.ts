@@ -53,6 +53,7 @@ export async function proxy(request: NextRequest) {
               supabaseResponse.cookies.set(name, value, {
                 ...options,
                 path: options?.path ?? "/",
+                sameSite: "lax",
               }),
             );
           },
