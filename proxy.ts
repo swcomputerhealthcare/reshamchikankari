@@ -2,6 +2,16 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function proxy(request: NextRequest) {
+  // Enforce HTTPS redirect in production
+  const proto = request.headers.get("x-forwarded-proto");
+  const host = request.headers.get("host");
+  if (proto === "http" && host && !host.includes("localhost") && !host.includes("127.0.0.1")) {
+    return NextResponse.redirect(
+      `https://${host}${request.nextUrl.pathname}${request.nextUrl.search}`,
+      301
+    );
+  }
+
   // If OAuth redirected to root / or any other route with ?code=, forward directly to /auth/callback to exchange for session
   const code = request.nextUrl.searchParams.get("code");
   if (code && !request.nextUrl.pathname.startsWith("/auth/callback")) {
