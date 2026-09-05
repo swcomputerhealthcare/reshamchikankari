@@ -47,11 +47,40 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isPincodeLoading, setIsPincodeLoading] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
     if (errors[e.target.name]) {
       setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
+    }
+  };
+
+  const handleZipChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value.replace(/\D/g, "").slice(0, 6);
+    setForm((prev) => ({ ...prev, zip: rawVal }));
+    if (errors.zip) {
+      setErrors((prev) => ({ ...prev, zip: "" }));
+    }
+
+    if (rawVal.length === 6) {
+      setIsPincodeLoading(true);
+      try {
+        const res = await fetch(`https://api.postalpincode.in/pincode/${rawVal}`);
+        const data = await res.json();
+        if (data && data[0]?.Status === "Success" && data[0]?.PostOffice?.length > 0) {
+          const po = data[0].PostOffice[0];
+          setForm((prev) => ({
+            ...prev,
+            city: po.District || po.Block || prev.city,
+            state: po.State || prev.state,
+          }));
+        }
+      } catch {
+        // Ignore PIN API failure
+      } finally {
+        setIsPincodeLoading(false);
+      }
     }
   };
 
@@ -80,10 +109,12 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
     const phoneRegex = /^[0-9]{10}$/;
     const cleanPhone = form.phone.replace(/[\s\-\+]/g, "");
     if (!cleanPhone || !phoneRegex.test(cleanPhone)) {
-      newErrors.phone = "Please enter a valid 10-digit mobile number";
+      newErrors.phone = "Please enter a valid 10-digit Indian mobile number";
     }
 
-    if (!form.street.trim()) newErrors.street = "Street address is required";
+    if (!form.street.trim() || form.street.trim().length < 5) {
+      newErrors.street = "Please enter a complete street address (min 5 characters)";
+    }
     if (!form.city.trim()) newErrors.city = "City is required";
     if (!form.state.trim()) newErrors.state = "State is required";
 
@@ -206,10 +237,10 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-sans text-xs">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-sans">
             {/* Full Name */}
             <div className="sm:col-span-2 space-y-1.5">
-              <label htmlFor="fullName" className="uppercase tracking-widest text-[9px] font-bold text-neutral-500">
+              <label htmlFor="fullName" className="uppercase tracking-widest text-[10px] font-extrabold text-neutral-800 block">
                 Full Name *
               </label>
               <input
@@ -219,9 +250,9 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                 required
                 value={form.fullName}
                 onChange={handleChange}
-                placeholder="Full Name"
-                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#7C7A5A] text-xs text-[#161616] transition-colors ${
-                  errors.fullName ? "border-red-400" : "border-brand-black/15"
+                placeholder="Enter your full name"
+                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7C7A5A]/20 focus:border-[#7C7A5A] text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 placeholder:font-normal transition-all shadow-xs ${
+                  errors.fullName ? "border-red-500 bg-red-50/20" : "border-neutral-300"
                 }`}
               />
               {errors.fullName && <p className="text-[10px] text-red-600 font-semibold">{errors.fullName}</p>}
@@ -229,7 +260,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
 
             {/* Email Address */}
             <div className="space-y-1.5">
-              <label htmlFor="email" className="uppercase tracking-widest text-[9px] font-bold text-neutral-500">
+              <label htmlFor="email" className="uppercase tracking-widest text-[10px] font-extrabold text-neutral-800 block">
                 Email Address *
               </label>
               <input
@@ -240,9 +271,9 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                 required
                 value={form.email}
                 onChange={handleChange}
-                placeholder="email@example.com"
-                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#7C7A5A] text-xs text-[#161616] transition-colors ${
-                  errors.email ? "border-red-400" : "border-brand-black/15"
+                placeholder="name@example.com"
+                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7C7A5A]/20 focus:border-[#7C7A5A] text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 placeholder:font-normal transition-all shadow-xs ${
+                  errors.email ? "border-red-500 bg-red-50/20" : "border-neutral-300"
                 }`}
               />
               {errors.email && <p className="text-[10px] text-red-600 font-semibold">{errors.email}</p>}
@@ -250,7 +281,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
 
             {/* Phone Number */}
             <div className="space-y-1.5">
-              <label htmlFor="phone" className="uppercase tracking-widest text-[9px] font-bold text-neutral-500">
+              <label htmlFor="phone" className="uppercase tracking-widest text-[10px] font-extrabold text-neutral-800 block">
                 Phone Number (10 digits) *
               </label>
               <input
@@ -258,20 +289,50 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                 type="tel"
                 name="phone"
                 inputMode="tel"
+                maxLength={10}
                 required
                 value={form.phone}
                 onChange={handleChange}
                 placeholder="9876543210"
-                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#7C7A5A] text-xs text-[#161616] transition-colors ${
-                  errors.phone ? "border-red-400" : "border-brand-black/15"
+                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7C7A5A]/20 focus:border-[#7C7A5A] text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 placeholder:font-normal transition-all shadow-xs ${
+                  errors.phone ? "border-red-500 bg-red-50/20" : "border-neutral-300"
                 }`}
               />
               {errors.phone && <p className="text-[10px] text-red-600 font-semibold">{errors.phone}</p>}
             </div>
 
+            {/* PIN Code with Auto-Lookup */}
+            <div className="space-y-1.5 sm:col-span-2">
+              <div className="flex justify-between items-center">
+                <label htmlFor="zip" className="uppercase tracking-widest text-[10px] font-extrabold text-neutral-800 block">
+                  6-Digit PIN Code *
+                </label>
+                {isPincodeLoading && (
+                  <span className="text-[10px] text-[#7C7A5A] font-semibold animate-pulse">
+                    Auto-detecting City &amp; State...
+                  </span>
+                )}
+              </div>
+              <input
+                id="zip"
+                type="text"
+                name="zip"
+                inputMode="numeric"
+                maxLength={6}
+                required
+                value={form.zip}
+                onChange={handleZipChange}
+                placeholder="e.g. 226001 (Auto-fills City &amp; State)"
+                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7C7A5A]/20 focus:border-[#7C7A5A] text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 placeholder:font-normal transition-all shadow-xs ${
+                  errors.zip ? "border-red-500 bg-red-50/20" : "border-neutral-300"
+                }`}
+              />
+              {errors.zip && <p className="text-[10px] text-red-600 font-semibold">{errors.zip}</p>}
+            </div>
+
             {/* Street Address */}
             <div className="sm:col-span-2 space-y-1.5">
-              <label htmlFor="street" className="uppercase tracking-widest text-[9px] font-bold text-neutral-500">
+              <label htmlFor="street" className="uppercase tracking-widest text-[10px] font-extrabold text-neutral-800 block">
                 Street Address *
               </label>
               <input
@@ -281,9 +342,9 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                 required
                 value={form.street}
                 onChange={handleChange}
-                placeholder="Flat / House no, Building name, Street"
-                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#7C7A5A] text-xs text-[#161616] transition-colors ${
-                  errors.street ? "border-red-400" : "border-brand-black/15"
+                placeholder="Flat / House No., Building Name, Street / Locality"
+                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7C7A5A]/20 focus:border-[#7C7A5A] text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 placeholder:font-normal transition-all shadow-xs ${
+                  errors.street ? "border-red-500 bg-red-50/20" : "border-neutral-300"
                 }`}
               />
               {errors.street && <p className="text-[10px] text-red-600 font-semibold">{errors.street}</p>}
@@ -291,7 +352,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
 
             {/* City */}
             <div className="space-y-1.5">
-              <label htmlFor="city" className="uppercase tracking-widest text-[9px] font-bold text-neutral-500">
+              <label htmlFor="city" className="uppercase tracking-widest text-[10px] font-extrabold text-neutral-800 block">
                 City *
               </label>
               <input
@@ -301,9 +362,9 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                 required
                 value={form.city}
                 onChange={handleChange}
-                placeholder="Lucknow"
-                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#7C7A5A] text-xs text-[#161616] transition-colors ${
-                  errors.city ? "border-red-400" : "border-brand-black/15"
+                placeholder="City (e.g. Lucknow)"
+                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7C7A5A]/20 focus:border-[#7C7A5A] text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 placeholder:font-normal transition-all shadow-xs ${
+                  errors.city ? "border-red-500 bg-red-50/20" : "border-neutral-300"
                 }`}
               />
               {errors.city && <p className="text-[10px] text-red-600 font-semibold">{errors.city}</p>}
@@ -311,7 +372,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
 
             {/* State */}
             <div className="space-y-1.5">
-              <label htmlFor="state" className="uppercase tracking-widest text-[9px] font-bold text-neutral-500">
+              <label htmlFor="state" className="uppercase tracking-widest text-[10px] font-extrabold text-neutral-800 block">
                 State *
               </label>
               <input
@@ -321,34 +382,12 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                 required
                 value={form.state}
                 onChange={handleChange}
-                placeholder="Uttar Pradesh"
-                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#7C7A5A] text-xs text-[#161616] transition-colors ${
-                  errors.state ? "border-red-400" : "border-brand-black/15"
+                placeholder="State (e.g. Uttar Pradesh)"
+                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-2 focus:ring-[#7C7A5A]/20 focus:border-[#7C7A5A] text-sm font-semibold text-neutral-900 placeholder:text-neutral-400 placeholder:font-normal transition-all shadow-xs ${
+                  errors.state ? "border-red-500 bg-red-50/20" : "border-neutral-300"
                 }`}
               />
               {errors.state && <p className="text-[10px] text-red-600 font-semibold">{errors.state}</p>}
-            </div>
-
-            {/* PIN Code */}
-            <div className="space-y-1.5 sm:col-span-2">
-              <label htmlFor="zip" className="uppercase tracking-widest text-[9px] font-bold text-neutral-500">
-                6-Digit PIN Code *
-              </label>
-              <input
-                id="zip"
-                type="text"
-                name="zip"
-                inputMode="numeric"
-                maxLength={6}
-                required
-                value={form.zip}
-                onChange={handleChange}
-                placeholder="226001"
-                className={`w-full px-4 py-3.5 bg-white border rounded-xl focus:outline-none focus:ring-1 focus:ring-[#7C7A5A] text-xs text-[#161616] transition-colors ${
-                  errors.zip ? "border-red-400" : "border-brand-black/15"
-                }`}
-              />
-              {errors.zip && <p className="text-[10px] text-red-600 font-semibold">{errors.zip}</p>}
             </div>
           </div>
         </div>

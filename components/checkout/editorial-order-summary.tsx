@@ -285,6 +285,32 @@ export default function EditorialOrderSummary({
               </button>
             </div>
 
+            {/* Quick Clickable Available Offers Badges */}
+            <div className="pt-1 flex flex-wrap gap-1.5 items-center">
+              <span className="text-[9px] uppercase font-extrabold tracking-wider text-neutral-500 mr-0.5">Available Offers:</span>
+              {[
+                { code: "FESTIVE500", label: "₹500 OFF" },
+                { code: "WELCOME10", label: "10% OFF" },
+                { code: "RESHAM1000", label: "₹1000 OFF" },
+              ].map((offer) => (
+                <button
+                  key={offer.code}
+                  type="button"
+                  onClick={() => {
+                    setCouponCodeInput(offer.code);
+                    if (couponError) setCouponError(null);
+                  }}
+                  className={`px-2 py-0.5 border rounded-lg text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
+                    couponCodeInput === offer.code
+                      ? "bg-[#7C7A5A] text-white border-[#7C7A5A] shadow-xs"
+                      : "bg-white text-[#7C7A5A] border-[#7C7A5A]/30 hover:border-[#7C7A5A] hover:bg-[#7C7A5A]/10"
+                  }`}
+                >
+                  {offer.code} <span className="opacity-75 font-sans font-normal">({offer.label})</span>
+                </button>
+              ))}
+            </div>
+
             {/* Inline Editorial Error Message */}
             <AnimatePresence>
               {couponError && (

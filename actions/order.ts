@@ -132,14 +132,25 @@ export async function createOrderAction(
       const { payments } = await import("@/db/schema/payment");
       const { profiles } = await import("@/db/schema/auth");
 
+      let targetUserId = user.id;
+      const isUuidStr = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      if (!isUuidStr(targetUserId)) {
+        targetUserId = "00000000-0000-4000-a000-000000000000";
+      }
+
       // Ensure profile row exists to satisfy foreign key orders_user_id_profiles_id_fk
       try {
-        await db.insert(profiles).values({
-          id: user.id,
-          fullName: user.name || address.fullName || "Valued Customer",
-          email: user.email,
-          role: user.role || "CUSTOMER",
-        }).onConflictDoNothing();
+        const { profiles } = await import("@/db/schema/auth");
+        const { eq } = await import("drizzle-orm");
+        const [prof] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.id, targetUserId)).limit(1);
+        if (!prof) {
+          await db.insert(profiles).values({
+            id: targetUserId,
+            fullName: user.name || address.fullName || "Valued Customer",
+            email: address.email || user.email || `${targetUserId}@user.com`,
+            role: user.role || "CUSTOMER",
+          }).onConflictDoNothing();
+        }
       } catch (profileErr) {
         console.warn("Profile auto-insert warning for order placement:", profileErr);
       }
@@ -147,7 +158,7 @@ export async function createOrderAction(
       await db.insert(orders).values({
         id: orderId,
         orderNumber,
-        userId: user.id,
+        userId: targetUserId,
         status: "PENDING",
         paymentStatus,
         subtotalPaise: cart.subtotalPaise,
