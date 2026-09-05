@@ -65,9 +65,9 @@ export default function SitePreloader({ children }: { children: React.ReactNode 
     // 2. Preload critical hero images in background
     if (typeof window !== "undefined") {
       const img1 = new window.Image();
-      img1.src = "/images/Hero%20Image%201%20-%20ChatGPT.png";
+      img1.src = "/images/hero.png";
       const img2 = new window.Image();
-      img2.src = "/images/chikankari_hero.png";
+      img2.src = "/images/hero-mobile.png";
     }
 
     // 3. Staggered Timeline Animation Sequence:
