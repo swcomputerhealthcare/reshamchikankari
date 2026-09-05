@@ -8,17 +8,16 @@ import { createClient } from "@/lib/supabase/client";
 import Button from "@/components/ui/button";
 
 function LoginForm() {
+  const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isSigningUp, setIsSigningUp] = useState(false);
   const [createdMessage, setCreatedMessage] = useState("");
   
   // Google button states: "idle" | "loading" | "redirecting" | "error"
   const [googleState, setGoogleState] = useState<"idle" | "loading" | "redirecting" | "error">("idle");
   
-  const router = useRouter();
   const searchParams = useSearchParams();
 
   const successMessage = searchParams.get("message");
@@ -31,107 +30,106 @@ function LoginForm() {
     }
   }, [urlError]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setCreatedMessage("");
     setIsLoading(true);
 
-    try {
-      const supabase = createClient();
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+    const supabase = createClient();
 
-      if (authError) {
-        if (authError.message?.toLowerCase().includes("email not confirmed")) {
-          setError("Your email has not been confirmed yet. Please verify your email or confirm your user in the Supabase Dashboard.");
-        } else {
-          setError(authError.message || "Invalid email or password.");
-        }
-      } else {
-        window.location.href = callbackURL;
-      }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "An unexpected error occurred.";
-      setError(message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSignup = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    if (!email || !password) {
-      setError("Please enter both email and password to create an account.");
-      return;
-    }
-    if (password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
-    }
-
-    setError("");
-    setCreatedMessage("");
-    setIsSigningUp(true);
-
-    try {
-      const supabase = createClient();
-      const { data, error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: email.split("@")[0],
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackURL)}`,
-        },
-      });
-
-      if (signUpError) {
-        if (signUpError.message?.toLowerCase().includes("user already registered") || signUpError.message?.toLowerCase().includes("already exists")) {
-          setError("An account with this email already exists. Please enter your password and click 'Sign In'.");
-        } else {
-          setError(signUpError.message || "Failed to create account. Please try again.");
-        }
-      } else if (data?.session) {
-        setCreatedMessage("Account created successfully! Redirecting...");
-        window.location.href = callbackURL;
-      } else if (data?.user) {
-        // Attempt immediate login in case account is auto-confirmed
-        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+    if (activeTab === "signin") {
+      try {
+        const { error: authError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
 
-        if (signInData?.session && !signInErr) {
+        if (authError) {
+          if (authError.message?.toLowerCase().includes("invalid login credentials")) {
+            setError("Invalid email or password. If you forgot your password or need a new account, switch to Create Account or click Forgot Password.");
+          } else {
+            setError(authError.message || "Invalid email or password.");
+          }
+        } else {
+          window.location.href = callbackURL;
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "An unexpected error occurred.";
+        setError(message);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      // Create Account mode
+      if (password.length < 6) {
+        setError("Password must be at least 6 characters.");
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const { data, error: signUpError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              full_name: email.split("@")[0],
+            },
+            emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackURL)}`,
+          },
+        });
+
+        if (signUpError) {
+          if (
+            signUpError.message?.toLowerCase().includes("user already registered") ||
+            signUpError.message?.toLowerCase().includes("already exists")
+          ) {
+            setError("An account with this email already exists. Please switch to Sign In and enter your password.");
+            setActiveTab("signin");
+          } else {
+            setError(signUpError.message || "Failed to create account. Please try again.");
+          }
+        } else if (data?.session) {
           setCreatedMessage("Account created successfully! Redirecting...");
           window.location.href = callbackURL;
-        } else if (signInErr?.message?.toLowerCase().includes("email not confirmed")) {
-          setCreatedMessage("Account created! A confirmation link has been sent to your email. Please check your inbox (and spam folder) to activate your account, then click Sign In.");
-        } else {
-          setCreatedMessage("Account created successfully! Please click 'Sign In' to access your account.");
+        } else if (data?.user) {
+          // Attempt immediate login
+          const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+            email,
+            password,
+          });
+
+          if (signInData?.session && !signInErr) {
+            setCreatedMessage("Account created successfully! Redirecting...");
+            window.location.href = callbackURL;
+          } else {
+            setCreatedMessage("Account created successfully! Please click Sign In to log in.");
+            setActiveTab("signin");
+          }
         }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : "An unexpected error occurred during account creation.";
+        setError(message);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "An unexpected error occurred during account creation.";
-      setError(message);
-    } finally {
-      setIsSigningUp(false);
     }
   };
 
   const handleGoogleLogin = async () => {
-    if (googleState !== "idle" || isLoading || isSigningUp) return;
+    if (googleState !== "idle" || isLoading) return;
     setError("");
     setGoogleState("loading");
 
     try {
       const supabase = createClient();
-      const currentOrigin = typeof window !== "undefined" && window.location.origin ? window.location.origin : (process.env.NEXT_PUBLIC_SITE_URL || "https://www.reshamchikankari.com");
+      const currentOrigin =
+        typeof window !== "undefined" && window.location.origin
+          ? window.location.origin
+          : (process.env.NEXT_PUBLIC_SITE_URL || "https://www.reshamchikankari.com");
       const redirectToUrl = `${currentOrigin}/auth/callback?next=${encodeURIComponent(callbackURL)}`;
-      
+
       const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -145,7 +143,6 @@ function LoginForm() {
       if (authError) {
         setGoogleState("error");
         setError(authError.message || "Unable to sign in with Google. Please try again.");
-        console.error("Google OAuth Error: ", authError.message);
       } else {
         setGoogleState("redirecting");
       }
@@ -153,20 +150,57 @@ function LoginForm() {
       setGoogleState("error");
       const message = err instanceof Error ? err.message : "An unexpected error occurred during Google Sign In.";
       setError(message);
-      console.error("Google OAuth exception: ", message);
     }
   };
 
   return (
     <div className="w-full max-w-md p-6 sm:p-10 bg-[#FFF9F4] border border-brand-black/5 shadow-xs">
-      <div className="text-center mb-8">
+      <div className="text-center mb-6">
         <span className="text-[9px] uppercase tracking-widest text-[#7C7A5A] font-bold block mb-2">
           Atelier Entrance
         </span>
-        <h1 className="font-display text-4xl text-brand-black mb-2 font-light">Welcome Back</h1>
+        <h1 className="font-display text-4xl text-brand-black mb-2 font-light">
+          {activeTab === "signin" ? "Welcome Back" : "Create Account"}
+        </h1>
         <p className="font-sans text-xs text-neutral-500 tracking-wide">
-          Sign in to your Resham account
+          {activeTab === "signin"
+            ? "Sign in to your Resham Chikankari account"
+            : "Register for faster checkout & order tracking"}
         </p>
+      </div>
+
+      {/* Tab Switcher */}
+      <div className="grid grid-cols-2 gap-1 p-1 bg-brand-black/5 mb-6 text-center font-sans text-xs uppercase tracking-wider font-semibold">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("signin");
+            setError("");
+            setCreatedMessage("");
+          }}
+          className={`py-2.5 transition-colors cursor-pointer ${
+            activeTab === "signin"
+              ? "bg-[#FFF9F4] text-brand-black shadow-xs"
+              : "text-neutral-500 hover:text-brand-black"
+          }`}
+        >
+          Sign In
+        </button>
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("signup");
+            setError("");
+            setCreatedMessage("");
+          }}
+          className={`py-2.5 transition-colors cursor-pointer ${
+            activeTab === "signup"
+              ? "bg-[#FFF9F4] text-brand-black shadow-xs"
+              : "text-neutral-500 hover:text-brand-black"
+          }`}
+        >
+          Create Account
+        </button>
       </div>
 
       {createdMessage && (
@@ -187,7 +221,7 @@ function LoginForm() {
         </div>
       )}
 
-      <form onSubmit={handleLogin} className="space-y-5">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div className="space-y-2">
           <label htmlFor="email" className="block font-sans text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
             Email Address
@@ -199,7 +233,7 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            disabled={isLoading || isSigningUp || googleState !== "idle"}
+            disabled={isLoading || googleState !== "idle"}
             className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
             placeholder="name@example.com"
           />
@@ -210,12 +244,14 @@ function LoginForm() {
             <label htmlFor="password" className="block font-sans text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
               Password
             </label>
-            <Link
-              href="/forgot-password"
-              className="font-sans text-[10px] text-neutral-500 hover:text-brand-black transition-colors tracking-wide"
-            >
-              Forgot Password?
-            </Link>
+            {activeTab === "signin" && (
+              <Link
+                href="/forgot-password"
+                className="font-sans text-[10px] text-neutral-500 hover:text-brand-black transition-colors tracking-wide underline"
+              >
+                Forgot Password?
+              </Link>
+            )}
           </div>
           <input
             id="password"
@@ -223,34 +259,21 @@ function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            disabled={isLoading || isSigningUp || googleState !== "idle"}
+            disabled={isLoading || googleState !== "idle"}
             className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
             placeholder="••••••••"
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
-          <Button
-            variant="primary"
-            type="submit"
-            disabled={isLoading || isSigningUp || googleState !== "idle"}
-            className="w-full py-3.5 !bg-brand-black hover:!bg-neutral-800 text-brand-offwhite text-xs uppercase tracking-widest font-bold font-sans !rounded-none transition-colors"
-            isLoading={isLoading}
-          >
-            Sign In
-          </Button>
-
-          <Button
-            variant="outline"
-            type="button"
-            onClick={handleSignup}
-            disabled={isLoading || isSigningUp || googleState !== "idle"}
-            className="w-full py-3.5 !border-brand-black/30 hover:!border-brand-black hover:!bg-brand-black/5 text-brand-black text-xs uppercase tracking-widest font-bold font-sans !rounded-none transition-colors"
-            isLoading={isSigningUp}
-          >
-            Create Account
-          </Button>
-        </div>
+        <Button
+          variant="primary"
+          type="submit"
+          disabled={isLoading || googleState !== "idle"}
+          className="w-full py-3.5 !bg-brand-black hover:!bg-neutral-800 text-brand-offwhite text-xs uppercase tracking-widest font-bold font-sans !rounded-none transition-colors"
+          isLoading={isLoading}
+        >
+          {activeTab === "signin" ? "Sign In" : "Register Account"}
+        </Button>
       </form>
 
       <div className="relative my-8 text-center">
@@ -281,7 +304,6 @@ function LoginForm() {
           "Redirecting to Google..."
         ) : (
           <>
-            {/* Colored Official Google 'G' Logo */}
             <svg className="w-4 h-4 mr-3" viewBox="0 0 24 24" fill="currentColor">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853" />
@@ -305,7 +327,7 @@ function LoginForm() {
 export default function LoginPage() {
   return (
     <div className="min-h-screen bg-[#FFF9F4] grid grid-cols-1 lg:grid-cols-12 text-brand-black selection:bg-[#E694AA]/20">
-      {/* Editorial campaign panel (Hidden on mobile/tablet) */}
+      {/* Editorial campaign panel */}
       <div className="hidden lg:block lg:col-span-7 relative h-[calc(100vh-2rem)] min-h-[600px] rounded-[24px] overflow-hidden m-4 shadow-xs">
         <Image
           src="/images/reshamchikankari/New folder 5/IMG_2755.JPG"
@@ -315,7 +337,6 @@ export default function LoginPage() {
           className="object-cover"
           sizes="60vw"
         />
-        {/* Editorial Text Overlay */}
         <div className="absolute inset-0 bg-brand-black/10 flex flex-col justify-between p-16 text-brand-offwhite">
           <Link href="/" className="font-display text-2xl tracking-wider select-none text-white hover:opacity-90 w-fit">
             Resham Chikankari
