@@ -159,77 +159,82 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
     }
 
     startTransition(async () => {
-      const address: AddressData = {
-        fullName: form.fullName.trim(),
-        email: form.email.trim(),
-        street: form.street.trim(),
-        city: form.city.trim(),
-        state: form.state.trim(),
-        zip: form.zip.trim(),
-        phone: form.phone.trim(),
-      };
+      try {
+        const address: AddressData = {
+          fullName: form.fullName.trim(),
+          email: form.email.trim(),
+          street: form.street.trim(),
+          city: form.city.trim(),
+          state: form.state.trim(),
+          zip: form.zip.trim(),
+          phone: form.phone.trim(),
+        };
 
-      const result = await createOrderAction(address, paymentMethod, appliedWalletPaise);
-      if (!result.success) {
-        setError(result.error || "Something went wrong while placing your order. Please try again.");
-        return;
-      }
-
-      if (result.requiresPayment && result.razorpayOrderId) {
-        const isLoaded = await loadRazorpaySDK();
-        if (!isLoaded || typeof window === "undefined" || !(window as any).Razorpay) {
-          setError("Razorpay SDK failed to load. Please check your internet connection or try Cash on Delivery.");
+        const result = await createOrderAction(address, paymentMethod, appliedWalletPaise);
+        if (!result.success) {
+          setError(result.error || "Something went wrong while placing your order. Please try again.");
           return;
         }
 
-        const options = {
-          key: result.razorpayKeyId,
-          amount: result.amountPaise,
-          currency: "INR",
-          name: "Resham Chikankari",
-          description: `Order #${result.orderNumber}`,
-          order_id: result.razorpayOrderId,
-          handler: async function (response: any) {
-            startTransition(async () => {
-              try {
-                const verifyRes = await verifyRazorpayPaymentAction(
-                  result.orderId!,
-                  response.razorpay_payment_id,
-                  response.razorpay_order_id,
-                  response.razorpay_signature
-                );
-                if (verifyRes.success && verifyRes.orderNumber) {
-                  router.push(`/checkout/success?orderNumber=${verifyRes.orderNumber}`);
-                } else {
-                  setError(verifyRes.error || "Payment verification failed. Please contact support.");
-                }
-              } catch (verifyErr: any) {
-                setError(verifyErr.message || "An error occurred during payment verification.");
-              }
-            });
-          },
-          prefill: {
-            name: form.fullName.trim(),
-            email: form.email.trim(),
-            contact: form.phone.trim(),
-          },
-          theme: {
-            color: "#7C7A5A",
-          },
-          modal: {
-            ondismiss: function () {
-              setError("Payment cancelled. You can retry paying whenever you are ready.");
-            },
-          },
-        };
+        if (result.requiresPayment && result.razorpayOrderId) {
+          const isLoaded = await loadRazorpaySDK();
+          if (!isLoaded || typeof window === "undefined" || !(window as any).Razorpay) {
+            setError("Razorpay SDK failed to load. Please check your internet connection or try Cash on Delivery.");
+            return;
+          }
 
-        const rzp = new (window as any).Razorpay(options);
-        rzp.on("payment.failed", function (response: any) {
-          setError(response.error?.description || "Payment process failed. Please try again.");
-        });
-        rzp.open();
-      } else if (result.orderNumber) {
-        router.push(`/checkout/success?orderNumber=${result.orderNumber}`);
+          const options = {
+            key: result.razorpayKeyId,
+            amount: result.amountPaise,
+            currency: "INR",
+            name: "Resham Chikankari",
+            description: `Order #${result.orderNumber}`,
+            order_id: result.razorpayOrderId,
+            handler: async function (response: any) {
+              startTransition(async () => {
+                try {
+                  const verifyRes = await verifyRazorpayPaymentAction(
+                    result.orderId!,
+                    response.razorpay_payment_id,
+                    response.razorpay_order_id,
+                    response.razorpay_signature
+                  );
+                  if (verifyRes.success && verifyRes.orderNumber) {
+                    router.push(`/checkout/success?orderNumber=${verifyRes.orderNumber}`);
+                  } else {
+                    setError(verifyRes.error || "Payment verification failed. Please contact support.");
+                  }
+                } catch (verifyErr: any) {
+                  setError(verifyErr?.message || "An error occurred during payment verification.");
+                }
+              });
+            },
+            prefill: {
+              name: form.fullName.trim(),
+              email: form.email.trim(),
+              contact: form.phone.trim(),
+            },
+            theme: {
+              color: "#7C7A5A",
+            },
+            modal: {
+              ondismiss: function () {
+                setError("Payment cancelled. You can retry paying whenever you are ready.");
+              },
+            },
+          };
+
+          const rzp = new (window as any).Razorpay(options);
+          rzp.on("payment.failed", function (response: any) {
+            setError(response.error?.description || "Payment process failed. Please try again.");
+          });
+          rzp.open();
+        } else if (result.orderNumber) {
+          router.push(`/checkout/success?orderNumber=${result.orderNumber}`);
+        }
+      } catch (submitErr: any) {
+        console.error("Checkout submission error:", submitErr);
+        setError(submitErr?.message || "An unexpected error occurred while placing order. Please try again.");
       }
     });
   };

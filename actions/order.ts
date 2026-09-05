@@ -25,290 +25,299 @@ export async function createOrderAction(
   paymentMethod: "ONLINE" | "COD",
   walletAmountPaise = 0
 ) {
-  let user = await getCurrentUser();
-  if (!user) {
-    user = {
-      id: "00000000-0000-4000-a000-000000000000",
-      name: address.fullName || "Guest Customer",
-      email: address.email || "guest@user.com",
-      role: "CUSTOMER",
-    };
-  }
+  try {
+    let user = await getCurrentUser();
+    
+    // Safely resolve valid UUID for database foreign key constraints
+    const isUuidStr = (id: string) => typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+    const userId = (user && isUuidStr(user.id)) ? user.id : "00000000-0000-4000-a000-000000000000";
+    const userEmail = address.email || user?.email || "guest@user.com";
+    const userName = address.fullName || user?.name || "Guest Customer";
+    const userRole = user?.role || "CUSTOMER";
 
-  const cart = await getCartDetails();
-  if (cart.items.length === 0) {
-    return { success: false, error: "Your shopping bag is empty." };
-  }
-
-  // Validate coupon if applied
-  const cookieStore = await cookies();
-  const couponCookie = cookieStore.get("applied_coupon")?.value;
-  let discountPaise = 0;
-  let couponCode: string | null = null;
-  let couponId: string | null = null;
-
-  if (couponCookie) {
-    const decodedCode = decodeURIComponent(couponCookie);
-    const validation = await validateCouponCode(decodedCode, cart.subtotalPaise);
-    if (validation.success) {
-      discountPaise = validation.discountPaise || 0;
-      couponCode = validation.coupon?.code || decodedCode;
-      couponId = validation.coupon?.id || null;
-    }
-  }
-
-  // Calculate Shipping (Free above ₹4000 or for test items)
-  const isTestCart = cart.items.some((item) => item.sku?.includes("TEST") || item.slug?.includes("test") || item.pricePaise <= 500);
-  const shippingPaise = (cart.subtotalPaise >= 400000 || isTestCart) ? 0 : 15000;
-
-  // Calculate COD Fee (₹50 additional charge for COD)
-  const codFeePaise = paymentMethod === "COD" ? 5000 : 0;
-
-  // Total
-  const orderTotalPaise = cart.subtotalPaise - discountPaise + shippingPaise + codFeePaise;
-
-  // Validate and Debit Wallet Balance
-  const orderId = `ord_${Math.random().toString(36).substring(2, 11)}`;
-  const orderNumber = `RES-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
-  const wallet = await getOrCreateWallet(user.id);
-
-  if (walletAmountPaise > 0) {
-    if (walletAmountPaise > wallet.availableBalancePaise) {
-      return { success: false, error: "Requested wallet balance is no longer available." };
-    }
-    if (walletAmountPaise > orderTotalPaise) {
-      return { success: false, error: "Wallet amount cannot exceed order total." };
+    const cart = await getCartDetails();
+    if (!cart.items || cart.items.length === 0) {
+      return { success: false, error: "Your shopping bag is empty. Please add items to your bag before proceeding to checkout." };
     }
 
-    try {
-      await debitWalletForOrder(wallet.id, walletAmountPaise, orderId);
-    } catch (e: any) {
-      return { success: false, error: e.message || "Failed to deduct wallet balance." };
-    }
-  }
+    // Validate coupon if applied
+    const cookieStore = await cookies();
+    const couponCookie = cookieStore.get("applied_coupon")?.value;
+    let discountPaise = 0;
+    let couponCode: string | null = null;
+    let couponId: string | null = null;
 
-  const remainingCashTotalPaise = orderTotalPaise - walletAmountPaise;
-  const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
-
-  // Resolve final order payment status
-  let paymentStatus = "PENDING";
-  if (remainingCashTotalPaise === 0) {
-    paymentStatus = "PAID";
-  } else if (paymentMethod === "COD") {
-    paymentStatus = "COD_PENDING";
-  }
-
-  // Handle Razorpay online payment order creation
-  let razorpayOrderId: string | null = null;
-  if (paymentMethod === "ONLINE" && remainingCashTotalPaise > 0) {
-    try {
-      const { razorpay } = await import("@/lib/razorpay");
-      const rzpOrder = await razorpay.orders.create({
-        amount: remainingCashTotalPaise,
-        currency: "INR",
-        receipt: orderId,
-        notes: {
-          orderNumber,
-          userId: user.id,
-          userEmail: user.email,
-        },
-      });
-      razorpayOrderId = rzpOrder.id;
-    } catch (err: any) {
-      console.error("Failed to create Razorpay order:", err);
-      if (walletAmountPaise > 0) {
-        try {
-          await creditWallet(wallet.id, walletAmountPaise, "REVERSAL_CREDIT", orderId, `Refund due to Razorpay order initialization failure ${orderId}`, "order");
-        } catch (revertErr) {
-          console.error("Critical: failed to revert wallet debit:", revertErr);
-        }
-      }
-      return { success: false, error: err.message || "Failed to initialize online payment with Razorpay." };
-    }
-  }
-
-  if (isDbAvailable) {
-    try {
-      const { payments } = await import("@/db/schema/payment");
-      const { profiles } = await import("@/db/schema/auth");
-
-      let targetUserId = user.id;
-      const isUuidStr = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-      if (!isUuidStr(targetUserId)) {
-        targetUserId = "00000000-0000-4000-a000-000000000000";
-      }
-
-      // Ensure profile row exists to satisfy foreign key orders_user_id_profiles_id_fk
+    if (couponCookie) {
       try {
-        const { profiles } = await import("@/db/schema/auth");
-        const { eq } = await import("drizzle-orm");
-        const [prof] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.id, targetUserId)).limit(1);
-        if (!prof) {
-          await db.insert(profiles).values({
-            id: targetUserId,
-            fullName: user.name || address.fullName || "Valued Customer",
-            email: address.email || user.email || `${targetUserId}@user.com`,
-            role: user.role || "CUSTOMER",
-          }).onConflictDoNothing();
+        const decodedCode = decodeURIComponent(couponCookie);
+        const validation = await validateCouponCode(decodedCode, cart.subtotalPaise);
+        if (validation.success) {
+          discountPaise = validation.discountPaise || 0;
+          couponCode = validation.coupon?.code || decodedCode;
+          couponId = validation.coupon?.id || null;
         }
-      } catch (profileErr) {
-        console.warn("Profile auto-insert warning for order placement:", profileErr);
+      } catch (couponErr) {
+        console.warn("Coupon validation error during checkout:", couponErr);
       }
-
-      await db.insert(orders).values({
-        id: orderId,
-        orderNumber,
-        userId: targetUserId,
-        status: "PENDING",
-        paymentStatus,
-        subtotalPaise: cart.subtotalPaise,
-        discountPaise,
-        shippingPaise: shippingPaise + codFeePaise, // Fold shipping + COD fee together
-        taxPaise: 0,
-        totalPaise: orderTotalPaise,
-        couponCodeSnapshot: couponCode,
-        shippingAddressSnapshot: {
-          ...address,
-          paymentMethod,
-          walletPaidPaise: walletAmountPaise,
-          remainingCashTotalPaise,
-        },
-        paymentProvider: paymentMethod === "COD" ? "COD" : (walletAmountPaise === orderTotalPaise ? "WALLET" : "RAZORPAY"),
-        paymentId: null,
-        walletAmountPaise,
-        currency: "INR",
-        couponId,
-        billingAddressSnapshot: {
-          ...address,
-          paymentMethod,
-          walletPaidPaise: walletAmountPaise,
-          remainingCashTotalPaise,
-        },
-      });
-
-      for (const item of cart.items) {
-        let validProductId: string | null = null;
-        let validVariantId: string | null = null;
-
-        if (item.productId) {
-          try {
-            const { products } = await import("@/db/schema/catalog");
-            const { eq } = await import("drizzle-orm");
-            const [p] = await db.select({ id: products.id }).from(products).where(eq(products.id, item.productId)).limit(1);
-            if (p) validProductId = p.id;
-          } catch (pErr) {
-            console.warn("Product FK validation warning:", pErr);
-          }
-        }
-
-        if (item.variantId) {
-          try {
-            const { productVariants } = await import("@/db/schema/catalog");
-            const { eq } = await import("drizzle-orm");
-            const [v] = await db.select({ id: productVariants.id }).from(productVariants).where(eq(productVariants.id, item.variantId)).limit(1);
-            if (v) validVariantId = v.id;
-          } catch (vErr) {
-            console.warn("Variant FK validation warning:", vErr);
-          }
-        }
-
-        await db.insert(orderItems).values({
-          id: `item_${Math.random().toString(36).substring(2, 11)}`,
-          orderId,
-          productId: validProductId,
-          variantId: validVariantId,
-          productName: item.name,
-          sku: item.sku,
-          unitPricePaise: item.pricePaise,
-          quantity: item.quantity,
-          lineTotalPaise: item.pricePaise * item.quantity,
-          productNameSnapshot: item.name,
-          skuSnapshot: item.sku,
-          variantSnapshot: item.variantLabel || item.sizeName || null,
-        });
-
-        // Atomic inventory decrement for variant to prevent overselling
-        if (item.variantId) {
-          try {
-            const { sql, eq } = await import("drizzle-orm");
-            const { productVariants } = await import("@/db/schema/catalog");
-            await db
-              .update(productVariants)
-              .set({
-                stock: sql`GREATEST(0, ${productVariants.stock} - ${item.quantity})`,
-                inventoryQuantity: sql`GREATEST(0, ${productVariants.inventoryQuantity} - ${item.quantity})`,
-              })
-              .where(eq(productVariants.id, item.variantId));
-          } catch (invErr) {
-            console.warn(`Variant inventory decrement warning for variant ${item.variantId}:`, invErr);
-          }
-        }
-      }
-
-      if (razorpayOrderId) {
-        await db.insert(payments).values({
-          id: `pay_${Math.random().toString(36).substring(2, 11)}`,
-          orderId,
-          provider: "RAZORPAY",
-          providerOrderId: razorpayOrderId,
-          amountPaise: remainingCashTotalPaise,
-          currency: "INR",
-          status: "CREATED",
-          signatureVerified: false,
-        });
-      }
-    } catch (e) {
-      console.error("Failed to save order to database, reverting wallet deduction:", e);
-      // Revert wallet debit on database insert failure
-      if (walletAmountPaise > 0) {
-        try {
-          await creditWallet(wallet.id, walletAmountPaise, "REVERSAL_CREDIT", orderId, `Refund due to order placement failure ${orderId}`, "order");
-        } catch (revertErr) {
-          console.error("Critical: failed to revert wallet debit:", revertErr);
-        }
-      }
-      return { success: false, error: "Failed to place order in database. Any wallet funds have been restored." };
     }
-  } else {
-    console.log("Offline Mode: Created Order", {
-      orderNumber,
-      user: user.email,
-      total: orderTotalPaise / 100,
-      walletDeducted: walletAmountPaise / 100,
-      remainingCash: remainingCashTotalPaise / 100,
-      paymentMethod,
-      razorpayOrderId,
-      address,
-      items: cart.items.map(i => `${i.name} (${i.sizeName}) x${i.quantity}`),
-    });
-  }
 
-  // Revalidate customer and admin views so order shows up immediately
-  revalidatePath("/account/orders");
-  revalidatePath("/admin/orders");
-  revalidatePath("/admin");
-  revalidatePath("/admin/analytics");
-  revalidatePath("/admin/customers");
+    // Calculate Shipping (Free above ₹4000 or for test items)
+    const isTestCart = cart.items.some((item) => item.sku?.includes("TEST") || item.slug?.includes("test") || item.pricePaise <= 500);
+    const shippingPaise = (cart.subtotalPaise >= 400000 || isTestCart) ? 0 : 15000;
 
-  // If requires online payment via Razorpay, return Razorpay payload to client UI without clearing cart yet
-  if (paymentMethod === "ONLINE" && remainingCashTotalPaise > 0 && razorpayOrderId) {
-    const { env } = await import("@/lib/validation/env");
+    // Calculate COD Fee (₹50 additional charge for COD)
+    const codFeePaise = paymentMethod === "COD" ? 5000 : 0;
+
+    // Total
+    const orderTotalPaise = Math.max(0, cart.subtotalPaise - discountPaise + shippingPaise + codFeePaise);
+
+    // Validate and Debit Wallet Balance
+    const orderId = `ord_${Math.random().toString(36).substring(2, 11)}`;
+    const orderNumber = `RES-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
+    const wallet = await getOrCreateWallet(userId);
+
+    if (walletAmountPaise > 0) {
+      if (walletAmountPaise > wallet.availableBalancePaise) {
+        return { success: false, error: "Requested wallet balance is no longer available." };
+      }
+      if (walletAmountPaise > orderTotalPaise) {
+        return { success: false, error: "Wallet amount cannot exceed order total." };
+      }
+
+      try {
+        await debitWalletForOrder(wallet.id, walletAmountPaise, orderId);
+      } catch (e: any) {
+        return { success: false, error: e.message || "Failed to deduct wallet balance." };
+      }
+    }
+
+    const remainingCashTotalPaise = Math.max(0, orderTotalPaise - walletAmountPaise);
+    const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+
+    // Resolve final order payment status
+    let paymentStatus = "PENDING";
+    if (remainingCashTotalPaise === 0) {
+      paymentStatus = "PAID";
+    } else if (paymentMethod === "COD") {
+      paymentStatus = "COD_PENDING";
+    }
+
+    // Handle Razorpay online payment order creation
+    let razorpayOrderId: string | null = null;
+    if (paymentMethod === "ONLINE" && remainingCashTotalPaise > 0) {
+      if (remainingCashTotalPaise < 100) {
+        return { success: false, error: "Order total must be at least ₹1 for online payment." };
+      }
+      try {
+        const { razorpay } = await import("@/lib/razorpay");
+        const rzpOrder = await razorpay.orders.create({
+          amount: remainingCashTotalPaise,
+          currency: "INR",
+          receipt: orderId,
+          notes: {
+            orderNumber,
+            userId,
+            userEmail,
+          },
+        });
+        razorpayOrderId = rzpOrder.id;
+      } catch (err: any) {
+        console.error("Failed to create Razorpay order:", err);
+        if (walletAmountPaise > 0) {
+          try {
+            await creditWallet(wallet.id, walletAmountPaise, "REVERSAL_CREDIT", orderId, `Refund due to Razorpay order initialization failure ${orderId}`, "order");
+          } catch (revertErr) {
+            console.error("Critical: failed to revert wallet debit:", revertErr);
+          }
+        }
+        return { success: false, error: err?.message || "Failed to initialize online payment with Razorpay. Please try Cash on Delivery." };
+      }
+    }
+
+    if (isDbAvailable) {
+      try {
+        const { payments } = await import("@/db/schema/payment");
+        const { profiles } = await import("@/db/schema/auth");
+
+        // Ensure profile row exists to satisfy foreign key orders_user_id_profiles_id_fk
+        try {
+          const { eq } = await import("drizzle-orm");
+          const [prof] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.id, userId)).limit(1);
+          if (!prof) {
+            await db.insert(profiles).values({
+              id: userId,
+              fullName: userName,
+              email: userEmail,
+              role: userRole,
+            }).onConflictDoNothing();
+          }
+        } catch (profileErr) {
+          console.warn("Profile auto-insert warning for order placement:", profileErr);
+        }
+
+        await db.insert(orders).values({
+          id: orderId,
+          orderNumber,
+          userId,
+          status: "PENDING",
+          paymentStatus,
+          subtotalPaise: cart.subtotalPaise,
+          discountPaise,
+          shippingPaise: shippingPaise + codFeePaise, // Fold shipping + COD fee together
+          taxPaise: 0,
+          totalPaise: orderTotalPaise,
+          couponCodeSnapshot: couponCode,
+          shippingAddressSnapshot: {
+            ...address,
+            paymentMethod,
+            walletPaidPaise: walletAmountPaise,
+            remainingCashTotalPaise,
+          },
+          paymentProvider: paymentMethod === "COD" ? "COD" : (walletAmountPaise === orderTotalPaise ? "WALLET" : "RAZORPAY"),
+          paymentId: null,
+          walletAmountPaise,
+          currency: "INR",
+          couponId,
+          billingAddressSnapshot: {
+            ...address,
+            paymentMethod,
+            walletPaidPaise: walletAmountPaise,
+            remainingCashTotalPaise,
+          },
+        });
+
+        for (const item of cart.items) {
+          let validProductId: string | null = null;
+          let validVariantId: string | null = null;
+
+          if (item.productId) {
+            try {
+              const { products } = await import("@/db/schema/catalog");
+              const { eq } = await import("drizzle-orm");
+              const [p] = await db.select({ id: products.id }).from(products).where(eq(products.id, item.productId)).limit(1);
+              if (p) validProductId = p.id;
+            } catch (pErr) {
+              console.warn("Product FK validation warning:", pErr);
+            }
+          }
+
+          if (item.variantId) {
+            try {
+              const { productVariants } = await import("@/db/schema/catalog");
+              const { eq } = await import("drizzle-orm");
+              const [v] = await db.select({ id: productVariants.id }).from(productVariants).where(eq(productVariants.id, item.variantId)).limit(1);
+              if (v) validVariantId = v.id;
+            } catch (vErr) {
+              console.warn("Variant FK validation warning:", vErr);
+            }
+          }
+
+          await db.insert(orderItems).values({
+            id: `item_${Math.random().toString(36).substring(2, 11)}`,
+            orderId,
+            productId: validProductId,
+            variantId: validVariantId,
+            productName: item.name,
+            sku: item.sku,
+            unitPricePaise: item.pricePaise,
+            quantity: item.quantity,
+            lineTotalPaise: item.pricePaise * item.quantity,
+            productNameSnapshot: item.name,
+            skuSnapshot: item.sku,
+            variantSnapshot: item.variantLabel || item.sizeName || null,
+          });
+
+          // Atomic inventory decrement for variant to prevent overselling
+          if (item.variantId && validVariantId) {
+            try {
+              const { sql, eq } = await import("drizzle-orm");
+              const { productVariants } = await import("@/db/schema/catalog");
+              await db
+                .update(productVariants)
+                .set({
+                  stock: sql`GREATEST(0, ${productVariants.stock} - ${item.quantity})`,
+                  inventoryQuantity: sql`GREATEST(0, ${productVariants.inventoryQuantity} - ${item.quantity})`,
+                })
+                .where(eq(productVariants.id, validVariantId));
+            } catch (invErr) {
+              console.warn(`Variant inventory decrement warning for variant ${item.variantId}:`, invErr);
+            }
+          }
+        }
+
+        if (razorpayOrderId) {
+          await db.insert(payments).values({
+            id: `pay_${Math.random().toString(36).substring(2, 11)}`,
+            orderId,
+            provider: "RAZORPAY",
+            providerOrderId: razorpayOrderId,
+            amountPaise: remainingCashTotalPaise,
+            currency: "INR",
+            status: "CREATED",
+            signatureVerified: false,
+          });
+        }
+      } catch (e: any) {
+        console.error("Failed to save order to database, reverting wallet deduction:", e);
+        // Revert wallet debit on database insert failure
+        if (walletAmountPaise > 0) {
+          try {
+            await creditWallet(wallet.id, walletAmountPaise, "REVERSAL_CREDIT", orderId, `Refund due to order placement failure ${orderId}`, "order");
+          } catch (revertErr) {
+            console.error("Critical: failed to revert wallet debit:", revertErr);
+          }
+        }
+        return { success: false, error: e?.message || "Failed to place order in database. Any wallet funds have been restored." };
+      }
+    } else {
+      console.log("Offline Mode: Created Order", {
+        orderNumber,
+        user: userEmail,
+        total: orderTotalPaise / 100,
+        walletDeducted: walletAmountPaise / 100,
+        remainingCash: remainingCashTotalPaise / 100,
+        paymentMethod,
+        razorpayOrderId,
+        address,
+        items: cart.items.map(i => `${i.name} (${i.sizeName}) x${i.quantity}`),
+      });
+    }
+
+    // Revalidate customer and admin views
+    try {
+      revalidatePath("/account/orders");
+      revalidatePath("/admin/orders");
+      revalidatePath("/admin");
+    } catch (revalErr) {
+      console.warn("Path revalidation warning:", revalErr);
+    }
+
+    // If requires online payment via Razorpay, return Razorpay payload to client UI without clearing cart yet
+    if (paymentMethod === "ONLINE" && remainingCashTotalPaise > 0 && razorpayOrderId) {
+      const { env } = await import("@/lib/validation/env");
+      return {
+        success: true,
+        requiresPayment: true,
+        orderId,
+        orderNumber,
+        razorpayOrderId,
+        razorpayKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_live_TYIGUQfADESI9t",
+        amountPaise: remainingCashTotalPaise,
+      };
+    }
+
+    // Clear cart and coupon cookies for direct COD or 100% wallet paid orders
+    await clearCart();
+    cookieStore.delete("applied_coupon");
+
+    return { success: true, requiresPayment: false, orderNumber };
+  } catch (globalErr: any) {
+    console.error("Unhandled error in createOrderAction:", globalErr);
     return {
-      success: true,
-      requiresPayment: true,
-      orderId,
-      orderNumber,
-      razorpayOrderId,
-      razorpayKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_live_TYIGUQfADESI9t",
-      amountPaise: remainingCashTotalPaise,
+      success: false,
+      error: globalErr?.message || "An error occurred while processing your order. Please try again.",
     };
   }
-
-  // Clear cart and coupon cookies for direct COD or 100% wallet paid orders
-  await clearCart();
-  cookieStore.delete("applied_coupon");
-
-  return { success: true, requiresPayment: false, orderNumber };
 }
 
 export async function verifyRazorpayPaymentAction(
