@@ -28,6 +28,27 @@ interface CheckoutFormProps {
   appliedCouponCode?: string;
 }
 
+const loadRazorpaySDK = (): Promise<boolean> => {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve(false);
+    if ((window as any).Razorpay) return resolve(true);
+
+    const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+    if (existingScript) {
+      existingScript.addEventListener("load", () => resolve(true));
+      existingScript.addEventListener("error", () => resolve(false));
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.async = true;
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
+
 export default function CheckoutForm({ cart, user, wallet, discountPaise, appliedCouponCode }: CheckoutFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -155,8 +176,9 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
       }
 
       if (result.requiresPayment && result.razorpayOrderId) {
-        if (typeof window === "undefined" || !(window as any).Razorpay) {
-          setError("Razorpay SDK failed to load. Please refresh the page and try again.");
+        const isLoaded = await loadRazorpaySDK();
+        if (!isLoaded || typeof window === "undefined" || !(window as any).Razorpay) {
+          setError("Razorpay SDK failed to load. Please check your internet connection or try Cash on Delivery.");
           return;
         }
 
