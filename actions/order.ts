@@ -49,7 +49,16 @@ export async function createOrderAction(
 
     if (couponCookie) {
       try {
-        const decodedCode = decodeURIComponent(couponCookie);
+        let decodedCode = couponCookie;
+        while (typeof decodedCode === "string" && decodedCode.includes("%")) {
+          try {
+            const next = decodeURIComponent(decodedCode);
+            if (next === decodedCode) break;
+            decodedCode = next;
+          } catch {
+            break;
+          }
+        }
         const validation = await validateCouponCode(decodedCode, cart.subtotalPaise);
         if (validation.success) {
           discountPaise = validation.discountPaise || 0;

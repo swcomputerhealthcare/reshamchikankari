@@ -41,8 +41,20 @@ async function getCookieCartItems(): Promise<{ id: string; productId: string; va
   const raw = cookieStore.get(COOKIE_NAME)?.value;
   if (!raw) return [];
   try {
-    return JSON.parse(decodeURIComponent(raw));
-  } catch {
+    let decoded = raw;
+    while (typeof decoded === "string" && decoded.includes("%")) {
+      try {
+        const next = decodeURIComponent(decoded);
+        if (next === decoded) break;
+        decoded = next;
+      } catch {
+        break;
+      }
+    }
+    const parsed = JSON.parse(decoded);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    console.warn("Failed to parse cart cookie:", err);
     return [];
   }
 }
@@ -50,7 +62,7 @@ async function getCookieCartItems(): Promise<{ id: string; productId: string; va
 async function saveCookieCartItems(items: { id: string; productId: string; variantId: string | null; quantity: number }[]) {
   try {
     const cookieStore = await cookies();
-    cookieStore.set(COOKIE_NAME, encodeURIComponent(JSON.stringify(items)), {
+    cookieStore.set(COOKIE_NAME, JSON.stringify(items), {
       path: "/",
       maxAge: 60 * 60 * 24 * 7, // 7 days
       httpOnly: true,
@@ -179,7 +191,16 @@ export async function getCartDetails(): Promise<CartDetails> {
   let appliedCouponCode: string | undefined = undefined;
 
   if (couponCode) {
-    const decodedCode = decodeURIComponent(couponCode);
+    let decodedCode = couponCode;
+    while (typeof decodedCode === "string" && decodedCode.includes("%")) {
+      try {
+        const next = decodeURIComponent(decodedCode);
+        if (next === decodedCode) break;
+        decodedCode = next;
+      } catch {
+        break;
+      }
+    }
     const validation = await validateCouponCode(decodedCode, subtotal);
     if (validation.success) {
       discountPaise = validation.discountPaise || 0;
