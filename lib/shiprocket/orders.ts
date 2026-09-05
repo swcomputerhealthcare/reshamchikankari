@@ -78,20 +78,22 @@ export function buildShiprocketOrderPayload(
 
   const isCOD = order.paymentProvider === "COD";
 
-  const firstName = addr.firstName || addr.name?.split(" ")[0] || "Valued";
-  const lastName = addr.lastName || addr.name?.split(" ").slice(1).join(" ") || "Customer";
+  const rawName = (addr.fullName || addr.name || "Customer").trim();
+  const nameParts = rawName.split(" ");
+  const firstName = nameParts[0] || "Valued";
+  const lastName = nameParts.slice(1).join(" ") || firstName;
 
   return {
     order_id: order.orderNumber,
     order_date: formattedDate,
-    pickup_location: env.SHIPROCKET_PICKUP_LOCATION || "Primary",
+    pickup_location: process.env.SHIPROCKET_PICKUP_LOCATION || env.SHIPROCKET_PICKUP_LOCATION || "Home",
     billing_customer_name: firstName,
     billing_last_name: lastName,
-    billing_address: addr.addressLine1 || addr.address || "Lucknow Store Order",
+    billing_address: addr.street || addr.addressLine1 || addr.address || "Main Road",
     billing_address_2: addr.addressLine2 || "",
-    billing_city: addr.city || "Lucknow",
-    billing_pincode: String(addr.pincode || addr.zip || "226001"),
-    billing_state: addr.state || "Uttar Pradesh",
+    billing_city: addr.city || "New Delhi",
+    billing_pincode: String(addr.zip || addr.pincode || "110001"),
+    billing_state: addr.state || "Delhi",
     billing_country: addr.country || "India",
     billing_email: addr.email || "customer@reshamchikankari.com",
     billing_phone: String(addr.phone || "9999999999"),

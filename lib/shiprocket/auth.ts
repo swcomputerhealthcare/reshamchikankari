@@ -18,8 +18,8 @@ export async function getShiprocketToken(): Promise<string> {
     return cachedToken.token;
   }
 
-  const email = env.SHIPROCKET_EMAIL;
-  const password = env.SHIPROCKET_PASSWORD;
+  const email = process.env.SHIPROCKET_EMAIL || env.SHIPROCKET_EMAIL;
+  const password = process.env.SHIPROCKET_PASSWORD || env.SHIPROCKET_PASSWORD;
 
   if (!email || !password || email === "orders@reshamchikankari.com") {
     // In development mode or missing credentials, fallback gracefully to mock token
