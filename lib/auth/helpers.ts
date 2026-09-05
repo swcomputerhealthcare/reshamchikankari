@@ -37,14 +37,18 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
   const userEmail = (email || "").toLowerCase();
   const isAdminEmail = adminEmails.includes(userEmail);
 
-  // Query profiles table using Drizzle with a try-catch to prevent crashing on missing tables
+  // Query profiles table using Drizzle with a try-catch to prevent crashing on invalid UUID formats or missing tables
   let profile = null;
-  try {
-    profile = await db.query.profiles.findFirst({
-      where: eq(profiles.id, userId),
-    });
-  } catch (dbError) {
-    console.error("Warning: profiles table query failed. Ensure SQL schema is applied.", dbError);
+  const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+
+  if (isUuid) {
+    try {
+      profile = await db.query.profiles.findFirst({
+        where: eq(profiles.id, userId),
+      });
+    } catch (dbError) {
+      console.error("Warning: profiles table query failed.", dbError);
+    }
   }
 
   if (!profile) {
@@ -52,19 +56,21 @@ export const getCurrentUser = cache(async (): Promise<User | null> => {
     const fullName = (userMetadata?.full_name as string) || (userMetadata?.name as string) || email || "Valued Customer";
     const avatarUrl = (userMetadata?.avatar_url as string) || null;
 
-    // Automatically upsert missing profile row to satisfy foreign key constraints across wishlists, orders, and wallets
-    try {
-      await db.insert(profiles).values({
-        id: userId,
-        fullName,
-        email: email || `${userId}@user.com`,
-        avatarUrl,
-        role: resolvedRole,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      }).onConflictDoNothing();
-    } catch (insertErr) {
-      console.warn("Could not auto-create profile row:", insertErr);
+    // Automatically upsert missing profile row if userId is a valid UUID
+    if (isUuid) {
+      try {
+        await db.insert(profiles).values({
+          id: userId,
+          fullName,
+          email: email || `${userId}@user.com`,
+          avatarUrl,
+          role: resolvedRole,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        }).onConflictDoNothing();
+      } catch (insertErr) {
+        console.warn("Could not auto-create profile row:", insertErr);
+      }
     }
 
     return {

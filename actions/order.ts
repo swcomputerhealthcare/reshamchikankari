@@ -25,9 +25,14 @@ export async function createOrderAction(
   paymentMethod: "ONLINE" | "COD",
   walletAmountPaise = 0
 ) {
-  const user = await getCurrentUser();
+  let user = await getCurrentUser();
   if (!user) {
-    return { success: false, error: "Please log in to complete your checkout." };
+    user = {
+      id: "00000000-0000-4000-a000-000000000000",
+      name: address.fullName || "Guest Customer",
+      email: address.email || "guest@user.com",
+      role: "CUSTOMER",
+    };
   }
 
   const cart = await getCartDetails();
