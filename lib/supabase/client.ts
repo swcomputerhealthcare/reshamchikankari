@@ -9,5 +9,20 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     "sb_publishable_ADKS42lpLMQX__UratAPsg_8jhAD-ND";
 
-  return createBrowserClient(url, key);
+  const isProdDomain =
+    typeof window !== "undefined" &&
+    window.location.hostname.endsWith("reshamchikankari.com");
+
+  return createBrowserClient(url, key, {
+    cookieOptions: isProdDomain
+      ? {
+          domain: ".reshamchikankari.com",
+          path: "/",
+          sameSite: "lax",
+        }
+      : {
+          path: "/",
+          sameSite: "lax",
+        },
+  });
 }

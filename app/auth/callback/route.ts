@@ -45,6 +45,9 @@ export async function GET(request: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
       "sb_publishable_ADKS42lpLMQX__UratAPsg_8jhAD-ND";
 
+    const isProdDomain = request.nextUrl.hostname.endsWith("reshamchikankari.com");
+    const cookieDomain = isProdDomain ? ".reshamchikankari.com" : undefined;
+
     const supabase = createServerClient(
       supabaseUrl,
       supabaseKey,
@@ -62,6 +65,7 @@ export async function GET(request: NextRequest) {
             cookiesToSet.forEach(({ name, value, options }) => {
               const opts = {
                 ...options,
+                ...(cookieDomain ? { domain: cookieDomain } : {}),
                 path: "/",
                 sameSite: "lax" as const,
               };
