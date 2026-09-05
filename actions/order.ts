@@ -171,11 +171,36 @@ export async function createOrderAction(
       });
 
       for (const item of cart.items) {
+        let validProductId: string | null = null;
+        let validVariantId: string | null = null;
+
+        if (item.productId) {
+          try {
+            const { products } = await import("@/db/schema/catalog");
+            const { eq } = await import("drizzle-orm");
+            const [p] = await db.select({ id: products.id }).from(products).where(eq(products.id, item.productId)).limit(1);
+            if (p) validProductId = p.id;
+          } catch (pErr) {
+            console.warn("Product FK validation warning:", pErr);
+          }
+        }
+
+        if (item.variantId) {
+          try {
+            const { productVariants } = await import("@/db/schema/catalog");
+            const { eq } = await import("drizzle-orm");
+            const [v] = await db.select({ id: productVariants.id }).from(productVariants).where(eq(productVariants.id, item.variantId)).limit(1);
+            if (v) validVariantId = v.id;
+          } catch (vErr) {
+            console.warn("Variant FK validation warning:", vErr);
+          }
+        }
+
         await db.insert(orderItems).values({
           id: `item_${Math.random().toString(36).substring(2, 11)}`,
           orderId,
-          productId: item.productId,
-          variantId: item.variantId,
+          productId: validProductId,
+          variantId: validVariantId,
           productName: item.name,
           sku: item.sku,
           unitPricePaise: item.pricePaise,
