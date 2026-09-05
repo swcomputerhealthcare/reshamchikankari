@@ -288,7 +288,7 @@ export async function createOrderAction(
       orderId,
       orderNumber,
       razorpayOrderId,
-      razorpayKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_TW3QQt1VzzNel6",
+      razorpayKeyId: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_live_TYIGUQfADESI9t",
       amountPaise: remainingCashTotalPaise,
     };
   }
