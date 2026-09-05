@@ -72,12 +72,18 @@ export async function GET(request: NextRequest) {
       return response;
     }
     console.error("Supabase OAuth code exchange failed:", error.message);
+    return NextResponse.redirect(
+      new URL(
+        `/login?error=${encodeURIComponent(error.message || "Unable to complete Google sign in. Please try again.")}`,
+        origin
+      )
+    );
   }
 
   // If code exchange failed, redirect to login page with a descriptive message
   return NextResponse.redirect(
     new URL(
-      "/login?error=Unable to complete Google sign in. Please try again.",
+      "/login?error=Invalid auth callback code. Please try logging in again.",
       origin
     )
   );

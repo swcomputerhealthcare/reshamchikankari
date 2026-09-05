@@ -110,7 +110,8 @@ function LoginForm() {
 
     try {
       const supabase = createClient();
-      const redirectToUrl = `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackURL)}`;
+      const currentOrigin = typeof window !== "undefined" ? window.location.origin : "https://www.reshamchikankari.com";
+      const redirectToUrl = `${currentOrigin}/auth/callback?next=${encodeURIComponent(callbackURL)}`;
       
       const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -121,7 +122,7 @@ function LoginForm() {
 
       if (authError) {
         setGoogleState("error");
-        setError("Unable to sign in with Google. Please try again.");
+        setError(authError.message || "Unable to sign in with Google. Please try again.");
         console.error("Google OAuth Error: ", authError.message);
       } else {
         setGoogleState("redirecting");
@@ -129,7 +130,7 @@ function LoginForm() {
     } catch (err: unknown) {
       setGoogleState("error");
       const message = err instanceof Error ? err.message : "An unexpected error occurred during Google Sign In.";
-      setError("Unable to sign in with Google. Please try again.");
+      setError(message);
       console.error("Google OAuth exception: ", message);
     }
   };
