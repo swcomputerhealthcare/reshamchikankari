@@ -22,10 +22,12 @@ export default async function CustomerOrdersPage() {
 
   if (isDbAvailable) {
     try {
+      const userEmailLower = (user.email || "").toLowerCase();
       userOrders = await db.query.orders.findMany({
         where: or(
           eq(orders.userId, user.id),
-          sql`shipping_address_snapshot->>'email' = ${user.email}`
+          sql`LOWER(shipping_address_snapshot->>'email') = ${userEmailLower}`,
+          sql`LOWER(billing_address_snapshot->>'email') = ${userEmailLower}`
         ),
         orderBy: [desc(orders.createdAt)],
         with: {

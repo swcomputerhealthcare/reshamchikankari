@@ -16,20 +16,12 @@ export const metadata = {
 };
 
 export default async function CheckoutPage() {
-  const { getCurrentUser } = await import("@/lib/auth/helpers");
-  const user = await getCurrentUser();
+  const user = await requireUser();
   const cart = await getCartDetails();
 
   if (cart.items.length === 0) {
     redirect("/cart");
   }
-
-  const effectiveUser = user || {
-    id: "00000000-0000-4000-a000-000000000000",
-    name: "",
-    email: "",
-    role: "CUSTOMER",
-  };
 
   // Fetch Wallet details safely
   let wallet = { availableBalancePaise: 0, lockedBalancePaise: 0, currency: "INR" };
@@ -114,7 +106,7 @@ export default async function CheckoutPage() {
 
           <CheckoutForm
             cart={cart}
-            user={{ id: effectiveUser.id, email: effectiveUser.email, name: effectiveUser.name }}
+            user={{ id: user.id, email: user.email, name: user.name }}
             wallet={{
               availableBalancePaise: wallet.availableBalancePaise,
               lockedBalancePaise: wallet.lockedBalancePaise,
