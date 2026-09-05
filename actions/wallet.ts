@@ -14,19 +14,38 @@ const hasDatabase = () => {
   return !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
 };
 
-const MOCK_DB_PATH = path.join(process.cwd(), "db", "wallet_mock.json");
+import os from "os";
+
+const getMockDbPath = () => {
+  if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+    return path.join(os.tmpdir(), "wallet_mock.json");
+  }
+  return path.join(process.cwd(), "db", "wallet_mock.json");
+};
 
 function readMockStore() {
-  if (!fs.existsSync(MOCK_DB_PATH)) return { wallets: {}, transactions: [], payoutMethods: [], withdrawalRequests: [] };
   try {
-    return JSON.parse(fs.readFileSync(MOCK_DB_PATH, "utf-8"));
-  } catch {
-    return { wallets: {}, transactions: [], payoutMethods: [], withdrawalRequests: [] };
+    const mockPath = getMockDbPath();
+    if (fs.existsSync(mockPath)) {
+      return JSON.parse(fs.readFileSync(mockPath, "utf-8"));
+    }
+  } catch (err) {
+    console.warn("Read mock store error fallback:", err);
   }
+  return { wallets: {}, transactions: [], payoutMethods: [], withdrawalRequests: [] };
 }
 
 function writeMockStore(store: any) {
-  fs.writeFileSync(MOCK_DB_PATH, JSON.stringify(store, null, 2));
+  try {
+    const mockPath = getMockDbPath();
+    const dir = path.dirname(mockPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(mockPath, JSON.stringify(store, null, 2));
+  } catch (err) {
+    console.warn("Could not write mock wallet store file (read-only filesystem):", err);
+  }
 }
 
 // 1. Get current user's wallet

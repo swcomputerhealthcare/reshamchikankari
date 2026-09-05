@@ -9,8 +9,15 @@ const hasDatabase = () => {
   return !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
 };
 
-// Mock Offline File Store Setup
-const MOCK_DB_PATH = path.join(process.cwd(), "db", "wallet_mock.json");
+import os from "os";
+
+// Safe Storage Path (/tmp on Vercel serverless environment)
+const getMockDbPath = () => {
+  if (process.env.VERCEL || process.env.NODE_ENV === "production") {
+    return path.join(os.tmpdir(), "wallet_mock.json");
+  }
+  return path.join(process.cwd(), "db", "wallet_mock.json");
+};
 
 interface MockStore {
   wallets: Record<string, { id: string; userId: string; availableBalancePaise: number; lockedBalancePaise: number; currency: string }>;
@@ -19,23 +26,50 @@ interface MockStore {
   withdrawalRequests: any[];
 }
 
+const globalStoreKey = Symbol.for("resham.wallet_mock_store");
+const getGlobalStore = (): MockStore => {
+  if (!(globalThis as any)[globalStoreKey]) {
+    (globalThis as any)[globalStoreKey] = { wallets: {}, transactions: [], payoutMethods: [], withdrawalRequests: [] };
+  }
+  return (globalThis as any)[globalStoreKey];
+};
+
 function readMockStore(): MockStore {
-  if (!fs.existsSync(MOCK_DB_PATH)) {
-    const initialStore = { wallets: {}, transactions: [], payoutMethods: [], withdrawalRequests: [] };
-    fs.mkdirSync(path.dirname(MOCK_DB_PATH), { recursive: true });
-    fs.writeFileSync(MOCK_DB_PATH, JSON.stringify(initialStore, null, 2));
-    return initialStore;
-  }
+  const store = getGlobalStore();
   try {
-    return JSON.parse(fs.readFileSync(MOCK_DB_PATH, "utf-8"));
-  } catch {
-    return { wallets: {}, transactions: [], payoutMethods: [], withdrawalRequests: [] };
+    const mockPath = getMockDbPath();
+    if (fs.existsSync(mockPath)) {
+      const data = JSON.parse(fs.readFileSync(mockPath, "utf-8"));
+      if (data && typeof data === "object") {
+        store.wallets = data.wallets || store.wallets;
+        store.transactions = data.transactions || store.transactions;
+        store.payoutMethods = data.payoutMethods || store.payoutMethods;
+        store.withdrawalRequests = data.withdrawalRequests || store.withdrawalRequests;
+      }
+    }
+  } catch (err) {
+    console.warn("Read mock wallet store fallback:", err);
   }
+  return store;
 }
 
-function writeMockStore(store: MockStore) {
-  fs.mkdirSync(path.dirname(MOCK_DB_PATH), { recursive: true });
-  fs.writeFileSync(MOCK_DB_PATH, JSON.stringify(store, null, 2));
+function writeMockStore(newStore: MockStore) {
+  const store = getGlobalStore();
+  store.wallets = newStore.wallets;
+  store.transactions = newStore.transactions;
+  store.payoutMethods = newStore.payoutMethods;
+  store.withdrawalRequests = newStore.withdrawalRequests;
+
+  try {
+    const mockPath = getMockDbPath();
+    const dir = path.dirname(mockPath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(mockPath, JSON.stringify(store, null, 2));
+  } catch (err) {
+    console.warn("Could not write mock wallet store file (read-only filesystem):", err);
+  }
 }
 
 // WALLET LEDGER OPERATIONS
