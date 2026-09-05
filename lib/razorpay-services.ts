@@ -24,12 +24,10 @@ export async function executeRazorpayRefund(
   idempotencyKey: string,
   notes: Record<string, string> = {}
 ): Promise<RazorpayRefundResult> {
-  if (!paymentId || paymentId.startsWith("mock_") || paymentId.startsWith("cod_")) {
-    // Simulated refund for COD or offline mock payments
+  if (!paymentId || paymentId.startsWith("cod_")) {
     return {
-      success: true,
-      refundId: `rfnd_sim_${Math.random().toString(36).substring(2, 11)}`,
-      status: "processed",
+      success: false,
+      error: "Refund cannot be processed: Cash on Delivery or invalid payment ID.",
     };
   }
 

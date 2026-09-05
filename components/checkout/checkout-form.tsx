@@ -222,7 +222,14 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
             prefill: {
               name: form.fullName.trim(),
               email: form.email.trim(),
-              contact: form.phone.trim(),
+              contact: form.phone.replace(/[^0-9+]/g, "").slice(-10),
+            },
+            notes: {
+              orderNumber: result.orderNumber,
+            },
+            retry: {
+              enabled: true,
+              max_count: 3,
             },
             theme: {
               color: "#7C7A5A",

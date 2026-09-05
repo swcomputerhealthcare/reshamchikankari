@@ -361,24 +361,9 @@ export async function verifyRazorpayPaymentAction(
     }
   }
 
-  // Fallback for test mode or test signatures
-  if (!isVerified) {
-    if (
-      !RAZORPAY_KEY_SECRET ||
-      RAZORPAY_KEY_SECRET.includes("dummy") ||
-      RAZORPAY_KEY_SECRET === "n3El2db9w8KRICQLqXRdN41y" ||
-      razorpayPaymentId.startsWith("pay_sim_") ||
-      razorpayPaymentId.startsWith("pay_test_") ||
-      process.env.NODE_ENV === "development"
-    ) {
-      console.log("Test mode / Fallback payment verification allowed:", { razorpayOrderId, razorpayPaymentId });
-      isVerified = true;
-    }
-  }
-
   if (!isVerified) {
     console.error("Razorpay signature verification failed:", { razorpayOrderId, razorpayPaymentId });
-    return { success: false, error: "Payment verification failed. Invalid transaction signature." };
+    return { success: false, error: "Payment verification failed. Invalid transaction signature from Razorpay." };
   }
 
   const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;

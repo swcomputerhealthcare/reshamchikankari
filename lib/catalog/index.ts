@@ -133,58 +133,6 @@ export const MOCK_CATEGORIES: Category[] = [
 
 export const MOCK_PRODUCTS: CatalogProductInput[] = [
   {
-    "id": "prod_test_1rupee",
-    "categoryId": "cat_kurtis",
-    "name": "Razorpay ₹1 Test Product",
-    "slug": "razorpay-1-rupee-test-product",
-    "description": "Special ₹1 test product created to test end-to-end Razorpay payments, webhooks, and checkout flows.",
-    "sku": "RC-TEST-1INR",
-    "pricePaise": 100,
-    "compareAtPricePaise": 10000,
-    "isActive": true,
-    "featured": true,
-    "productNumber": 999,
-    "fabric": "Mulmul Cotton",
-    "color": "Emerald Green",
-    "length": "Knee Length",
-    "neckline": "Round Neck",
-    "sleeves": "3/4 Sleeves",
-    "occasion": "Testing",
-    "washCare": "Hand Wash",
-    "images": [
-      {
-        "id": "img_test_1rupee_1",
-        "productId": "prod_test_1rupee",
-        "url": "/images/reshamchikankari/New folder 3/IMG_3001.JPG",
-        "imageUrl": "/images/reshamchikankari/New folder 3/IMG_3001.JPG",
-        "publicId": "rc_test_1rupee_1",
-        "alt": "Razorpay ₹1 Test Product",
-        "altText": "Razorpay ₹1 Test Product",
-        "isPrimary": true,
-        "width": null,
-        "height": null,
-        "sortOrder": 0
-      }
-    ],
-    "variants": [
-      {
-        "id": "var_test_1rupee_std",
-        "productId": "prod_test_1rupee",
-        "sku": "RC-TEST-1INR-STD",
-        "name": "Standard",
-        "pricePaise": 100,
-        "compareAtPricePaise": 10000,
-        "stock": 999,
-        "inventoryQuantity": 999,
-        "isActive": true,
-        "isAvailable": true,
-        "size": "Standard",
-        "colorName": null,
-        "colorCode": null
-      }
-    ]
-  },
-  {
     "id": "prod_rc_1",
     "categoryId": "cat_coord",
     "name": "RC Chanderi Sparkle set",
