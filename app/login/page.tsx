@@ -90,11 +90,29 @@ function LoginForm() {
       });
 
       if (signUpError) {
-        setError(signUpError.message || "Failed to create account. Please try again.");
+        if (signUpError.message?.toLowerCase().includes("user already registered") || signUpError.message?.toLowerCase().includes("already exists")) {
+          setError("An account with this email already exists. Please enter your password and click 'Sign In'.");
+        } else {
+          setError(signUpError.message || "Failed to create account. Please try again.");
+        }
       } else if (data?.session) {
+        setCreatedMessage("Account created successfully! Redirecting...");
         window.location.href = callbackURL;
-      } else {
-        setCreatedMessage("Account created successfully! If email confirmation is enabled, please verify your email or click Sign In.");
+      } else if (data?.user) {
+        // Attempt immediate login in case account is auto-confirmed
+        const { data: signInData, error: signInErr } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+        if (signInData?.session && !signInErr) {
+          setCreatedMessage("Account created successfully! Redirecting...");
+          window.location.href = callbackURL;
+        } else if (signInErr?.message?.toLowerCase().includes("email not confirmed")) {
+          setCreatedMessage("Account created! A confirmation link has been sent to your email. Please check your inbox (and spam folder) to activate your account, then click Sign In.");
+        } else {
+          setCreatedMessage("Account created successfully! Please click 'Sign In' to access your account.");
+        }
       }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "An unexpected error occurred during account creation.";
@@ -105,6 +123,7 @@ function LoginForm() {
   };
 
   const handleGoogleLogin = async () => {
+    if (googleState !== "idle" || isLoading || isSigningUp) return;
     setError("");
     setGoogleState("loading");
 
@@ -117,6 +136,9 @@ function LoginForm() {
         provider: "google",
         options: {
           redirectTo: redirectToUrl,
+          queryParams: {
+            prompt: "select_account",
+          },
         },
       });
 

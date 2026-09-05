@@ -25,6 +25,11 @@ export async function proxy(request: NextRequest) {
     },
   });
 
+  // Skip auth session refresh on /auth/callback so we don't clear PKCE cookies before code exchange
+  if (request.nextUrl.pathname.startsWith("/auth/callback")) {
+    return supabaseResponse;
+  }
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://woavdlhvmjikobigadqc.supabase.co";
   const supabaseKey =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
@@ -65,7 +70,7 @@ export async function proxy(request: NextRequest) {
     await supabase.auth.getUser();
   } catch (err) {
     // Prevent unhandled middleware exceptions from crashing the entire app with 500
-    console.warn("Middleware proxy auth error:", err);
+    console.warn("Middleware auth error:", err);
   }
 
   return supabaseResponse;
