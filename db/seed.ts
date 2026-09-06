@@ -1992,19 +1992,6 @@ const productsList = [
     "washCare": "Gentle Hand Wash",
     "images": [
       {
-        "id": "img_9_1",
-        "productId": "prod_rc_9",
-        "url": "/images/reshamchikankari/New folder 9/IMG_3144.JPG",
-        "imageUrl": "/images/reshamchikankari/New folder 9/IMG_3144.JPG",
-        "publicId": "rc_9_1",
-        "alt": "RC Rayon set Details View 1",
-        "altText": "RC Rayon set Details View 1",
-        "isPrimary": true,
-        "width": null,
-        "height": null,
-        "sortOrder": 0
-      },
-      {
         "id": "img_9_2",
         "productId": "prod_rc_9",
         "url": "/images/reshamchikankari/New folder 9/IMG_3146.JPG",
@@ -2012,10 +1999,10 @@ const productsList = [
         "publicId": "rc_9_2",
         "alt": "RC Rayon set Details View 2",
         "altText": "RC Rayon set Details View 2",
-        "isPrimary": false,
+        "isPrimary": true,
         "width": null,
         "height": null,
-        "sortOrder": 1
+        "sortOrder": 0
       },
       {
         "id": "img_9_3",
