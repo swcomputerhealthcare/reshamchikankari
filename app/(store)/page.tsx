@@ -25,7 +25,9 @@ export default async function StorefrontHome() {
       dbReviewsList = await db
         .select({
           id: reviews.id,
-          authorName: profiles.fullName,
+          userFullName: profiles.fullName,
+          authorName: reviews.authorName,
+          title: reviews.title,
           rating: reviews.rating,
           body: reviews.body,
           isVerified: reviews.isVerifiedPurchase,
@@ -41,7 +43,7 @@ export default async function StorefrontHome() {
 
   const initialReviews = dbReviewsList.map((r) => ({
     id: r.id,
-    authorName: r.authorName || "Valued Patron",
+    authorName: r.userFullName || r.authorName || r.title || "Valued Patron",
     rating: r.rating,
     body: r.body,
     isVerified: r.isVerified ?? true,

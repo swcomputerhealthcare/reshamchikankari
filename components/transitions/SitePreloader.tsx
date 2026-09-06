@@ -26,7 +26,7 @@ export default function SitePreloader({ children }: { children: React.ReactNode 
       setIsFinished(true);
       setShowPreloader(false);
       start(); // Unlock Lenis smooth scroll
-    }, 950); // 250ms content fade + 700ms curtain slide
+    }, 450);
   }, [start]);
 
   useEffect(() => {
@@ -46,9 +46,9 @@ export default function SitePreloader({ children }: { children: React.ReactNode 
     setShowPreloader(true);
     stop();
 
-    // 2-Second Sweet Spot Minimum Duration
-    const MIN_PRELOADER_TIME = 2000;
-    const MAX_SAFETY_TIME = 3500;
+    // Snappy luxury duration
+    const MIN_PRELOADER_TIME = 450;
+    const MAX_SAFETY_TIME = 800;
     let isResourceReady = false;
 
     // 1. Font readiness check
@@ -70,24 +70,18 @@ export default function SitePreloader({ children }: { children: React.ReactNode 
       img2.src = "/images/hero-mobile.png";
     }
 
-    // 3. Staggered Timeline Animation Sequence:
-    // 0-900ms: Title & Subtitle fade in
-    // 900-1700ms: Progress line draws 0 -> 100%
-    // 1700-1900ms: 200ms brief hold at 100%
-    // 1900ms+: Exit curtain reveal
     const animateProgress = (timestamp: number) => {
       if (!startTimeRef.current) startTimeRef.current = timestamp;
       const elapsed = timestamp - startTimeRef.current;
 
-      const progressStartMs = 900;
-      const progressDurationMs = 800; // 900ms to 1700ms
+      const progressStartMs = 100;
+      const progressDurationMs = 350;
 
       let rawProgress = 0;
       if (elapsed >= progressStartMs) {
         rawProgress = Math.min(100, ((elapsed - progressStartMs) / progressDurationMs) * 100);
       }
 
-      // If progress reaches 100% before 2000ms or before resources are ready, hold at 100% until MIN_PRELOADER_TIME
       const canExit = elapsed >= MIN_PRELOADER_TIME && (isResourceReady || elapsed >= MAX_SAFETY_TIME);
 
       setProgress(rawProgress);
@@ -95,7 +89,6 @@ export default function SitePreloader({ children }: { children: React.ReactNode 
       if (!canExit || rawProgress < 100) {
         rafRef.current = requestAnimationFrame(animateProgress);
       } else {
-        // Trigger curtain opening sequence at 1900ms-2000ms
         triggerExitSequence();
       }
     };

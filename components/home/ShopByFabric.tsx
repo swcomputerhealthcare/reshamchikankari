@@ -1,5 +1,4 @@
 import React from "react";
-import Image from "next/image";
 import Container from "@/components/ui/container";
 import ScrollReveal from "@/components/performance/ScrollReveal";
 import FabricCard from "@/components/home/FabricCard";
@@ -7,39 +6,51 @@ import FabricCard from "@/components/home/FabricCard";
 const FABRICS = [
   {
     number: "01",
-    name: "MODAL",
-    descriptor: "LIGHT · FLUID · EVERYDAY",
-    ctaText: "EXPLORE MODAL",
-    image: "/images/reshamchikankari/New folder 5/IMG_3230.JPG",
-    href: "/shop?fabric=modal",
-    className: "lg:col-span-5 lg:col-start-1",
+    name: "COTTON",
+    descriptor: "STRUCTURED · BREATHABLE · PURE",
+    ctaText: "EXPLORE COTTON",
+    image: "/images/Cotton.jpeg",
+    href: "/shop?fabric=cotton",
   },
   {
     number: "02",
-    name: "MUSLIN",
-    descriptor: "SOFT · AIRY · TIMELESS",
-    ctaText: "EXPLORE MUSLIN",
-    image: "/images/reshamchikankari/New folder/IMG_2685.JPG",
-    href: "/shop?fabric=muslin",
-    className: "lg:col-span-5 lg:col-start-7 lg:mt-20",
+    name: "RAYON",
+    descriptor: "SILKY DRAPE · AIRY · EFFORTLESS",
+    ctaText: "EXPLORE RAYON",
+    image: "/images/Rayon.jpeg",
+    href: "/shop?fabric=rayon",
   },
   {
     number: "03",
     name: "VISCOSE",
-    descriptor: "FLUID · FALLING · ELEGANT",
+    descriptor: "FLUID · REGAL · GEORGETTE",
     ctaText: "EXPLORE VISCOSE",
-    image: "/images/reshamchikankari/New folder 21/IMG_3192.JPG",
+    image: "/images/Viscose.jpeg",
     href: "/shop?fabric=viscose",
-    className: "lg:col-span-5 lg:col-start-1",
   },
   {
     number: "04",
-    name: "COTTON",
-    descriptor: "STRUCTURED · BREATHABLE · CLASSIC",
-    ctaText: "EXPLORE COTTON",
-    image: "/images/reshamchikankari/New folder 2/IMG_3250.JPG",
-    href: "/shop?fabric=cotton",
-    className: "lg:col-span-5 lg:col-start-7 lg:mt-10",
+    name: "CHANDERI",
+    descriptor: "HERITAGE WEAVE · SHEER · LUSTROUS",
+    ctaText: "EXPLORE CHANDERI",
+    image: "/images/Chanderi.jpeg",
+    href: "/shop?fabric=chanderi",
+  },
+  {
+    number: "05",
+    name: "MODAL",
+    descriptor: "FEATHERLIGHT · SMOOTH · EVERYDAY",
+    ctaText: "EXPLORE MODAL",
+    image: "/images/Modal.jpeg",
+    href: "/shop?fabric=modal",
+  },
+  {
+    number: "06",
+    name: "MUSLIN",
+    descriptor: "TIMELESS WEAVE · GAUZY · SOFT",
+    ctaText: "EXPLORE MUSLIN",
+    image: "/images/Muslin.jpeg",
+    href: "/shop?fabric=muslin",
   },
 ];
 
@@ -66,14 +77,13 @@ export default function ShopByFabric() {
           </div>
         </ScrollReveal>
 
-        {/* Asymmetric Swiss Editorial Grid Layout */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-10 sm:gap-12 lg:gap-x-14 lg:gap-y-16">
+        {/* 6-Fabric Luxury Editorial Grid Layout */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10 lg:gap-x-10 lg:gap-y-14">
           {FABRICS.map((fabric, idx) => (
             <ScrollReveal
               key={fabric.name}
               direction="up"
-              delay={idx * 0.1}
-              className={fabric.className}
+              delay={idx * 0.08}
             >
               <FabricCard {...fabric} />
             </ScrollReveal>

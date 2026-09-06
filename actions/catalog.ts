@@ -190,6 +190,7 @@ export async function updateProductAction(id: string, formData: Partial<z.infer<
       }
     }
 
+    revalidatePath("/");
     revalidatePath(`/product/${formData.slug || ""}`);
     revalidatePath("/shop");
     revalidatePath("/admin/products");
@@ -209,9 +210,16 @@ export async function deactivateProductAction(id: string, active: boolean) {
   }
 
   try {
+    const prod = await db.query.products.findFirst({
+      where: eq(products.id, id),
+    });
     await db.update(products).set({ isActive: active }).where(eq(products.id, id));
+    revalidatePath("/");
     revalidatePath("/shop");
     revalidatePath("/admin/products");
+    if (prod?.slug) {
+      revalidatePath(`/product/${prod.slug}`);
+    }
     return { success: true };
   } catch (error) {
     console.error("DB Deactivate Product failed:", error);
@@ -423,6 +431,7 @@ export async function deleteProductAction(id: string) {
 
   try {
     await db.delete(products).where(eq(products.id, id));
+    revalidatePath("/");
     revalidatePath("/shop");
     revalidatePath("/admin/products");
     return { success: true };

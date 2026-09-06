@@ -28,16 +28,18 @@ export default function AboutPage() {
 
         {/* Section 1: The Founder's Family Journey */}
         <section className="flex flex-col md:flex-row items-center justify-center gap-10 lg:gap-16 pt-2">
-          {/* Left Campaign Image */}
-          <div className="w-full md:w-1/2 aspect-[4/5] sm:aspect-[3/4] md:aspect-[4/5] max-h-[640px] relative overflow-hidden rounded-2xl border border-[#ECE9E2] shadow-xs bg-[#F8F2EC]">
-            <Image
-              src="/images/reshamchikankari/New%20folder%203/IMG_3001.JPG"
-              alt="Hand-embroidered Lucknowi Chikankari Kurti detail"
-              fill
-              className="object-cover object-top"
-              sizes="(max-width: 768px) 100vw, 50vw"
-              priority
-            />
+          {/* Left Campaign Image: Founders Portrait */}
+          <div className="w-full md:w-1/2 flex justify-center">
+            <div className="relative w-full max-w-[560px] aspect-[1122/1402] overflow-hidden rounded-2xl border border-[#ECE9E2] shadow-md bg-[#F8F2EC]">
+              <Image
+                src="/images/about.png"
+                alt="Resham Chikankari Founders — A Shared Family Dream"
+                fill
+                priority
+                className="object-contain object-center"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
           </div>
 
           {/* Right Personal Narrative */}

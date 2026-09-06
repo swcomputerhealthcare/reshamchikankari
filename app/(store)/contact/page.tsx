@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Container from "@/components/ui/container";
 import Button from "@/components/ui/button";
-import { Mail, MessageCircle, Phone, MapPin, Clock, Send, CheckCircle2, Sparkles } from "lucide-react";
+import { Mail, MessageCircle, MapPin, Clock, Send, CheckCircle2, Sparkles } from "lucide-react";
 
 function InstagramIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -131,7 +131,7 @@ export default function ContactPage() {
                     <input
                       id="phone"
                       type="tel"
-                      placeholder="+91 98765 43210"
+                      placeholder="+91 96259 40329"
                       value={formState.phone}
                       onChange={(e) => setFormState((prev) => ({ ...prev, phone: e.target.value }))}
                       className="w-full px-4 py-3.5 bg-[#FFF9F4] border border-[#ECE9E2] rounded-xl focus:outline-none focus:ring-1 focus:ring-[#7C7A5A] text-xs text-[#161616]"
@@ -195,7 +195,7 @@ export default function ContactPage() {
               </h3>
 
               {/* Email */}
-              <a href="mailto:concierge@reshamchikankari.com" className="flex items-start gap-4 group">
+              <a href="mailto:info@reshamchikankari.com" className="flex items-start gap-4 group">
                 <div className="w-10 h-10 rounded-xl bg-[#7C7A5A]/10 text-[#7C7A5A] group-hover:bg-[#E694AA]/20 group-hover:text-[#E694AA] flex items-center justify-center shrink-0 transition-colors">
                   <Mail className="w-5 h-5" />
                 </div>
@@ -204,13 +204,13 @@ export default function ContactPage() {
                     EMAIL CONCIERGE
                   </span>
                   <p className="text-sm sm:text-base font-semibold text-[#161616] group-hover:text-[#7C7A5A] transition-colors">
-                    concierge@reshamchikankari.com
+                    info@reshamchikankari.com
                   </p>
                 </div>
               </a>
 
               {/* WhatsApp */}
-              <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" className="flex items-start gap-4 group">
+              <a href="https://wa.me/919625940329" target="_blank" rel="noopener noreferrer" className="flex items-start gap-4 group">
                 <div className="w-10 h-10 rounded-xl bg-[#7C7A5A]/10 text-[#7C7A5A] group-hover:bg-[#E694AA]/20 group-hover:text-[#E694AA] flex items-center justify-center shrink-0 transition-colors">
                   <MessageCircle className="w-5 h-5" />
                 </div>
@@ -219,28 +219,13 @@ export default function ContactPage() {
                     WHATSAPP PATRON CARE
                   </span>
                   <p className="text-sm sm:text-base font-semibold text-[#161616] group-hover:text-[#7C7A5A] transition-colors">
-                    +91 98765 43210
-                  </p>
-                </div>
-              </a>
-
-              {/* Phone Direct */}
-              <a href="tel:+919876543210" className="flex items-start gap-4 group">
-                <div className="w-10 h-10 rounded-xl bg-[#7C7A5A]/10 text-[#7C7A5A] group-hover:bg-[#E694AA]/20 group-hover:text-[#E694AA] flex items-center justify-center shrink-0 transition-colors">
-                  <Phone className="w-5 h-5" />
-                </div>
-                <div>
-                  <span className="text-[9px] font-bold uppercase tracking-widest text-neutral-400 block mb-0.5">
-                    TELEPHONE HELPLINE
-                  </span>
-                  <p className="text-sm sm:text-base font-semibold text-[#161616] group-hover:text-[#7C7A5A] transition-colors">
-                    +91 (0522) 261-0099
+                    +91 96259 40329
                   </p>
                 </div>
               </a>
 
               {/* Instagram */}
-              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="flex items-start gap-4 group">
+              <a href="https://www.instagram.com/resham.chikankari/" target="_blank" rel="noopener noreferrer" className="flex items-start gap-4 group">
                 <div className="w-10 h-10 rounded-xl bg-[#7C7A5A]/10 text-[#7C7A5A] group-hover:bg-[#E694AA]/20 group-hover:text-[#E694AA] flex items-center justify-center shrink-0 transition-colors">
                   <InstagramIcon className="w-5 h-5" />
                 </div>
@@ -249,7 +234,7 @@ export default function ContactPage() {
                     INSTAGRAM JOURNAL
                   </span>
                   <p className="text-sm sm:text-base font-semibold text-[#161616] group-hover:text-[#7C7A5A] transition-colors">
-                    @reshamchikankari.official
+                    @resham.chikankari
                   </p>
                 </div>
               </a>
@@ -287,8 +272,8 @@ export default function ContactPage() {
         {/* 3. EDITORIAL PHOTOGRAPHY BANNER */}
         <div className="relative w-full aspect-[21/9] sm:aspect-[24/9] rounded-2xl overflow-hidden border border-[#ECE9E2] shadow-xs">
           <Image
-            src="/images/reshamchikankari/New%20folder%205/IMG_3230.JPG"
-            alt="Hand-embroidered Lucknowi Chikankari craftsmanship"
+            src="/images/contact-atelier.webp"
+            alt="Hand-embroidered Lucknowi Chikankari craftsmanship at the atelier"
             fill
             className="object-cover object-center"
             sizes="100vw"

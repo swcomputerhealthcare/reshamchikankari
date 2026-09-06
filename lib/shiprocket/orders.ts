@@ -79,9 +79,27 @@ export function buildShiprocketOrderPayload(
   const isCOD = order.paymentProvider === "COD";
 
   const rawName = (addr.fullName || addr.name || "Customer").trim();
-  const nameParts = rawName.split(" ");
+  const nameParts = rawName.split(/\s+/);
   const firstName = nameParts[0] || "Valued";
   const lastName = nameParts.slice(1).join(" ") || firstName;
+
+  // Sanitize 10-digit phone number (strip +91, spaces, hyphens)
+  const rawPhone = String(addr.phone || "9999999999").replace(/\D/g, "");
+  const cleanPhone = rawPhone.length >= 10 ? rawPhone.slice(-10) : "9999999999";
+
+  // Sanitize pincode (6 digits)
+  const rawPincode = String(addr.zip || addr.pincode || "110001").replace(/\D/g, "");
+  const cleanPincode = rawPincode.length >= 6 ? rawPincode.slice(0, 6) : "110001";
+
+  // Sanitize address (Shiprocket requires minimum 10 characters, max 190 characters)
+  let cleanAddress = (addr.street || addr.addressLine1 || addr.address || "").trim();
+  if (cleanAddress.length < 10) {
+    cleanAddress = `${cleanAddress}, ${addr.city || "Lucknow"}, ${addr.state || "Uttar Pradesh"}`.trim();
+  }
+  if (cleanAddress.length < 10) {
+    cleanAddress = `Atelier Delivery Address, ${cleanAddress}`.trim();
+  }
+  cleanAddress = cleanAddress.substring(0, 190);
 
   return {
     order_id: order.orderNumber,
@@ -89,14 +107,14 @@ export function buildShiprocketOrderPayload(
     pickup_location: process.env.SHIPROCKET_PICKUP_LOCATION || env.SHIPROCKET_PICKUP_LOCATION || "Home",
     billing_customer_name: firstName,
     billing_last_name: lastName,
-    billing_address: addr.street || addr.addressLine1 || addr.address || "Main Road",
-    billing_address_2: addr.addressLine2 || "",
+    billing_address: cleanAddress,
+    billing_address_2: (addr.addressLine2 || "").substring(0, 190),
     billing_city: addr.city || "New Delhi",
-    billing_pincode: String(addr.zip || addr.pincode || "110001"),
+    billing_pincode: cleanPincode,
     billing_state: addr.state || "Delhi",
     billing_country: addr.country || "India",
     billing_email: addr.email || "customer@reshamchikankari.com",
-    billing_phone: String(addr.phone || "9999999999"),
+    billing_phone: cleanPhone,
     shipping_is_billing: true,
     order_items: orderItems,
     payment_method: isCOD ? "COD" : "Prepaid",

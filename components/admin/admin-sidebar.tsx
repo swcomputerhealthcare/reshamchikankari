@@ -7,15 +7,8 @@ import { createClient } from "@/lib/supabase/client";
 import {
   LayoutDashboard,
   Package,
-  FolderHeart,
   ShoppingBag,
-  Users,
   Star,
-  Tag,
-  Image as ImageIcon,
-  BarChart3,
-  Globe,
-  Wallet,
   Settings as SettingsIcon,
   ExternalLink,
   LogOut,
@@ -53,15 +46,8 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
   const navItems = [
     { name: "Overview", href: "/admin", icon: LayoutDashboard },
     { name: "Products", href: "/admin/products", icon: Package },
-    { name: "Categories", href: "/admin/categories", icon: FolderHeart },
     { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
-    { name: "Customers", href: "/admin/customers", icon: Users },
-    { name: "Wallet", href: "/admin/wallet", icon: Wallet },
     { name: "Reviews", href: "/admin/reviews", icon: Star },
-    { name: "Coupons", href: "/admin/coupons", icon: Tag },
-    { name: "Media", href: "/admin/media", icon: ImageIcon },
-    { name: "Analytics", href: "/admin/analytics", icon: BarChart3 },
-    { name: "SEO", href: "/admin/seo", icon: Globe },
     { name: "Settings", href: "/admin/settings", icon: SettingsIcon },
   ];
 
@@ -69,12 +55,17 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
     return (
       <div className="flex flex-col h-full bg-brand-black text-brand-offwhite border-r border-white/10 font-sans selection:bg-brand-pink/20">
         {/* Branding */}
-        <div className="py-8 px-6 border-b border-white/5">
-          <Link href="/admin" onClick={() => setIsOpen(false)}>
-            <span className="font-display text-2xl tracking-widest text-brand-pink block">RC</span>
-            <span className="text-[10px] tracking-[0.25em] uppercase text-neutral-400 font-semibold block mt-1">
-              Resham Chikankari
-            </span>
+        <div className="py-6 px-6 border-b border-white/5">
+          <Link href="/admin" onClick={() => setIsOpen(false)} className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full border border-white/20 p-1 bg-white/5 flex items-center justify-center flex-shrink-0">
+              <img src="/images/logo.png" alt="Resham Chikankari" className="h-full w-full object-contain" />
+            </div>
+            <div>
+              <span className="font-display text-lg tracking-widest text-brand-pink block font-semibold">Resham</span>
+              <span className="text-[9px] tracking-[0.22em] uppercase text-neutral-400 font-semibold block">
+                Atelier Admin
+              </span>
+            </div>
           </Link>
         </div>
 
@@ -154,8 +145,9 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
 
       {/* Mobile Sticky Top Header */}
       <div className="lg:hidden h-16 w-full bg-brand-black text-brand-offwhite flex items-center justify-between px-6 border-b border-white/10 fixed top-0 left-0 z-40 selection:bg-brand-pink/20">
-        <Link href="/admin">
-          <span className="font-display text-xl tracking-widest text-brand-pink">Resham</span>
+        <Link href="/admin" className="flex items-center gap-2.5">
+          <img src="/images/logo.png" alt="Resham Chikankari" className="h-7 w-7 object-contain" />
+          <span className="font-display text-lg tracking-widest text-brand-pink font-semibold">Resham Admin</span>
         </Link>
         <button
           onClick={() => setIsOpen(!isOpen)}

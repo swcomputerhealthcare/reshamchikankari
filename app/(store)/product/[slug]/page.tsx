@@ -5,6 +5,9 @@ import ProductDetailClient from "@/components/product/product-detail-client";
 import { getProductBySlug } from "@/lib/catalog";
 import { getWishlistItems } from "@/lib/wishlist";
 
+import ProductReviews from "@/components/product/product-reviews";
+import { getProductReviewsAction } from "@/actions/review";
+
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -34,7 +37,13 @@ export default async function ProductDetailPage(props: ProductPageProps) {
     notFound();
   }
 
+  const reviews = await getProductReviewsAction(product.id);
   const isWishlisted = wishlistIds.includes(product.id);
+
+  const averageRating =
+    reviews.length > 0
+      ? (reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length).toFixed(1)
+      : null;
 
   return (
     <div className="py-12 sm:py-20">
@@ -42,6 +51,14 @@ export default async function ProductDetailPage(props: ProductPageProps) {
         <ProductDetailClient
           product={product}
           initialWishlisted={isWishlisted}
+          reviewsCount={reviews.length}
+          averageRating={averageRating}
+        />
+
+        <ProductReviews
+          productId={product.id}
+          productName={product.name}
+          initialReviews={reviews}
         />
       </Container>
     </div>

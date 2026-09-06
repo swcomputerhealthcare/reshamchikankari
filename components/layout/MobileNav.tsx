@@ -63,7 +63,7 @@ export default function MobileNav({ user, variant = "default" }: MobileNavProps)
       {/* Left burger menu trigger */}
       <button
         onClick={() => setIsOpen(true)}
-        className={`p-2 -ml-2 hover:text-brand-pink transition-colors cursor-pointer border-none bg-transparent ${
+        className={`relative z-10 p-2 -ml-2 hover:text-brand-pink transition-colors cursor-pointer border-none bg-transparent ${
           variant === "dark" ? "text-[#FFF9F4]" : "text-brand-black"
         }`}
         aria-label="Open mobile menu"
@@ -71,18 +71,25 @@ export default function MobileNav({ user, variant = "default" }: MobileNavProps)
         <Menu className="w-6 h-6" />
       </button>
 
-      {/* Center Brand Logo */}
-      <Link 
-        href="/" 
-        className={`font-display text-lg sm:text-xl tracking-wider select-none text-center truncate max-w-[160px] sm:max-w-none ${
-          variant === "dark" ? "text-[#FFF9F4]" : "text-brand-black"
-        }`}
-      >
-        Resham Chikankari
-      </Link>
+      {/* Center Brand Text: Resham Chikankari (Mathematically centered with balanced side spaces) */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-12 sm:px-16">
+        <Link 
+          href="/" 
+          className="pointer-events-auto select-none py-1 transition-opacity hover:opacity-85"
+          aria-label="Resham Chikankari Home"
+        >
+          <span
+            className={`font-display text-[17px] min-[375px]:text-[19px] sm:text-[21px] tracking-[0.03em] font-normal whitespace-nowrap ${
+              variant === "dark" ? "text-[#FFF9F4]" : "text-brand-black"
+            }`}
+          >
+            Resham Chikankari
+          </span>
+        </Link>
+      </div>
 
       {/* Right Search & Cart triggers */}
-      <div className="flex items-center gap-2">
+      <div className="relative z-10 flex items-center gap-2">
         <HeaderSearch variant={variant} />
         
         <Link
@@ -119,9 +126,22 @@ export default function MobileNav({ user, variant = "default" }: MobileNavProps)
             
             {/* Drawer Top Header */}
             <div className="flex justify-between items-center pb-6 border-b border-brand-black/10 mb-6">
-              <span className="font-display text-xl tracking-wide text-brand-black">
-                Resham Chikankari
-              </span>
+              <Link
+                href="/"
+                onClick={() => setIsOpen(false)}
+                className="flex items-center gap-3 group"
+              >
+                <Image
+                  src="/images/logo.webp"
+                  alt="Resham Chikankari"
+                  width={36}
+                  height={36}
+                  className="w-9 h-9 object-cover rounded-full border border-brand-black/10 shadow-2xs group-hover:scale-105 transition-transform"
+                />
+                <span className="font-display text-xl tracking-wide text-brand-black">
+                  Resham Chikankari
+                </span>
+              </Link>
               <button
                 onClick={() => setIsOpen(false)}
                 className="text-neutral-500 hover:text-brand-black cursor-pointer p-2 border-none bg-transparent rounded-full hover:bg-black/5 transition-colors"

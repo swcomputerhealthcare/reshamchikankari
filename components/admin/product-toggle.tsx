@@ -6,9 +6,10 @@ import { deactivateProductAction } from "@/actions/catalog";
 interface ProductToggleProps {
   id: string;
   initialActive: boolean;
+  onToggle?: (active: boolean) => void;
 }
 
-export default function ProductToggle({ id, initialActive }: ProductToggleProps) {
+export default function ProductToggle({ id, initialActive, onToggle }: ProductToggleProps) {
   const [isPending, startTransition] = useTransition();
   const [active, setActive] = useState(initialActive);
 
@@ -18,6 +19,7 @@ export default function ProductToggle({ id, initialActive }: ProductToggleProps)
       const res = await deactivateProductAction(id, nextActive);
       if (res.success) {
         setActive(nextActive);
+        onToggle?.(nextActive);
       } else {
         alert("Failed to update status");
       }

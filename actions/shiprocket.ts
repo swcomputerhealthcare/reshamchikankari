@@ -11,6 +11,7 @@ import {
   assignShiprocketAWB,
   generateShiprocketPickup,
   trackShiprocketShipment,
+  checkCourierServiceability,
   mapShiprocketStatusToInternal,
   type DBOrderForShipment,
 } from "@/lib/shiprocket";
@@ -111,12 +112,41 @@ export async function triggerOrderFulfillment(orderId: string) {
     let courierCompanyId = srData.courier_company_id ? Number(srData.courier_company_id) : null;
 
     if (!awbCode && srShipmentId) {
-      const awbRes = await assignShiprocketAWB(srShipmentId);
+      let courierId: number | undefined = undefined;
+      try {
+        const addrSnap = (orderData.shippingAddressSnapshot as any) || {};
+        const destPincode = String(
+          addrSnap.pincode ||
+          addrSnap.zip ||
+          "226001"
+        );
+        const totalWeight = shipmentOrder.items.reduce(
+          (acc, i) => acc + (i.product?.weightKg ?? 0.5) * i.quantity,
+          0
+        );
+        const serviceCheck = await checkCourierServiceability(destPincode, totalWeight || 0.5);
+        if (serviceCheck.serviceable && serviceCheck.recommendedCourierId) {
+          courierId = serviceCheck.recommendedCourierId;
+        }
+      } catch (e) {
+        console.warn("Serviceability lookup error during AWB assignment:", e);
+      }
+
+      const awbRes = await assignShiprocketAWB(srShipmentId, courierId);
       if (awbRes.success && awbRes.data?.response?.data) {
         const awbData = awbRes.data.response.data;
         awbCode = awbData.awb_code;
         courierName = awbData.courier_name;
         courierCompanyId = awbData.courier_company_id;
+      } else if (!awbRes.success) {
+        console.warn(`AWB assignment notice for order ${orderId}:`, awbRes.error);
+        await db
+          .update(orders)
+          .set({
+            shippingError: awbRes.error || "Awaiting manual courier/AWB assignment in Shiprocket dashboard.",
+            updatedAt: new Date(),
+          })
+          .where(eq(orders.id, orderId));
       }
     }
 
@@ -130,6 +160,7 @@ export async function triggerOrderFulfillment(orderId: string) {
           courierCompanyId,
           trackingUrl,
           fulfillmentStatus: "AWB_ASSIGNED",
+          shippingError: null,
           updatedAt: new Date(),
         })
         .where(eq(orders.id, orderId));
@@ -145,6 +176,8 @@ export async function triggerOrderFulfillment(orderId: string) {
             updatedAt: new Date(),
           })
           .where(eq(orders.id, orderId));
+      } else {
+        console.warn(`Pickup scheduling notice for order ${orderId}:`, pickupRes.error);
       }
 
       // Dispatch Shipment Dispatched Email asynchronously

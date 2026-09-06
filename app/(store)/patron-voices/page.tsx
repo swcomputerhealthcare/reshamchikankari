@@ -1,47 +1,17 @@
 import React from "react";
-import Image from "next/image";
 import Link from "next/link";
 import Container from "@/components/ui/container";
-import { Star, Quote, CheckCircle2 } from "lucide-react";
+import { Star, CheckCircle2 } from "lucide-react";
 import { db } from "@/db";
 import { reviews } from "@/db/schema/review";
 import { profiles } from "@/db/schema/auth";
 import { eq, desc } from "drizzle-orm";
+import PatronVoicesShowcase from "@/components/testimonials/PatronVoicesShowcase";
 
 export const metadata = {
   title: "Patron Voices — Resham Chikankari",
   description: "Read reflections and testimonials from patrons and lovers of handcrafted Lucknowi Chikankari.",
 };
-
-const FEATURED_PATRONS = [
-  {
-    id: "1",
-    name: "Dr. Ananya Sharma",
-    location: "New Delhi",
-    garment: "Nūr White Chikankari Kurta Set",
-    quote: "The delicate precision of the threadwork is unlike anything I've owned before. You can truly feel the human hands and history in every motif.",
-    rating: 5,
-    date: "November 2024",
-  },
-  {
-    id: "2",
-    name: "Meera Sen",
-    location: "Mumbai",
-    garment: "Gulāb Dusty Rose Silk Dupatta",
-    quote: "Subtle, ethereal, and incredibly breathable. Resham Chikankari captures quiet luxury in the truest sense.",
-    rating: 5,
-    date: "December 2024",
-  },
-  {
-    id: "3",
-    name: "Kavita Rao",
-    location: "Bengaluru",
-    garment: "Bagh Heritage Sage Bandi",
-    quote: "The texture is gossamer light yet structured. The block printing combined with Bakhiya stitches is pure poetry.",
-    rating: 5,
-    date: "January 2025",
-  },
-];
 
 export default async function PatronVoicesPage() {
   let dbReviews: any[] = [];
@@ -53,96 +23,77 @@ export default async function PatronVoicesPage() {
         body: reviews.body,
         isVerified: reviews.isVerifiedPurchase,
         userName: profiles.fullName,
+        authorName: reviews.authorName,
+        title: reviews.title,
       })
       .from(reviews)
       .leftJoin(profiles, eq(reviews.userId, profiles.id))
       .where(eq(reviews.isApproved, true))
       .orderBy(desc(reviews.createdAt))
-      .limit(10);
+      .limit(8);
   } catch (e) {
     console.error("Could not fetch DB reviews:", e);
   }
 
   return (
     <div className="bg-[#FFF9F4] text-[#1b1c19] min-h-screen font-sans selection:bg-[#7C7A5A] selection:text-[#FFF9F4] py-12 sm:py-20">
-      <Container className="max-w-6xl">
+      <Container className="max-w-7xl">
         {/* Editorial Hero Header */}
-        <div className="text-center max-w-3xl mx-auto mb-16 sm:mb-24 space-y-4">
-          <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.25em] text-[#E694AA]">
-            TESTIMONIALS & REFLECTIONS
-          </span>
+        <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-16 space-y-4">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#E694AA]/15 border border-[#E694AA]/40 text-[#B66F79] text-[10.5px] sm:text-xs font-bold uppercase tracking-[0.24em]">
+            <span>✦ TESTIMONIALS & CRAFT REFLECTIONS ✦</span>
+          </div>
+
           <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl text-[#7C7A5A] tracking-tight">
             PATRON VOICES
           </h1>
+
           <p className="font-sans text-sm sm:text-base text-[#69727D] max-w-xl mx-auto leading-relaxed">
-            Reflections from connoisseurs of fine Lucknowi craftsmanship across the globe.
+            Reflections from connoisseurs and patrons across India and the globe who cherish the authentic art of Lucknowi Chikankari.
           </p>
           <div className="h-px w-20 bg-[#7C7A5A]/30 mx-auto pt-2" />
         </div>
 
-        {/* Featured Patron Spotlights Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10 mb-20">
-          {FEATURED_PATRONS.map((patron) => (
-            <div
-              key={patron.id}
-              className="bg-[#F8F2EC] border border-[#ECE9E2] rounded-2xl p-8 flex flex-col justify-between text-left relative overflow-hidden group hover:border-[#7C7A5A]/30 transition-all duration-300 shadow-xs"
-            >
-              <Quote className="w-10 h-10 text-[#7C7A5A]/15 mb-4 group-hover:text-[#7C7A5A]/30 transition-colors" />
+        {/* 3-Column Animated Testimonials Showcase */}
+        <PatronVoicesShowcase />
 
-              <div className="space-y-4 flex-1">
-                <div className="flex items-center gap-1 text-[#E2D89B]">
-                  {Array.from({ length: patron.rating }).map((_, i) => (
-                    <Star key={i} className="w-4 h-4 fill-current stroke-none" />
-                  ))}
-                </div>
-
-                <p className="font-display text-lg text-[#161616] leading-snug">
-                  &ldquo;{patron.quote}&rdquo;
-                </p>
-              </div>
-
-              <div className="pt-6 mt-6 border-t border-[#ECE9E2]">
-                <p className="font-sans text-sm font-bold text-[#7C7A5A]">{patron.name}</p>
-                <div className="flex items-center gap-2 text-[10px] uppercase tracking-wider text-[#69727D] mt-0.5">
-                  <span>{patron.location}</span>
-                  <span>·</span>
-                  <span className="flex items-center gap-1 text-[#7C7A5A]">
-                    <CheckCircle2 className="w-3 h-3 text-[#7C7A5A]" /> Verified Patron
-                  </span>
-                </div>
-                <p className="text-[10px] text-[#69727D]/80 mt-1 italic">{patron.garment}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Database Community Reviews Grid if available */}
+        {/* Database Community Reviews Grid (if available) */}
         {dbReviews.length > 0 && (
           <div className="mt-16 pt-16 border-t border-[#ECE9E2] text-left">
-            <h2 className="font-display text-2xl sm:text-3xl text-[#7C7A5A] mb-8">
-              Recent Reviews from Our Community
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="text-center max-w-2xl mx-auto mb-10 space-y-2">
+              <span className="text-[10px] sm:text-xs font-bold uppercase tracking-[0.22em] text-[#E694AA]">
+                ATELIER DIALOGUES
+              </span>
+              <h2 className="font-display text-2xl sm:text-4xl text-[#7C7A5A]">
+                Recent Reviews from Our Community
+              </h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {dbReviews.map((rev) => (
                 <div
                   key={rev.id}
-                  className="p-6 bg-white rounded-xl border border-[#ECE9E2] space-y-3"
+                  className="p-6 bg-[#F8F2EC] rounded-2xl border border-[#ECE9E2] space-y-3 flex flex-col justify-between shadow-xs"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1 text-[#E2D89B]">
-                      {Array.from({ length: rev.rating || 5 }).map((_, i) => (
-                        <Star key={i} className="w-3.5 h-3.5 fill-current stroke-none" />
-                      ))}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1 text-[#E2D89B]">
+                        {Array.from({ length: rev.rating || 5 }).map((_, i) => (
+                          <Star key={i} className="w-3.5 h-3.5 fill-current stroke-none" />
+                        ))}
+                      </div>
+                      {rev.isVerified && (
+                        <span className="text-[9px] uppercase tracking-wider font-semibold text-[#7C7A5A] flex items-center gap-1">
+                          <CheckCircle2 className="w-3 h-3 text-[#7C7A5A]" /> Verified
+                        </span>
+                      )}
                     </div>
-                    {rev.isVerified && (
-                      <span className="text-[9px] uppercase tracking-wider font-semibold text-[#7C7A5A]">
-                        Verified Purchase
-                      </span>
-                    )}
+                    <p className="font-sans text-xs text-[#2c3028] leading-relaxed italic">
+                      &ldquo;{rev.body}&rdquo;
+                    </p>
                   </div>
-                  <p className="text-sm text-[#161616] leading-relaxed">&ldquo;{rev.body}&rdquo;</p>
-                  <p className="text-xs font-semibold text-[#69727D]">
-                    — {rev.userName || "Valued Patron"}
+                  <p className="text-xs font-bold text-[#161616] pt-3 border-t border-[#ECE9E2]">
+                    — {rev.userName || rev.authorName || rev.title || "Valued Patron"}
                   </p>
                 </div>
               ))}
@@ -151,16 +102,22 @@ export default async function PatronVoicesPage() {
         )}
 
         {/* Call to Action Footer */}
-        <div className="mt-20 p-10 bg-[#7C7A5A] text-[#FFF9F4] rounded-3xl text-center space-y-4 shadow-md">
-          <h3 className="font-display text-2xl sm:text-3xl">Are you a Resham Chikankari Patron?</h3>
-          <p className="text-xs sm:text-sm text-[#FFF9F4]/80 max-w-lg mx-auto leading-relaxed">
-            We welcome your craft reflections and stories. Explore our collection and share your experience with our community.
+        <div className="mt-16 sm:mt-24 p-8 sm:p-12 bg-[#7C7A5A] text-[#FFF9F4] rounded-3xl text-center space-y-5 shadow-xl">
+          <span className="text-[10.5px] uppercase font-bold tracking-[0.24em] text-[#E694AA]">
+            EXPERIENCE THE HERITAGE
+          </span>
+          <h3 className="font-display text-2xl sm:text-4xl text-[#FFF9F4]">
+            Are you a Resham Chikankari Patron?
+          </h3>
+          <p className="text-xs sm:text-sm text-[#FFF9F4]/85 max-w-lg mx-auto leading-relaxed">
+            We welcome your craft reflections and stories. Explore our collection of hand-embroidered Lucknowi treasures and share your experience.
           </p>
-          <div className="pt-2">
-            <Link href="/shop">
-              <button className="px-8 py-3.5 bg-[#FFF9F4] text-[#7C7A5A] font-sans text-xs font-semibold uppercase tracking-[0.15em] rounded-full hover:bg-[#E694AA] hover:text-[#FFF9F4] transition-all cursor-pointer border-none">
-                Explore the Collection
-              </button>
+          <div className="pt-3">
+            <Link
+              href="/shop"
+              className="inline-flex items-center justify-center h-12 px-9 rounded-full bg-[#FFF9F4] text-[#7C7A5A] hover:bg-[#E694AA] hover:text-[#FFF9F4] font-sans text-xs font-bold uppercase tracking-[0.2em] transition-all shadow-md hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]"
+            >
+              Explore the Collection
             </Link>
           </div>
         </div>

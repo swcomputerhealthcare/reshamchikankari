@@ -48,24 +48,8 @@ export function PageTransitionProvider({
   }, [currentPathname, start]);
 
   const navigate = (href: string) => {
-    // Ignore navigation to current pathname or if already navigating
-    if (navigating.current || href === currentPathname) return;
-
-    navigating.current = true;
-    stop(); // Lock scrolling during transition
-    setIsTransitioning(true);
-
-    // Wait until curtain completely covers the viewport
-    setTimeout(() => {
-      router.push(href);
-
-      // Allow Next.js render time before retracting curtain
-      setTimeout(() => {
-        setIsTransitioning(false);
-        navigating.current = false;
-        start(); // Unlock scrolling after transition
-      }, 300);
-    }, 700);
+    if (href === currentPathname) return;
+    router.push(href);
   };
 
   return (

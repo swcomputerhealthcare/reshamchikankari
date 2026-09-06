@@ -35,6 +35,7 @@ export default function ProductListController({
   const [productsList, setProductsList] = useState<ProductItem[]>(initialProducts);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [isPending, startTransition] = useTransition();
@@ -61,9 +62,14 @@ export default function ProductListController({
       const matchesCategory =
         selectedCategory === "all" || prod.categoryId === selectedCategory;
 
-      return matchesSearch && matchesCategory;
+      const matchesStatus =
+        statusFilter === "all" ||
+        (statusFilter === "active" && prod.isActive) ||
+        (statusFilter === "inactive" && !prod.isActive);
+
+      return matchesSearch && matchesCategory && matchesStatus;
     });
-  }, [productsList, search, selectedCategory]);
+  }, [productsList, search, selectedCategory, statusFilter]);
 
   // Paginated products
   const totalPages = Math.max(Math.ceil(filteredProducts.length / itemsPerPage), 1);
@@ -77,7 +83,13 @@ export default function ProductListController({
     setTimeout(() => setMessage(null), 4000);
   };
 
-  // Actions
+  const handleToggleStatus = (id: string, newActive: boolean) => {
+    setProductsList((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, isActive: newActive } : p))
+    );
+    showToast(newActive ? "Product is now LIVE on storefront." : "Product is now HIDDEN from storefront.");
+  };
+
   const handleDuplicate = (id: string) => {
     if (isPending) return;
     startTransition(async () => {
@@ -167,26 +179,48 @@ export default function ProductListController({
           />
         </div>
 
-        {/* Category Filter */}
-        <div className="flex items-center gap-3">
-          <span className="text-xs uppercase font-bold tracking-widest text-neutral-500">
-            Category
-          </span>
-          <select
-            value={selectedCategory}
-            onChange={(e) => {
-              setSelectedCategory(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="bg-white border border-brand-black/15 rounded-xs px-4 py-2.5 text-sm font-semibold uppercase tracking-wider text-brand-black focus:outline-none focus:border-brand-sage"
-          >
-            <option value="all">All Categories</option>
-            {categories.map((cat) => (
-              <option key={cat.id} value={cat.id}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
+        {/* Filters Group */}
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Status Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs uppercase font-bold tracking-widest text-neutral-500">
+              Status
+            </span>
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+                setStatusFilter(e.target.value as any);
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-brand-black/15 rounded-xs px-3.5 py-2.5 text-xs font-semibold uppercase tracking-wider text-brand-black focus:outline-none focus:border-brand-sage"
+            >
+              <option value="all">All Products</option>
+              <option value="active">Active Only</option>
+              <option value="inactive">Inactive Only</option>
+            </select>
+          </div>
+
+          {/* Category Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs uppercase font-bold tracking-widest text-neutral-500">
+              Category
+            </span>
+            <select
+              value={selectedCategory}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="bg-white border border-brand-black/15 rounded-xs px-3.5 py-2.5 text-xs font-semibold uppercase tracking-wider text-brand-black focus:outline-none focus:border-brand-sage"
+            >
+              <option value="all">All Categories</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
       </div>
 
@@ -247,7 +281,11 @@ export default function ProductListController({
                         ₹{(prod.pricePaise / 100).toLocaleString("en-IN")}
                       </td>
                       <td className="py-4 px-4">
-                        <ProductToggle id={prod.id} initialActive={prod.isActive} />
+                        <ProductToggle
+                          id={prod.id}
+                          initialActive={prod.isActive}
+                          onToggle={(newActive) => handleToggleStatus(prod.id, newActive)}
+                        />
                       </td>
                       <td className="py-4 pl-4 pr-3 text-right space-x-3">
                         <Link
@@ -317,7 +355,11 @@ export default function ProductListController({
 
                   <div className="flex items-center justify-between border-t border-neutral-50 pt-2 text-[10px] uppercase font-bold tracking-widest text-neutral-400">
                     <span>Status</span>
-                    <ProductToggle id={prod.id} initialActive={prod.isActive} />
+                    <ProductToggle
+                      id={prod.id}
+                      initialActive={prod.isActive}
+                      onToggle={(newActive) => handleToggleStatus(prod.id, newActive)}
+                    />
                   </div>
 
                   <div className="flex items-center justify-between border-t border-neutral-50 pt-3">

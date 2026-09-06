@@ -23,10 +23,12 @@ export default function StickyHeader({ children, variant = "default" }: StickyHe
 
   const headerClass = variant === "dark"
     ? cn(
-        "sticky top-0 left-0 right-0 z-[100] transition-colors duration-300 h-[72px] min-h-[72px] flex items-center border-b border-white/15 bg-brand-black text-[#FFF9F4]"
+        "w-full transition-colors duration-300 h-[72px] min-h-[72px] flex items-center border-b border-white/15 bg-brand-black text-[#FFF9F4]",
+        isScrolled && "shadow-sm"
       )
     : cn(
-        "sticky top-0 left-0 right-0 z-[100] transition-colors duration-300 h-[72px] min-h-[72px] flex items-center border-b border-brand-black/10 bg-[#FFF9F4] text-brand-black"
+        "w-full transition-colors duration-300 h-[72px] min-h-[72px] flex items-center border-b border-brand-black/10 bg-[#FFF9F4] text-brand-black",
+        isScrolled && "shadow-sm"
       );
 
   return (

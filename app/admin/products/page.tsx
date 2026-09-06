@@ -14,8 +14,8 @@ export default async function AdminProductsPage() {
   // Enforce ADMIN role check server-side
   await requireAdmin();
 
-  // Fetch data
-  const { products } = await getProducts({ limit: 1000 });
+  // Fetch all products (both active and inactive) so admin can toggle status
+  const { products } = await getProducts({ limit: 1000, includeInactive: true });
   const categoriesList = await getCategories();
 
   return (
@@ -28,15 +28,10 @@ export default async function AdminProductsPage() {
               Management Portal
             </span>
             <h1 className="font-display text-3xl tracking-wide">
-              Catalog Management
+              Product Catalog
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/admin/categories">
-              <Button variant="outline" className="text-white border-white/20 hover:bg-white/10 hover:text-white py-2 text-xs">
-                Manage Categories
-              </Button>
-            </Link>
             <Link href="/admin/products/new">
               <Button variant="accent" className="py-2 text-xs">
                 Add Product

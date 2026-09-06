@@ -84,27 +84,28 @@ export async function createRefundAction(
       idempotencyKey,
     });
 
-    // 6. Call Razorpay Refund API
-    const rzpResult = await executeRazorpayRefund(providerPaymentId, amountPaise, idempotencyKey, {
-      orderId,
-      refundId,
-      refundMethod,
-      reason,
-    });
-
-    if (!rzpResult.success) {
-      await db.update(refunds).set({ status: "FAILED" }).where(eq(refunds.id, refundId));
-      return { success: false, error: rzpResult.error || "Razorpay refund execution failed." };
-    }
-
-    const rzpRefundId = rzpResult.refundId || `rfnd_${Date.now()}`;
-
+    let rzpRefundId: string | null = null;
     let walletTxId: string | null = null;
 
-    // 7. Credit RC Wallet ONLY IF refundMethod is "rc_wallet" and refund is confirmed
-    if (refundMethod === "rc_wallet") {
+    if (refundMethod === "original_payment_method") {
+      // 6a. Direct Bank/UPI/Card Refund via Razorpay API
+      const rzpResult = await executeRazorpayRefund(providerPaymentId, amountPaise, idempotencyKey, {
+        orderId,
+        refundId,
+        refundMethod,
+        reason,
+      });
+
+      if (!rzpResult.success) {
+        await db.update(refunds).set({ status: "FAILED" }).where(eq(refunds.id, refundId));
+        return { success: false, error: rzpResult.error || "Razorpay refund execution failed." };
+      }
+
+      rzpRefundId = rzpResult.refundId || `rfnd_${Date.now()}`;
+    } else {
+      // 6b. In-Store Credit to customer's Resham Chikankari (RC) Wallet
       const userWallet = await getOrCreateWallet(order.userId);
-      const creditRes = await creditWallet(
+      await creditWallet(
         userWallet.id,
         amountPaise,
         "REFUND",
@@ -125,7 +126,7 @@ export async function createRefundAction(
       if (latestTx[0]) walletTxId = latestTx[0].id;
     }
 
-    // 8. Update refund record status to COMPLETED
+    // 7. Update refund record status to COMPLETED
     await db
       .update(refunds)
       .set({

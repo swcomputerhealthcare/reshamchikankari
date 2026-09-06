@@ -1,6 +1,6 @@
 'use server';
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
 import { requireAdmin } from "@/lib/auth/helpers";
 import { db } from "@/db";
 import { seoSettings, pageSeo, siteSettings } from "@/db/schema/content";
@@ -149,7 +149,13 @@ export async function updateSiteSettingsAction(data: {
     }
 
     revalidatePath("/");
+    revalidatePath("/", "layout");
     revalidatePath("/admin/settings");
+    try {
+      (revalidateTag as any)("site-settings");
+    } catch {
+      // Revalidation handled by revalidatePath
+    }
     return { success: true };
   } catch (error: any) {
     console.error("Update site settings failed:", error);

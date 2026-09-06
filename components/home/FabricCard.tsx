@@ -40,7 +40,7 @@ export default function FabricCard({
             src={image}
             alt={`${name} fabric Chikankari garment`}
             fill
-            className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.035]"
+            className="object-cover object-top transition-transform duration-700 ease-out group-hover:scale-[1.035]"
             sizes="(max-width: 768px) 90vw, (max-width: 1200px) 45vw, 30vw"
           />
         </div>

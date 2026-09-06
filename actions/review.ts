@@ -6,8 +6,22 @@ import { orders, orderItems } from "@/db/schema/order";
 import { products } from "@/db/schema/catalog";
 import { profiles } from "@/db/schema/auth";
 import { getCurrentUser } from "@/lib/auth/helpers";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+
+function safeRevalidatePaths(...paths: string[]) {
+  try {
+    for (const p of paths) {
+      if (p === "/") {
+        revalidatePath("/", "layout");
+      } else {
+        revalidatePath(p);
+      }
+    }
+  } catch {
+    // Graceful fallback for non-request environments (e.g. testing scripts)
+  }
+}
 
 export async function submitPublicReviewAction(
   authorName: string,
@@ -45,30 +59,13 @@ export async function submitPublicReviewAction(
         return { success: false, error: "Product catalog is empty. Review cannot be linked." };
       }
 
-      // 2. Resolve user ID or fallback to current logged in user / system guest user profile
-      const user = await getCurrentUser();
-      let targetUserId = user?.id;
-
-      if (!targetUserId) {
-        // Look up or create guest user profile
-        const guestProfile = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.role, "CUSTOMER")).limit(1);
-        if (guestProfile.length > 0) {
-          targetUserId = guestProfile[0].id;
-        } else {
-          // Create guest profile
-          const guestId = `usr_guest_${Math.random().toString(36).substring(2, 9)}`;
-          await db.insert(profiles).values({
-            id: guestId,
-            fullName: authorName.trim() || "Guest Patron",
-            email: `guest_${Date.now()}@reshamchikankari.com`,
-            role: "CUSTOMER",
-          }).onConflictDoNothing();
-          targetUserId = guestId;
-        }
-      }
-
-      if (!targetUserId) {
-        return { success: false, error: "Customer profiles unavailable." };
+      // 2. Resolve user ID if authenticated, otherwise use guest authorName without creating fake profiles
+      let targetUserId: string | null = null;
+      try {
+        const user = await getCurrentUser();
+        targetUserId = user?.id || null;
+      } catch {
+        targetUserId = null;
       }
 
       const reviewId = `rev_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
@@ -76,16 +73,16 @@ export async function submitPublicReviewAction(
         id: reviewId,
         productId: targetProductId,
         userId: targetUserId,
+        authorName: authorName.trim(),
+        authorCity: null,
         rating,
         title: authorName.trim(),
         body: body.trim(),
-        isVerifiedPurchase: false,
+        isVerifiedPurchase: !!targetUserId,
         isApproved: false, // Requires admin moderation
       });
 
-      revalidatePath("/admin/reviews");
-      revalidatePath("/");
-      revalidatePath("/patron-voices");
+      safeRevalidatePaths("/admin/reviews", "/patron-voices", "/");
 
       return { success: true, message: "Thank you! Your story has been submitted for moderation." };
     } catch (e: any) {
@@ -220,6 +217,8 @@ export async function moderateReviewAction(reviewId: string, isApproved: boolean
         .set({ isApproved, updatedAt: new Date() })
         .where(eq(reviews.id, reviewId));
       
+      safeRevalidatePaths("/admin/reviews", "/patron-voices", "/");
+
       return { success: true, message: `Review has been ${isApproved ? "approved" : "rejected"} successfully.` };
     } catch (e) {
       console.error("Failed to moderate review:", e);
@@ -231,7 +230,7 @@ export async function moderateReviewAction(reviewId: string, isApproved: boolean
 }
 
 export async function adminCreateReviewAction(
-  userId: string,
+  authorName: string,
   productId: string,
   rating: number,
   title: string,
@@ -259,7 +258,8 @@ export async function adminCreateReviewAction(
       await db.insert(reviews).values({
         id,
         productId,
-        userId,
+        userId: null,
+        authorName: authorName.trim() || "Valued Patron",
         rating,
         title: title || null,
         body,
@@ -267,9 +267,7 @@ export async function adminCreateReviewAction(
         isApproved: true, // Auto-approve admin imported reviews
       });
 
-      const { revalidatePath } = await import("next/cache");
-      revalidatePath("/admin/reviews");
-      revalidatePath("/shop");
+      safeRevalidatePaths("/admin/reviews", "/patron-voices", "/");
       return { success: true };
     } catch (e: any) {
       console.error("Admin create review failed:", e);
@@ -277,6 +275,42 @@ export async function adminCreateReviewAction(
     }
   } else {
     return { success: true, message: "Offline simulated review creation." };
+  }
+}
+
+export async function getProductReviewsAction(productId: string) {
+  const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  if (!isDbAvailable) return [];
+
+  try {
+    const list = await db
+      .select({
+        id: reviews.id,
+        rating: reviews.rating,
+        title: reviews.title,
+        body: reviews.body,
+        authorName: reviews.authorName,
+        isVerifiedPurchase: reviews.isVerifiedPurchase,
+        createdAt: reviews.createdAt,
+        userFullName: profiles.fullName,
+      })
+      .from(reviews)
+      .leftJoin(profiles, eq(reviews.userId, profiles.id))
+      .where(and(eq(reviews.productId, productId), eq(reviews.isApproved, true)))
+      .orderBy(desc(reviews.createdAt));
+
+    return list.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      title: r.title,
+      body: r.body,
+      authorName: r.userFullName || r.authorName || r.title || "Valued Patron",
+      isVerifiedPurchase: r.isVerifiedPurchase,
+      createdAt: r.createdAt,
+    }));
+  } catch (err) {
+    console.error("Failed to fetch product reviews:", err);
+    return [];
   }
 }
 
@@ -291,9 +325,7 @@ export async function deleteReviewAction(id: string) {
   if (isDbAvailable) {
     try {
       await db.delete(reviews).where(eq(reviews.id, id));
-      const { revalidatePath } = await import("next/cache");
-      revalidatePath("/admin/reviews");
-      revalidatePath("/shop");
+      safeRevalidatePaths("/admin/reviews", "/patron-voices", "/");
       return { success: true };
     } catch (e: any) {
       console.error("Delete review failed:", e);

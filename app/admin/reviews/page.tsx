@@ -18,7 +18,6 @@ export default async function AdminReviewsPage() {
 
   let reviewsList: any[] = [];
   let productsList: any[] = [];
-  let customersList: any[] = [];
 
   const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
 
@@ -41,16 +40,6 @@ export default async function AdminReviewsPage() {
         })
         .from(products)
         .where(eq(products.isActive, true));
-
-      // 3. Fetch customer profiles for dropdown selector
-      customersList = await db
-        .select({
-          id: profiles.id,
-          fullName: profiles.fullName,
-          email: profiles.email,
-        })
-        .from(profiles)
-        .where(eq(profiles.role, "CUSTOMER"));
     } catch (e) {
       console.error("Failed to query reviews moderation data:", e);
     }
@@ -75,7 +64,6 @@ export default async function AdminReviewsPage() {
         <ReviewListController
           initialReviews={reviewsList}
           products={productsList}
-          customers={customersList}
         />
       </Container>
     </div>

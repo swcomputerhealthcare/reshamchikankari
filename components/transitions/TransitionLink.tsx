@@ -1,7 +1,7 @@
 'use client';
 
 import React, { ReactNode, MouseEvent } from "react";
-import { usePageTransition } from "./PageTransition";
+import Link from "next/link";
 
 interface TransitionLinkProps extends React.AnchorHTMLAttributes<HTMLAnchorElement> {
   href: string;
@@ -17,35 +17,15 @@ export default function TransitionLink({
   onClick,
   ...props
 }: TransitionLinkProps) {
-  const { navigate } = usePageTransition();
-
-  const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {
-    if (onClick) {
-      onClick(e);
-    }
-
-    // Allow native browser behaviors (new tab, new window, modifier keys)
-    if (
-      e.metaKey ||
-      e.ctrlKey ||
-      e.shiftKey ||
-      e.altKey ||
-      e.button !== 0 ||
-      href.startsWith("http") ||
-      href.startsWith("#") ||
-      href.startsWith("mailto:") ||
-      href.startsWith("tel:")
-    ) {
-      return;
-    }
-
-    e.preventDefault();
-    navigate(href);
-  };
-
   return (
-    <a href={href} onClick={handleClick} className={className} {...props}>
+    <Link
+      href={href}
+      onClick={onClick}
+      className={className}
+      prefetch={true}
+      {...props}
+    >
       {children}
-    </a>
+    </Link>
   );
 }

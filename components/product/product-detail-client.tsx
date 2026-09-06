@@ -5,14 +5,20 @@ import ProductGallery from "@/components/product/product-gallery";
 import ProductActionPanel from "@/components/product/product-action-panel";
 import { type CatalogProduct } from "@/lib/catalog";
 
+import { Star } from "lucide-react";
+
 interface ProductDetailClientProps {
   product: CatalogProduct;
   initialWishlisted: boolean;
+  reviewsCount?: number;
+  averageRating?: string | null;
 }
 
 export default function ProductDetailClient({
   product,
   initialWishlisted,
+  reviewsCount = 0,
+  averageRating = null,
 }: ProductDetailClientProps) {
   // Determine if product has 2 or more distinct colors in its variants
   const distinctColors = useMemo(() => {
@@ -29,6 +35,9 @@ export default function ProductDetailClient({
   const [selectedColor, setSelectedColor] = useState<string | null>(() => {
     return hasMultipleColors ? distinctColors[0] : null;
   });
+
+  const displayRating = averageRating || "5.0";
+  const numericRating = Math.round(parseFloat(displayRating));
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-12 gap-12 sm:gap-16">
@@ -49,6 +58,31 @@ export default function ProductDetailClient({
           <h1 className="font-display text-3xl sm:text-4xl text-brand-black leading-tight mb-2">
             {product.name}
           </h1>
+
+          {/* Star Rating & Review Link */}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex items-center text-amber-400">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star
+                  key={i}
+                  className={`w-3.5 h-3.5 ${
+                    i < numericRating
+                      ? "fill-amber-400 text-amber-400"
+                      : "text-neutral-300"
+                  }`}
+                />
+              ))}
+            </div>
+            <a
+              href="#reviews"
+              className="text-xs text-neutral-500 hover:text-brand-black transition-colors underline underline-offset-4 decoration-neutral-300 font-sans"
+            >
+              {reviewsCount > 0
+                ? `${displayRating} (${reviewsCount} ${reviewsCount === 1 ? "review" : "reviews"})`
+                : "Write the first review"}
+            </a>
+          </div>
+
           <p className="text-xs text-neutral-500 font-sans tracking-wide">
             SKU: {product.sku}
           </p>

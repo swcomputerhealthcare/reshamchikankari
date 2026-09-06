@@ -70,7 +70,7 @@ export async function getWishlistItems(): Promise<string[]> {
     // Merge cookie items if any exist
     if (cookieItems.length > 0) {
       const merged = Array.from(new Set([...dbItems, ...cookieItems]));
-      await syncWishlistToDb(user.id, merged);
+      await syncWishlistToDb(user, merged);
       await saveCookieWishlistItems([]); // clear cookie after merging to DB
       return merged;
     }
@@ -79,33 +79,35 @@ export async function getWishlistItems(): Promise<string[]> {
   return await getCookieWishlistItems();
 }
 
-async function syncWishlistToDb(userId: string, productIds: string[]) {
+async function syncWishlistToDb(user: { id: string; email?: string; name?: string; role?: string }, productIds: string[]) {
   if (!hasDatabase()) return;
   try {
     let [userWishlist] = await db
       .select({ id: wishlists.id })
       .from(wishlists)
-      .where(eq(wishlists.userId, userId))
+      .where(eq(wishlists.userId, user.id))
       .limit(1);
 
     if (!userWishlist) {
       // Ensure profiles record exists first to satisfy foreign key wishlists_user_id_profiles_id_fk
-      try {
-        const { profiles } = await import("@/db/schema/auth");
-        await db.insert(profiles).values({
-          id: userId,
-          fullName: "Valued Customer",
-          email: `${userId}@user.com`,
-          role: "CUSTOMER",
-        }).onConflictDoNothing();
-      } catch (profileErr) {
-        console.warn("Profile auto-insert warning:", profileErr);
+      if (user.email) {
+        try {
+          const { profiles } = await import("@/db/schema/auth");
+          await db.insert(profiles).values({
+            id: user.id,
+            fullName: user.name || "Customer",
+            email: user.email,
+            role: user.role || "CUSTOMER",
+          }).onConflictDoNothing();
+        } catch (profileErr) {
+          console.warn("Profile auto-insert warning:", profileErr);
+        }
       }
 
       const wishlistId = `wsh_${Math.random().toString(36).substring(2, 11)}`;
       await db.insert(wishlists).values({
         id: wishlistId,
-        userId,
+        userId: user.id,
       });
       userWishlist = { id: wishlistId };
     }
@@ -149,17 +151,18 @@ export async function toggleWishlistItem(productId: string): Promise<{ wishliste
         .limit(1);
 
       if (!userWishlist) {
-        // Ensure profiles record exists first to satisfy foreign key wishlists_user_id_profiles_id_fk
-        try {
-          const { profiles } = await import("@/db/schema/auth");
-          await db.insert(profiles).values({
-            id: user.id,
-            fullName: user.name || "Valued Customer",
-            email: user.email || `${user.id}@user.com`,
-            role: user.role || "CUSTOMER",
-          }).onConflictDoNothing();
-        } catch (profileErr) {
-          console.warn("Profile auto-insert warning:", profileErr);
+        if (user.email) {
+          try {
+            const { profiles } = await import("@/db/schema/auth");
+            await db.insert(profiles).values({
+              id: user.id,
+              fullName: user.name || "Customer",
+              email: user.email,
+              role: user.role || "CUSTOMER",
+            }).onConflictDoNothing();
+          } catch (profileErr) {
+            console.warn("Profile auto-insert warning:", profileErr);
+          }
         }
 
         const wishlistId = `wsh_${Math.random().toString(36).substring(2, 11)}`;

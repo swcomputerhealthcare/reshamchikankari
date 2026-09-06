@@ -330,10 +330,11 @@ export default function LoginPage() {
       {/* Editorial campaign panel */}
       <div className="hidden lg:block lg:col-span-7 relative h-[calc(100vh-2rem)] min-h-[600px] rounded-[24px] overflow-hidden m-4 shadow-xs">
         <Image
-          src="/images/reshamchikankari/New folder 5/IMG_2755.JPG"
+          src="/images/auth-campaign.jpg"
           alt="Editorial campaign presentation of Lucknowi Chikankari"
           fill
           priority
+          quality={92}
           className="object-cover"
           sizes="60vw"
         />

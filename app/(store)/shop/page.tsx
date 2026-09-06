@@ -22,6 +22,7 @@ export default async function ShopPage(props: ShopPageProps) {
   const searchParams = await props.searchParams;
 
   const category = searchParams.category as string | undefined;
+  const fabric = searchParams.fabric as string | undefined;
   const q = searchParams.q as string | undefined;
   const sort = searchParams.sort as string | undefined;
   const minPrice = searchParams.minPrice ? Number(searchParams.minPrice) * 100 : undefined;
@@ -35,6 +36,7 @@ export default async function ShopPage(props: ShopPageProps) {
     getProducts({
       categorySlug: category,
       query: q,
+      fabric,
       priceMin: minPrice,
       priceMax: maxPrice,
       sort,
@@ -54,7 +56,9 @@ export default async function ShopPage(props: ShopPageProps) {
           {/* Shop Heading */}
           <div className="text-center mb-12 sm:mb-16">
             <h1 className="font-display text-4xl sm:text-5xl text-brand-black mb-4">
-              {category
+              {fabric
+                ? `${fabric.charAt(0).toUpperCase() + fabric.slice(1)} Collection`
+                : category
                 ? categoriesData.find((c) => c.slug === category)?.name
                 : "The Catalogue"}
             </h1>

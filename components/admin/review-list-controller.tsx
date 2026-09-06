@@ -9,16 +9,17 @@ interface ReviewItem {
   rating: number;
   title: string | null;
   body: string;
+  authorName?: string | null;
   isVerifiedPurchase: boolean;
   isApproved: boolean;
   createdAt: Date;
-  user: {
+  user?: {
     fullName: string | null;
     email: string | null;
-  };
-  product: {
+  } | null;
+  product?: {
     name: string;
-  };
+  } | null;
 }
 
 interface ProductItem {
@@ -26,29 +27,21 @@ interface ProductItem {
   name: string;
 }
 
-interface CustomerItem {
-  id: string;
-  fullName: string | null;
-  email: string | null;
-}
-
 interface ReviewListControllerProps {
   initialReviews: ReviewItem[];
   products: ProductItem[];
-  customers: CustomerItem[];
 }
 
 export default function ReviewListController({
   initialReviews,
   products,
-  customers,
 }: ReviewListControllerProps) {
   const [reviewsList, setReviewsList] = useState<ReviewItem[]>(initialReviews);
   const [isPending, startTransition] = useTransition();
   const [toast, setToast] = useState<{ text: string; isError: boolean } | null>(null);
 
-  // Form states for manually importing a review
-  const [selectedCustomer, setSelectedCustomer] = useState(customers[0]?.id || "");
+  // Form states for adding/importing a review
+  const [authorName, setAuthorName] = useState("");
   const [selectedProduct, setSelectedProduct] = useState(products[0]?.id || "");
   const [rating, setRating] = useState("5");
   const [title, setTitle] = useState("");
@@ -90,15 +83,15 @@ export default function ReviewListController({
 
   const handleImport = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedCustomer || !selectedProduct || !body.trim()) {
-      showToast("Please fill in all required importer fields.", true);
+    if (!authorName.trim() || !selectedProduct || !body.trim()) {
+      showToast("Please enter patron name, select product, and write review.", true);
       return;
     }
 
     startTransition(async () => {
       const ratingNum = parseInt(rating, 10);
       const res = await adminCreateReviewAction(
-        selectedCustomer,
+        authorName.trim(),
         selectedProduct,
         ratingNum,
         title.trim(),
@@ -107,9 +100,7 @@ export default function ReviewListController({
       );
 
       if (res.success) {
-        showToast("Testimonial imported successfully.");
-        // Append placeholder to local state for visual confirmation
-        const cust = customers.find((c) => c.id === selectedCustomer);
+        showToast("Review submitted and published successfully.");
         const prod = products.find((p) => p.id === selectedProduct);
         
         setReviewsList([
@@ -118,13 +109,11 @@ export default function ReviewListController({
             rating: ratingNum,
             title: title.trim() || null,
             body: body.trim(),
+            authorName: authorName.trim(),
             isVerifiedPurchase: verified,
             isApproved: true,
             createdAt: new Date(),
-            user: {
-              fullName: cust?.fullName || "Guest Customer",
-              email: cust?.email || null,
-            },
+            user: null,
             product: {
               name: prod?.name || "Product",
             },
@@ -132,6 +121,7 @@ export default function ReviewListController({
           ...reviewsList,
         ]);
 
+        setAuthorName("");
         setTitle("");
         setBody("");
       } else {
@@ -176,7 +166,7 @@ export default function ReviewListController({
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <div className="font-bold text-brand-black text-base">
-                        {rev.user?.fullName || rev.title || "Valued Patron"}
+                        {rev.authorName || rev.user?.fullName || rev.title || "Valued Patron"}
                       </div>
                       <div className="text-xs text-neutral-500 font-sans mt-1">
                         Product: <span className="font-semibold text-brand-black">{rev.product?.name || "Catalog Garment"}</span>
@@ -267,26 +257,19 @@ export default function ReviewListController({
           </h4>
 
           <form onSubmit={handleImport} className="space-y-5 text-sm font-sans">
-            {/* Customer Dropdown */}
+            {/* Patron / Reviewer Name Input */}
             <div className="space-y-2">
               <label className="text-xs uppercase font-bold tracking-widest text-neutral-500 block">
-                Reviewer Profile
+                Patron / Reviewer Name
               </label>
-              <select
-                value={selectedCustomer}
-                onChange={(e) => setSelectedCustomer(e.target.value)}
+              <input
+                type="text"
+                required
+                placeholder="e.g. Priya Sharma (or Patron Name)"
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value)}
                 className="w-full bg-neutral-50 border border-brand-black/15 rounded-xs px-3.5 py-2.5 text-sm font-medium focus:outline-none focus:border-brand-sage text-brand-black"
-              >
-                {customers.length === 0 ? (
-                  <option value="guest">Guest Customer (Walk-in / Patron)</option>
-                ) : (
-                  customers.map((c) => (
-                    <option key={c.id} value={c.id}>
-                      {c.fullName || "Guest Customer"} ({c.email || "No email"})
-                    </option>
-                  ))
-                )}
-              </select>
+              />
             </div>
 
             {/* Product Dropdown */}

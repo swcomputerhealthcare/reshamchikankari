@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { categories, products, type Category, type Product, type ProductImage, type ProductVariant } from "@/db/schema/catalog";
-import { eq, and, like, gte, lte, asc, desc, inArray } from "drizzle-orm";
+import { eq, and, like, ilike, gte, lte, asc, desc, inArray, sql } from "drizzle-orm";
 
 export interface CatalogProduct extends Product {
   category?: Category;
@@ -5159,19 +5159,25 @@ export async function getCategories(): Promise<Category[]> {
 export interface ProductFilters {
   categorySlug?: string;
   query?: string;
+  fabric?: string;
   priceMin?: number;
   priceMax?: number;
   productIds?: string[];
   sort?: string; // "price_asc" | "price_desc" | "newest"
   page?: number;
   limit?: number;
+  includeInactive?: boolean;
 }
 
 export async function getProducts(filters: ProductFilters = {}): Promise<{ products: CatalogProduct[]; total: number }> {
-  const { categorySlug, query, priceMin, priceMax, sort, page = 1, limit = 12, productIds } = filters;
+  const { categorySlug, query, fabric, priceMin, priceMax, sort, page = 1, limit = 12, productIds, includeInactive = false } = filters;
 
   if (!hasDatabase()) {
     let list = MOCK_PRODUCTS.map(mapInputToCatalogProduct);
+
+    if (!includeInactive) {
+      list = list.filter(p => p.isActive !== false);
+    }
 
     if (productIds && productIds.length > 0) {
       list = list.filter(p => productIds.includes(p.id));
@@ -5187,6 +5193,11 @@ export async function getProducts(filters: ProductFilters = {}): Promise<{ produ
     if (query) {
       const q = query.toLowerCase();
       list = list.filter(p => p.name.toLowerCase().includes(q) || p.description?.toLowerCase().includes(q));
+    }
+
+    if (fabric) {
+      const f = fabric.toLowerCase();
+      list = list.filter(p => p.fabric?.toLowerCase().includes(f));
     }
 
     if (priceMin !== undefined) {
@@ -5212,7 +5223,10 @@ export async function getProducts(filters: ProductFilters = {}): Promise<{ produ
   }
 
   try {
-    const conditions = [eq(products.isActive, true)];
+    const conditions = [];
+    if (!includeInactive) {
+      conditions.push(eq(products.isActive, true));
+    }
 
     if (productIds && productIds.length > 0) {
       conditions.push(inArray(products.id, productIds));
@@ -5227,6 +5241,10 @@ export async function getProducts(filters: ProductFilters = {}): Promise<{ produ
 
     if (query) {
       conditions.push(like(products.name, `%${query}%`));
+    }
+
+    if (fabric) {
+      conditions.push(ilike(products.fabric, `%${fabric}%`));
     }
 
     if (priceMin !== undefined) {
@@ -5247,8 +5265,10 @@ export async function getProducts(filters: ProductFilters = {}): Promise<{ produ
 
     const offset = (page - 1) * limit;
 
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
+
     const dbProducts = await db.query.products.findMany({
-      where: and(...conditions),
+      where: whereClause,
       orderBy,
       limit,
       offset,
@@ -5258,8 +5278,11 @@ export async function getProducts(filters: ProductFilters = {}): Promise<{ produ
       },
     });
 
-    const totalResult = await db.select().from(products).where(and(...conditions));
-    const total = totalResult.length;
+    const countQuery = whereClause
+      ? db.select({ total: sql<number>`count(*)::int` }).from(products).where(whereClause)
+      : db.select({ total: sql<number>`count(*)::int` }).from(products);
+    const countRes = await countQuery;
+    const total = countRes[0]?.total ?? 0;
 
     return { products: dbProducts as CatalogProduct[], total };
   } catch (err) {
@@ -5301,14 +5324,16 @@ function getProductsOffline(filters: ProductFilters): { products: CatalogProduct
 }
 
 export async function getProductBySlug(slug: string): Promise<CatalogProduct | null> {
+  const targetSlug = slug === "rc-1rupee-test" ? "razorpay-1-rupee-test-product" : slug;
+
   if (!hasDatabase()) {
-    const p = MOCK_PRODUCTS.find(p => p.slug === slug);
+    const p = MOCK_PRODUCTS.find(p => p.slug === targetSlug || p.slug === slug);
     return p ? mapInputToCatalogProduct(p) : null;
   }
 
   try {
     const productResult = await db.query.products.findFirst({
-      where: and(eq(products.slug, slug), eq(products.isActive, true)),
+      where: and(eq(products.slug, targetSlug), eq(products.isActive, true)),
       with: {
         images: true,
         variants: true,

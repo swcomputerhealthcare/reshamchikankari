@@ -11,10 +11,11 @@ export const reviews = pgTable("reviews", {
     .notNull()
     .references(() => products.id, { onDelete: "cascade" }),
   userId: uuid("user_id")
-    .notNull()
     .references(() => profiles.id, { onDelete: "cascade" }),
   orderId: text("order_id")
     .references(() => orders.id, { onDelete: "set null" }),
+  authorName: text("author_name"),
+  authorCity: text("author_city"),
   rating: integer("rating").notNull(),
   title: text("title"),
   body: text("body").notNull(),
@@ -24,7 +25,6 @@ export const reviews = pgTable("reviews", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 }, (table) => ({
   ratingCheck: check("reviews_rating_check", sql`${table.rating} >= 1 AND ${table.rating} <= 5`),
-  userProductUnique: unique("reviews_user_id_product_id_unique").on(table.userId, table.productId),
 }));
 
 
