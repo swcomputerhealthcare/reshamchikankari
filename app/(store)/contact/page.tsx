@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Image from "next/image";
 import Container from "@/components/ui/container";
 import Button from "@/components/ui/button";
-import { Mail, MessageCircle, MapPin, Clock, Send, CheckCircle2, Sparkles } from "lucide-react";
+import { Mail, MessageCircle, Send, CheckCircle2 } from "lucide-react";
 
 function InstagramIcon({ className = "w-5 h-5" }: { className?: string }) {
   return (
@@ -48,7 +48,7 @@ export default function ContactPage() {
             ATELIER CONCIERGE & HERITAGE ASSISTANCE
           </span>
           <h1 className="font-display text-4xl sm:text-6xl text-[#7C7A5A] leading-tight">
-            Connect with Our Lucknow Atelier
+            Connect with Our Concierge Team
           </h1>
           <div className="w-16 h-[1px] bg-[#7C7A5A]/30 mx-auto my-3" />
           <p className="font-sans text-xs sm:text-sm text-neutral-600 leading-relaxed max-w-xl mx-auto">
@@ -239,33 +239,6 @@ export default function ContactPage() {
                 </div>
               </a>
             </div>
-
-            {/* Atelier Address & Hours Card */}
-            <div className="bg-[#7C7A5A] text-[#FFF9F4] rounded-2xl p-6 sm:p-8 space-y-5 shadow-sm">
-              <div className="flex items-center gap-2 text-[#E694AA]">
-                <Sparkles className="w-4 h-4" />
-                <span className="text-[10px] font-bold uppercase tracking-widest">
-                  HERITAGE FLAGSHIP STORE
-                </span>
-              </div>
-              <h4 className="font-display text-xl sm:text-2xl text-[#FFF9F4]">
-                Lucknow Atelier & Boutique
-              </h4>
-              <div className="space-y-3 font-sans text-xs text-[#FFF9F4]/80 leading-relaxed">
-                <div className="flex items-start gap-3">
-                  <MapPin className="w-4 h-4 text-[#E694AA] shrink-0 mt-0.5" />
-                  <span>
-                    Chowk Heritage Precinct, Hazratganj Extension,<br />
-                    Lucknow, Uttar Pradesh 226001, India
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 pt-1">
-                  <Clock className="w-4 h-4 text-[#E694AA] shrink-0" />
-                  <span>Mon – Sat: 10:30 AM – 8:00 PM IST</span>
-                </div>
-              </div>
-            </div>
-
           </div>
         </div>
 
@@ -328,7 +301,7 @@ export default function ContactPage() {
             <div className="bg-[#F8F2EC] border border-[#ECE9E2] rounded-xl p-6 space-y-2">
               <h4 className="font-display text-lg text-[#161616]">What is your exchange and return policy?</h4>
               <p className="font-sans text-xs text-neutral-600 leading-relaxed">
-                We offer hassle-free 7-day returns and size exchanges for all unworn items. Contact our concierge team via WhatsApp or email for instant return pickup.
+                We offer hassle-free 5-day returns and size exchanges for all unworn items. Contact our concierge team via WhatsApp or email for instant return pickup.
               </p>
             </div>
           </div>

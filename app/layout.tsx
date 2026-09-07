@@ -50,7 +50,7 @@ import SitePreloader from "@/components/transitions/SitePreloader";
 
 import AuthCodeHandler from "@/components/auth/AuthCodeHandler";
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const [cartDetails, wishlistIds] = await Promise.all([
     getCartDetails(),
     getWishlistItems(),

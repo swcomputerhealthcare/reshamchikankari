@@ -22,7 +22,7 @@ export default function AboutPage() {
           </h1>
           <div className="w-16 h-[1px] bg-[#7C7A5A]/20 mx-auto my-4" />
           <p className="font-sans text-sm sm:text-base text-[#69727D] max-w-xl mx-auto leading-relaxed">
-            A shared family dream born in Lucknow, woven in thread, and dedicated to empowering local women artisans.
+            A shared family dream, woven in thread, and dedicated to empowering local women artisans.
           </p>
         </section>
 
