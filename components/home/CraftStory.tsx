@@ -24,6 +24,7 @@ export default function CraftStory() {
                     src="/images/reshamchikankari/New%20folder%205/IMG_3230.JPG"
                     alt="Authentic handcrafted Lucknawi Chikankari garment detail"
                     fill
+                    unoptimized
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     sizes="(max-width: 1024px) 50vw, 25vw"
                   />
@@ -37,6 +38,7 @@ export default function CraftStory() {
                     src="/images/reshamchikankari/New%20folder%206/IMG_3115.JPG"
                     alt="Intricate shadow work embroidery detail"
                     fill
+                    unoptimized
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     sizes="(max-width: 1024px) 50vw, 25vw"
                   />
@@ -124,6 +126,7 @@ export default function CraftStory() {
                     src="/images/reshamchikankari/New%20folder%203/IMG_3001.JPG"
                     alt="Classic Lucknawi Kurti silhouette"
                     fill
+                    unoptimized
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     sizes="(max-width: 1024px) 50vw, 25vw"
                   />
@@ -137,6 +140,7 @@ export default function CraftStory() {
                     src="/images/reshamchikankari/New%20folder%2021/IMG_3192.JPG"
                     alt="Heritage embroidery detailing on Chikankari apparel"
                     fill
+                    unoptimized
                     className="object-cover transition-transform duration-700 ease-out group-hover:scale-105"
                     sizes="(max-width: 1024px) 50vw, 25vw"
                   />

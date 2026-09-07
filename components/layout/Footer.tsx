@@ -146,7 +146,7 @@ export default function Footer() {
                 </li>
                 <li>
                   <Link href="/patron-voices" className="hover:text-brand-pink transition-colors block py-0.5">
-                    Patron Voices
+                    What People Say
                   </Link>
                 </li>
                 <li>

@@ -13,6 +13,9 @@ interface AdminEditProductPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata = {
   title: "Edit Product — Resham Admin",
 };
@@ -48,8 +51,8 @@ export default async function AdminEditProductPage(props: AdminEditProductPagePr
     if (mock) {
       product = {
         ...mock,
-        images: [],
-        variants: [],
+        images: mock.images || [],
+        variants: mock.variants || [],
       };
     }
   }

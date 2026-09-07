@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Sparkles, RefreshCw, Globe, Truck, ShieldCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, RefreshCw, Globe, Truck, ShieldCheck, Gift } from "lucide-react";
 
 interface AnnouncementItem {
   id: string;
@@ -13,10 +13,22 @@ interface AnnouncementItem {
 
 const DEFAULT_ANNOUNCEMENTS: AnnouncementItem[] = [
   {
+    id: "free-gift",
+    text: "✨ Free Gift with every purchase from our side! Handcrafted keepsake included",
+    badge: "FREE GIFT",
+    icon: Gift,
+  },
+  {
     id: "exchange",
     text: "Hassle-free exchange within 5 days of delivery",
     badge: "5-DAY GUARANTEE",
     icon: RefreshCw,
+  },
+  {
+    id: "checkout-gift",
+    text: "Complimentary hand-embroidered Lucknowi gift added to your order summary at checkout",
+    badge: "PATRON PRIVILEGE",
+    icon: Gift,
   },
   {
     id: "international",
@@ -70,7 +82,10 @@ export default function AnnouncementCarousel({ initialText }: AnnouncementCarous
       let badge = "ATELIER";
 
       const lower = text.toLowerCase();
-      if (lower.includes("exchange") || lower.includes("return") || lower.includes("day")) {
+      if (lower.includes("gift") || lower.includes("free gift")) {
+        icon = Gift;
+        badge = "FREE GIFT";
+      } else if (lower.includes("exchange") || lower.includes("return") || lower.includes("day")) {
         icon = RefreshCw;
         badge = "EASY EXCHANGE";
       } else if (lower.includes("international") || lower.includes("$") || lower.includes("worldwide")) {
@@ -92,7 +107,10 @@ export default function AnnouncementCarousel({ initialText }: AnnouncementCarous
       };
     });
 
-    // Ensure the 2 primary user-requested lines are always present
+    // Ensure the primary user-requested lines are always present
+    const hasFreeGift = customItems.some((item) =>
+      item.text.toLowerCase().includes("gift")
+    );
     const hasExchange = customItems.some((item) =>
       item.text.toLowerCase().includes("exchange")
     );
@@ -101,11 +119,14 @@ export default function AnnouncementCarousel({ initialText }: AnnouncementCarous
     );
 
     const merged = [...customItems];
-    if (!hasExchange) {
+    if (!hasFreeGift) {
       merged.unshift(DEFAULT_ANNOUNCEMENTS[0]);
     }
-    if (!hasIntl) {
+    if (!hasExchange) {
       merged.splice(1, 0, DEFAULT_ANNOUNCEMENTS[1]);
+    }
+    if (!hasIntl) {
+      merged.splice(2, 0, DEFAULT_ANNOUNCEMENTS[3]);
     }
 
     return merged;

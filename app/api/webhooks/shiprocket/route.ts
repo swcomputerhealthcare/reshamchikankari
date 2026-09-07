@@ -1,179 +1,128 @@
 import { NextResponse } from "next/server";
+import crypto from "crypto";
 import { env } from "@/lib/validation/env";
 import { db } from "@/db";
-import { orders, shipmentTrackingEvents } from "@/db/schema/order";
-import { eq } from "drizzle-orm";
+import { orders, shipmentTrackingEvents, orderTimeline } from "@/db/schema/order";
+import { eq, or } from "drizzle-orm";
 import { mapShiprocketStatusToInternal } from "@/lib/shiprocket";
-import { revalidatePath } from "next/cache";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
-  return NextResponse.json(
-    { success: true, message: "Shiprocket webhook endpoint is active." },
-    { status: 200 }
-  );
-}
+function verifyShiprocketHeader(req: Request): boolean {
+  const secret = process.env.SHIPROCKET_WEBHOOK_SECRET || env.SHIPROCKET_WEBHOOK_SECRET;
+  if (!secret) return true; // If no secret configured, proceed
 
-export async function HEAD() {
-  return new NextResponse(null, { status: 200 });
-}
+  const sigHeader = req.headers.get("x-shiprocket-signature") || req.headers.get("x-api-key");
+  if (!sigHeader) return true;
 
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      "Allow": "GET, POST, HEAD, OPTIONS",
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, HEAD, OPTIONS",
-      "Access-Control-Allow-Headers": "*",
-    },
-  });
+  return sigHeader === secret;
 }
 
 export async function POST(req: Request) {
   try {
-    const rawBody = await req.text();
-    const url = new URL(req.url);
-
-    // Handle empty ping or health-check requests
-    if (!rawBody || rawBody.trim() === "") {
-      return NextResponse.json(
-        { success: true, message: "Webhook ping received." },
-        { status: 200 }
-      );
+    if (!verifyShiprocketHeader(req)) {
+      return NextResponse.json({ error: "Invalid Shiprocket webhook header signature." }, { status: 401 });
     }
 
-    let payload: Record<string, any> = {};
-    try {
-      payload = JSON.parse(rawBody);
-    } catch {
-      return NextResponse.json(
-        { success: true, message: "Test payload received." },
-        { status: 200 }
-      );
-    }
-
-    // Tracking webhook payload fields
-    const orderNumber = payload.order_id || payload.channel_order_id;
-    const awbCode = payload.awb || payload.awb_code;
-
-    // If this is a verification ping from dashboard without order identifiers, respond 200 OK immediately
-    if (!orderNumber && !awbCode) {
-      return NextResponse.json(
-        { success: true, message: "Endpoint verified successfully." },
-        { status: 200 }
-      );
-    }
-
-    const receivedToken =
-      req.headers.get("x-shiprocket-signature") ||
-      req.headers.get("x-shiprocket-token") ||
-      req.headers.get("x-api-key") ||
-      req.headers.get("token") ||
-      req.headers.get("authorization")?.replace(/^Bearer\s+/i, "") ||
-      url.searchParams.get("token") ||
-      "";
-
-    const validTokens = [
-      process.env.SHIPROCKET_WEBHOOK_SECRET,
-      env.SHIPROCKET_WEBHOOK_SECRET,
-      "sr_sec_wh_78a1c9e42b5f6d03918a2e4c8d71b305",
-      "shiprocket_wh_secret_reshamk_test",
-    ].filter(Boolean) as string[];
-
-    // Optional token validation on actual events if token is passed
-    if (receivedToken && validTokens.length > 0 && !validTokens.includes(receivedToken)) {
-      if (env.NODE_ENV === "production") {
-        console.warn("Shiprocket Webhook Token Mismatch:", receivedToken);
-        return NextResponse.json({ error: "Unauthorized webhook token" }, { status: 401 });
-      }
-    }
-
-    const currentStatus = payload.current_status || payload.status || "UNKNOWN";
-    const location = payload.location || payload.current_location || "In Transit";
-    const activity = payload.activity || payload.scans?.[0]?.activity || `Shipment status: ${currentStatus}`;
-    const eventTimeStr = payload.date || payload.event_time || new Date().toISOString();
+    const payload = await req.json();
+    console.log("Inbound Shiprocket Webhook Event:", payload);
 
     const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
-
-    if (isDbAvailable) {
-      let targetOrder = null;
-      if (orderNumber) {
-        const found = await db
-          .select()
-          .from(orders)
-          .where(eq(orders.orderNumber, String(orderNumber)))
-          .limit(1);
-        targetOrder = found[0];
-      }
-
-      if (!targetOrder && awbCode) {
-        const found = await db
-          .select()
-          .from(orders)
-          .where(eq(orders.awbCode, String(awbCode)))
-          .limit(1);
-        targetOrder = found[0];
-      }
-
-      if (targetOrder) {
-        const internalStatus = mapShiprocketStatusToInternal(currentStatus);
-        const eventTime = new Date(eventTimeStr);
-        const now = new Date();
-
-        const updateData: Record<string, any> = {
-          fulfillmentStatus: internalStatus,
-          lastTrackingUpdate: now,
-          updatedAt: now,
-        };
-
-        if (internalStatus === "IN_TRANSIT" && !targetOrder.shippedAt) {
-          updateData.shippedAt = now;
-        }
-        if (internalStatus === "DELIVERED" && !targetOrder.deliveredAt) {
-          updateData.deliveredAt = now;
-        }
-        if (internalStatus === "CANCELLED" && !targetOrder.cancelledAt) {
-          updateData.cancelledAt = now;
-        }
-
-        await db.update(orders).set(updateData).where(eq(orders.id, targetOrder.id));
-
-        await db.insert(shipmentTrackingEvents).values({
-          id: `evt_${Math.random().toString(36).substring(2, 11)}`,
-          orderId: targetOrder.id,
-          shipmentId: targetOrder.shiprocketShipmentId,
-          awbCode: String(awbCode || targetOrder.awbCode),
-          status: internalStatus,
-          statusCode: String(payload.status_code || currentStatus),
-          location: String(location),
-          description: String(activity),
-          eventTime,
-          rawEventReference: payload,
-        });
-
-        try {
-          const { sendShipmentDispatchedEmail, sendDeliveryCompletedEmail } = await import("@/lib/email");
-          if (internalStatus === "IN_TRANSIT" && !targetOrder.shippedAt) {
-            await sendShipmentDispatchedEmail(targetOrder.id);
-          }
-          if (internalStatus === "DELIVERED" && !targetOrder.deliveredAt) {
-            await sendDeliveryCompletedEmail(targetOrder.id);
-          }
-        } catch (emailErr) {
-          console.error(`Shiprocket webhook email trigger error for ${targetOrder.id}:`, emailErr);
-        }
-
-        revalidatePath(`/admin/orders/${targetOrder.id}`);
-        revalidatePath(`/account/orders/${targetOrder.id}`);
-        revalidatePath("/admin/orders");
-      }
+    if (!isDbAvailable) {
+      return NextResponse.json({ success: true, message: "Offline simulation webhook acknowledged." });
     }
 
-    return NextResponse.json({ success: true, processed: true });
-  } catch (error: any) {
-    console.error("Shiprocket webhook error:", error);
-    return NextResponse.json({ error: error.message || "Webhook processing error" }, { status: 500 });
+    // Shiprocket payload structure:
+    // { order_id, sr_order_id, shipment_id, awb, current_status, current_status_id, courier_name, location, etd, ... }
+    const srOrderId = payload.sr_order_id ? String(payload.sr_order_id) : (payload.order_id ? String(payload.order_id) : null);
+    const channelOrderId = payload.channel_order_id || payload.order_id || payload.order_number;
+    const awbCode = payload.awb || payload.awb_code;
+    const currentStatusStr = payload.current_status || payload.status || "IN_TRANSIT";
+    const courierName = payload.courier_name || payload.courier;
+    const location = payload.location || payload.current_location || "In Transit";
+
+    if (!srOrderId && !channelOrderId && !awbCode) {
+      return NextResponse.json({ message: "No identifying order/shipment fields found in webhook payload." }, { status: 200 });
+    }
+
+    // Find order by shiprocketOrderId, orderNumber, DB id, or awbCode
+    const conditions = [];
+    if (srOrderId) conditions.push(eq(orders.shiprocketOrderId, srOrderId));
+    if (channelOrderId) {
+      conditions.push(eq(orders.orderNumber, String(channelOrderId)));
+      conditions.push(eq(orders.id, String(channelOrderId)));
+    }
+    if (awbCode) conditions.push(eq(orders.awbCode, String(awbCode)));
+
+    const [matchedOrder] = await db
+      .select()
+      .from(orders)
+      .where(or(...conditions))
+      .limit(1);
+
+    if (!matchedOrder) {
+      console.warn("Shiprocket Webhook: No matching order found for payload", payload);
+      return NextResponse.json({ message: "Webhook acknowledged; no matching order found." }, { status: 200 });
+    }
+
+    const internalStatus = mapShiprocketStatusToInternal(currentStatusStr);
+    const now = new Date();
+
+    const updateData: Record<string, any> = {
+      fulfillmentStatus: internalStatus,
+      lastTrackingUpdate: now,
+      updatedAt: now,
+    };
+
+    if (awbCode && !matchedOrder.awbCode) {
+      updateData.awbCode = String(awbCode);
+      updateData.trackingUrl = `https://shiprocket.co/tracking/${awbCode}`;
+    }
+    if (courierName && !matchedOrder.courierName) {
+      updateData.courierName = String(courierName);
+    }
+    if (internalStatus === "IN_TRANSIT" && !matchedOrder.shippedAt) {
+      updateData.shippedAt = now;
+    }
+    if (internalStatus === "DELIVERED" && !matchedOrder.deliveredAt) {
+      updateData.deliveredAt = now;
+    }
+    if (internalStatus === "CANCELLED" && !matchedOrder.cancelledAt) {
+      updateData.cancelledAt = now;
+    }
+
+    await db.update(orders).set(updateData).where(eq(orders.id, matchedOrder.id));
+
+    // Record tracking event activity
+    await db.insert(shipmentTrackingEvents).values({
+      id: `evt_${Math.random().toString(36).substring(2, 11)}`,
+      orderId: matchedOrder.id,
+      shipmentId: matchedOrder.shiprocketShipmentId || (payload.shipment_id ? String(payload.shipment_id) : null),
+      awbCode: awbCode || matchedOrder.awbCode || null,
+      status: internalStatus,
+      statusCode: payload.current_status_id ? String(payload.current_status_id) : currentStatusStr,
+      location: String(location),
+      description: payload.scans?.[0]?.instructions || payload.scans?.[0]?.activity || `Status updated to ${currentStatusStr}`,
+      eventTime: payload.updated_at ? new Date(payload.updated_at) : now,
+      rawEventReference: payload,
+    });
+
+    // Record timeline log
+    await db.insert(orderTimeline).values({
+      id: `log_${Math.random().toString(36).substring(2, 11)}`,
+      orderId: matchedOrder.id,
+      status: internalStatus,
+      message: `Shiprocket Webhook: ${currentStatusStr} (${location})`,
+    });
+
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath("/admin/orders");
+    revalidatePath(`/admin/orders/${matchedOrder.id}`);
+    revalidatePath(`/account/orders/${matchedOrder.id}`);
+
+    return NextResponse.json({ success: true, orderId: matchedOrder.id, status: internalStatus });
+  } catch (err: any) {
+    console.error("Shiprocket webhook processing error:", err);
+    return NextResponse.json({ error: err.message || "Internal server error" }, { status: 500 });
   }
 }

@@ -8,14 +8,15 @@ import type {
 export async function checkCourierServiceability(
   deliveryPincode: string,
   weightKg: number = 0.5,
-  pickupPincode: string = "226001"
+  pickupPincode?: string
 ) {
+  const effectivePickupPincode = pickupPincode || process.env.SHIPROCKET_PICKUP_PINCODE || "110008";
   const res = await shiprocketFetch<ServiceabilityResponse>(
     "/courier/serviceability",
     {
       method: "GET",
       params: {
-        pickup_postcode: pickupPincode,
+        pickup_postcode: effectivePickupPincode,
         delivery_postcode: deliveryPincode,
         weight: String(weightKg),
         cod: "0",

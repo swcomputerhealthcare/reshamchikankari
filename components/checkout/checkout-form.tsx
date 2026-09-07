@@ -7,10 +7,10 @@ import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { createOrderAction, verifyRazorpayPaymentAction, checkOrderPaymentStatusAction, type AddressData } from "@/actions/order";
 import { type CartDetails } from "@/lib/cart";
-import Button from "@/components/ui/button";
-import { ShieldCheck, Lock, AlertCircle, Check, CreditCard, Truck, Wallet } from "lucide-react";
+import { ShieldCheck, Lock, AlertCircle, Check, CreditCard, Truck, Wallet, Gift, Sparkles } from "lucide-react";
 
 import EditorialOrderSummary from "@/components/checkout/editorial-order-summary";
+import FreeGiftPopup from "@/components/checkout/FreeGiftPopup";
 
 interface CheckoutFormProps {
   cart: CartDetails;
@@ -281,6 +281,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
 
   return (
     <>
+      <FreeGiftPopup />
       <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-12 sm:gap-16 text-left">
       {/* Left Column: Delivery & Payment Details */}
@@ -532,11 +533,16 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
       <div className="lg:col-span-5 space-y-6">
         {/* Items Thumbnail Snapshot Card */}
         <div className="bg-[#F8F2EC] border border-[#ECE9E2] p-6 sm:p-8 rounded-2xl shadow-xs space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#7C7A5A] border-b border-[#ECE9E2] pb-3">
-            Items in Order ({cart.items.length})
-          </h2>
+          <div className="flex items-center justify-between border-b border-[#ECE9E2] pb-3">
+            <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-[#7C7A5A]">
+              Items in Order ({cart.items.length})
+            </h2>
+            <span className="inline-flex items-center gap-1 text-[9.5px] font-bold uppercase tracking-wider text-[#E694AA] bg-[#E694AA]/15 px-2 py-0.5 rounded-full">
+              <Sparkles className="w-3 h-3 text-[#E694AA]" /> +1 Free Gift
+            </span>
+          </div>
 
-          <div className="space-y-4 max-h-64 overflow-y-auto pr-1">
+          <div className="space-y-4 max-h-72 overflow-y-auto pr-1">
             {cart.items.map((item) => (
               <div key={item.id} className="flex gap-4 items-center">
                 <div className="relative h-14 w-11 flex-shrink-0 bg-white border border-brand-black/10 overflow-hidden rounded-lg">
@@ -561,6 +567,30 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                 </div>
               </div>
             ))}
+
+            {/* Complimentary Free Gift Privilege Item */}
+            <div className="flex gap-4 items-center p-3 bg-[#FFF9F4] border border-[#7C7A5A]/30 rounded-xl relative overflow-hidden">
+              <div className="relative h-14 w-11 flex-shrink-0 bg-white border border-[#7C7A5A]/20 overflow-hidden rounded-lg flex items-center justify-center text-[#7C7A5A]">
+                <Gift className="w-6 h-6 stroke-[1.8]" />
+              </div>
+              <div className="flex-1 min-w-0 font-sans text-xs text-left">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-semibold text-brand-black truncate">
+                    Hand-Embroidered Keepsake Gift
+                  </h3>
+                  <span className="text-[8.5px] uppercase font-extrabold tracking-wider bg-[#7C7A5A]/15 text-[#7C7A5A] px-1.5 py-0.5 rounded">
+                    FREE
+                  </span>
+                </div>
+                <p className="text-[10px] text-neutral-500 mt-0.5">
+                  Artisan Chikankari Potli | Qty: 1
+                </p>
+                <p className="text-[10px] font-bold text-[#7C7A5A] mt-1 flex items-center gap-1.5">
+                  <span className="line-through text-neutral-400 font-normal">₹499</span>
+                  <span>₹0 (FREE GIFT)</span>
+                </p>
+              </div>
+            </div>
           </div>
         </div>
 

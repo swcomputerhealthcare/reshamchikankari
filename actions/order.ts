@@ -319,6 +319,14 @@ export async function createOrderAction(
     await clearCart();
     cookieStore.delete("applied_coupon");
 
+    // Trigger Shiprocket fulfillment pipeline asynchronously for COD or 100% wallet paid orders
+    try {
+      const { triggerOrderFulfillment } = await import("@/actions/shiprocket");
+      await triggerOrderFulfillment(orderId);
+    } catch (shiprocketErr) {
+      console.error(`Non-blocking Shiprocket trigger error for order ${orderId}:`, shiprocketErr);
+    }
+
     return { success: true, requiresPayment: false, orderNumber };
   } catch (globalErr: any) {
     console.error("Unhandled error in createOrderAction:", globalErr);

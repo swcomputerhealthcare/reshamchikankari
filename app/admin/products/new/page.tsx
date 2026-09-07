@@ -4,6 +4,9 @@ import Container from "@/components/ui/container";
 import ProductForm from "@/components/admin/product-form";
 import { getCategories } from "@/lib/catalog";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata = {
   title: "Add Product — Resham Admin",
 };

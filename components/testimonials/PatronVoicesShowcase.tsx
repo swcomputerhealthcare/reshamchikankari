@@ -160,7 +160,7 @@ const ALL_PATRONS: PatronTestimonial[] = [
     text: "Lightweight, airy, and so versatile. I pair it with palazzos for festive lunches and with denims for casual evenings.",
     name: "Nandini Nair",
     location: "Chennai",
-    garment: "RC Chandni Short Kurti",
+    garment: "RC Chanderi Short Kurti",
     image: "https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=150&auto=format&fit=crop&q=80",
     rating: 5,
   },

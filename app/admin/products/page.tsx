@@ -6,6 +6,9 @@ import Button from "@/components/ui/button";
 import { getProducts, getCategories } from "@/lib/catalog";
 import ProductListController from "@/components/admin/product-list-controller";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export const metadata = {
   title: "Admin Products Dashboard — Resham",
 };

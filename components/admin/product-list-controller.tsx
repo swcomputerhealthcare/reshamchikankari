@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useTransition, useMemo } from "react";
+import React, { useState, useEffect, useTransition, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import ProductToggle from "./product-toggle";
 import { duplicateProductAction, deleteProductAction, deactivateProductAction } from "@/actions/catalog";
 import { Search, ChevronLeft, ChevronRight, Copy, Archive, Trash2, Edit } from "lucide-react";
@@ -32,6 +33,7 @@ export default function ProductListController({
   initialProducts,
   categories,
 }: ProductListControllerProps) {
+  const router = useRouter();
   const [productsList, setProductsList] = useState<ProductItem[]>(initialProducts);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -39,6 +41,11 @@ export default function ProductListController({
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage] = useState(10);
   const [isPending, startTransition] = useTransition();
+
+  // Sync state whenever server revalidates and passes new initialProducts
+  useEffect(() => {
+    setProductsList(initialProducts);
+  }, [initialProducts]);
 
   // Action status states
   const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
@@ -88,6 +95,7 @@ export default function ProductListController({
       prev.map((p) => (p.id === id ? { ...p, isActive: newActive } : p))
     );
     showToast(newActive ? "Product is now LIVE on storefront." : "Product is now HIDDEN from storefront.");
+    router.refresh();
   };
 
   const handleDuplicate = (id: string) => {
@@ -96,21 +104,7 @@ export default function ProductListController({
       const res = await duplicateProductAction(id);
       if (res.success) {
         showToast("Product duplicated successfully.");
-        // Refresh catalog simulation by adding placeholder in state
-        const dupedProduct = productsList.find((p) => p.id === id);
-        if (dupedProduct) {
-          setProductsList([
-            {
-              ...dupedProduct,
-              id: res.id || `dup_${Date.now()}`,
-              name: `${dupedProduct.name} (Copy)`,
-              sku: `${dupedProduct.sku}-COPY`,
-              slug: `${dupedProduct.slug}-copy`,
-              isActive: false,
-            },
-            ...productsList,
-          ]);
-        }
+        router.refresh();
       } else {
         showToast(res.error || "Failed to duplicate product.", true);
       }
@@ -126,6 +120,7 @@ export default function ProductListController({
         setProductsList(
           productsList.map((p) => (p.id === id ? { ...p, isActive: false } : p))
         );
+        router.refresh();
       } else {
         showToast(res.error || "Failed to archive product.", true);
       }
@@ -138,8 +133,9 @@ export default function ProductListController({
       const res = await deleteProductAction(id);
       if (res.success) {
         showToast("Product deleted permanently.");
-        setProductsList(productsList.filter((p) => p.id !== id));
+        setProductsList((prev) => prev.filter((p) => p.id !== id));
         setDeleteConfirmId(null);
+        router.refresh();
       } else {
         showToast(res.error || "Failed to delete product.", true);
         setDeleteConfirmId(null);

@@ -243,6 +243,25 @@ body {
   border-radius: 999px;
 }
 
+/* Responsive hero slide image positioning */
+.hero-slide-image {
+  object-position: var(--obj-pos-mobile, center);
+  image-rendering: high-quality;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+@media (min-width: 768px) {
+  .hero-slide-image {
+    object-position: var(--obj-pos-tablet, center 35%);
+  }
+}
+@media (min-width: 1200px) {
+  .hero-slide-image {
+    object-position: var(--obj-pos-desktop, 75% 30%);
+  }
+}
+
+
 @utility nav-link-underline {
   position: relative;
   &::after {

@@ -61,7 +61,7 @@ export function buildShiprocketOrderPayload(
       name: item.productName || "Lucknowi Chikankari Garment",
       sku: item.sku || `RC-${order.id.slice(-6).toUpperCase()}`,
       units: item.quantity,
-      selling_price: Math.round(item.unitPricePaise / 100),
+      selling_price: Math.max(1, Math.round(item.unitPricePaise / 100)),
       discount: 0,
       hsn: item.product?.hsnCode || "6204",
     };
@@ -101,6 +101,8 @@ export function buildShiprocketOrderPayload(
   }
   cleanAddress = cleanAddress.substring(0, 190);
 
+  const subTotalRs = Math.round(order.subtotalPaise / 100);
+
   return {
     order_id: order.orderNumber,
     order_date: formattedDate,
@@ -116,11 +118,21 @@ export function buildShiprocketOrderPayload(
     billing_email: addr.email || "customer@reshamchikankari.com",
     billing_phone: cleanPhone,
     shipping_is_billing: true,
+    shipping_customer_name: firstName,
+    shipping_last_name: lastName,
+    shipping_address: cleanAddress,
+    shipping_address_2: (addr.addressLine2 || "").substring(0, 190),
+    shipping_city: addr.city || "New Delhi",
+    shipping_pincode: cleanPincode,
+    shipping_state: addr.state || "Delhi",
+    shipping_country: addr.country || "India",
+    shipping_email: addr.email || "customer@reshamchikankari.com",
+    shipping_phone: cleanPhone,
     order_items: orderItems,
     payment_method: isCOD ? "COD" : "Prepaid",
     shipping_charges: Math.round(order.shippingPaise / 100),
     total_discount: Math.round(order.discountPaise / 100),
-    sub_total: Math.round(order.subtotalPaise / 100),
+    sub_total: Math.max(1, subTotalRs),
     length: maxLengthCm,
     breadth: maxBreadthCm,
     height: maxHeightCm,

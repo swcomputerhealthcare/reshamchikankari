@@ -107,7 +107,7 @@ export default async function StorefrontHome() {
       {/* Section 3: Shop by Fabric (Editorial Textile Archive Spec) */}
       <ShopByFabric />
 
-      {/* Section 4: Patron Voices & Customer Reviews Arc */}
+      {/* Section 4: What People Say & Customer Reviews Arc */}
       <ReviewsSection initialReviews={initialReviews} />
 
       {/* Section 6: Quiet Editorial Contact CTA */}

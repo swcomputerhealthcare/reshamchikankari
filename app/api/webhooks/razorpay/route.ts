@@ -68,6 +68,8 @@ export async function POST(req: Request) {
 
     if (isDbAvailable) {
       if (event === "payment.captured" || event === "order.paid") {
+        let targetOrderId: string | null = null;
+
         const [existingPayment] = await db
           .select()
           .from(payments)
@@ -75,30 +77,52 @@ export async function POST(req: Request) {
           .limit(1);
 
         if (existingPayment) {
+          targetOrderId = existingPayment.orderId;
+        } else {
+          // Fallback order lookup by order notes or rzpOrderId as receipt/id
+          const notes = paymentEntity?.notes || orderEntity?.notes || {};
+          const candidateId = notes.orderId || notes.order_id || notes.receipt || rzpOrderId;
+          if (candidateId) {
+            const { or } = await import("drizzle-orm");
+            const [foundOrder] = await db
+              .select({ id: orders.id })
+              .from(orders)
+              .where(or(eq(orders.id, candidateId), eq(orders.orderNumber, candidateId)))
+              .limit(1);
+            if (foundOrder) {
+              targetOrderId = foundOrder.id;
+            }
+          }
+        }
+
+        if (targetOrderId) {
+          const finalOrderId = targetOrderId;
           await db.transaction(async (tx) => {
             await tx
               .update(orders)
               .set({
                 status: "CONFIRMED",
                 paymentStatus: "PAID",
-                paymentId: rzpPaymentId || existingPayment.providerPaymentId,
+                paymentId: rzpPaymentId || null,
                 updatedAt: new Date(),
               })
-              .where(eq(orders.id, existingPayment.orderId));
+              .where(eq(orders.id, finalOrderId));
 
-            await tx
-              .update(payments)
-              .set({
-                status: "CAPTURED",
-                providerPaymentId: rzpPaymentId || existingPayment.providerPaymentId,
-                signatureVerified: true,
-                updatedAt: new Date(),
-              })
-              .where(eq(payments.providerOrderId, rzpOrderId));
+            if (existingPayment) {
+              await tx
+                .update(payments)
+                .set({
+                  status: "CAPTURED",
+                  providerPaymentId: rzpPaymentId || existingPayment.providerPaymentId,
+                  signatureVerified: true,
+                  updatedAt: new Date(),
+                })
+                .where(eq(payments.providerOrderId, rzpOrderId));
+            }
 
             await tx.insert(orderTimeline).values({
               id: `log_${Math.random().toString(36).substring(2, 11)}`,
-              orderId: existingPayment.orderId,
+              orderId: finalOrderId,
               status: "CONFIRMED",
               message: `Webhook received: Payment captured (${rzpPaymentId || "Razorpay"})`,
             });
@@ -107,17 +131,17 @@ export async function POST(req: Request) {
           // Idempotent trigger of Shiprocket fulfillment after webhook confirms payment
           try {
             const { triggerOrderFulfillment } = await import("@/actions/shiprocket");
-            await triggerOrderFulfillment(existingPayment.orderId);
+            await triggerOrderFulfillment(finalOrderId);
           } catch (shiprocketErr) {
-            console.error(`Webhook Shiprocket trigger error for order ${existingPayment.orderId}:`, shiprocketErr);
+            console.error(`Webhook Shiprocket trigger error for order ${finalOrderId}:`, shiprocketErr);
           }
 
           // Dispatch Order Confirmation Email asynchronously
           try {
             const { sendOrderConfirmationEmail } = await import("@/lib/email");
-            await sendOrderConfirmationEmail(existingPayment.orderId);
+            await sendOrderConfirmationEmail(finalOrderId);
           } catch (emailErr) {
-            console.error(`Webhook Order Confirmation Email error for order ${existingPayment.orderId}:`, emailErr);
+            console.error(`Webhook Order Confirmation Email error for order ${finalOrderId}:`, emailErr);
           }
         }
       } else if (event === "payment.failed") {

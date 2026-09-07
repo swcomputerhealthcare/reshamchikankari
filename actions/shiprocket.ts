@@ -5,7 +5,7 @@ import { requireAdmin } from "@/lib/auth/helpers";
 import { db } from "@/db";
 import { orders, shipmentTrackingEvents } from "@/db/schema/order";
 import { products } from "@/db/schema/catalog";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import {
   createShiprocketOrder,
   assignShiprocketAWB,
@@ -19,9 +19,9 @@ import {
 // Idempotently create Shiprocket shipment for an order
 export async function triggerOrderFulfillment(orderId: string) {
   try {
-    // 1. Query order with items & shipping metadata
+    // 1. Query order with items & shipping metadata (by DB id or Order Number)
     const orderData = await db.query.orders.findFirst({
-      where: eq(orders.id, orderId),
+      where: or(eq(orders.id, orderId), eq(orders.orderNumber, orderId)),
       with: {
         items: {
           with: {
@@ -35,9 +35,16 @@ export async function triggerOrderFulfillment(orderId: string) {
       return { success: false, error: "Order not found." };
     }
 
-    // Ensure order is paid before triggering fulfillment
-    if (orderData.paymentStatus !== "PAID") {
-      return { success: false, error: "Order payment is not confirmed (Status must be PAID)." };
+    // Allow paid orders, COD orders, or confirmed/processing orders
+    const isEligibleForShipment =
+      orderData.paymentStatus === "PAID" ||
+      orderData.paymentProvider === "COD" ||
+      orderData.paymentStatus === "COD_PENDING" ||
+      orderData.status === "CONFIRMED" ||
+      orderData.status === "PROCESSING";
+
+    if (!isEligibleForShipment) {
+      return { success: false, error: `Order is not confirmed for shipping (Status: ${orderData.status}, Payment: ${orderData.paymentStatus}).` };
     }
 
     // IDEMPOTENCY GUARD: If shiprocket_order_id already exists, return existing status
@@ -133,17 +140,22 @@ export async function triggerOrderFulfillment(orderId: string) {
       }
 
       const awbRes = await assignShiprocketAWB(srShipmentId, courierId);
-      if (awbRes.success && awbRes.data?.response?.data) {
+      if (awbRes.success && awbRes.data?.response?.data?.awb_code) {
         const awbData = awbRes.data.response.data;
         awbCode = awbData.awb_code;
         courierName = awbData.courier_name;
         courierCompanyId = awbData.courier_company_id;
-      } else if (!awbRes.success) {
-        console.warn(`AWB assignment notice for order ${orderId}:`, awbRes.error);
+      } else {
+        const errorMsg =
+          (awbRes.data?.response?.data as any)?.awb_assign_error ||
+          (awbRes.data as any)?.message ||
+          awbRes.error ||
+          "Awaiting manual courier/AWB assignment in Shiprocket dashboard.";
+        console.warn(`AWB assignment notice for order ${orderId}:`, errorMsg);
         await db
           .update(orders)
           .set({
-            shippingError: awbRes.error || "Awaiting manual courier/AWB assignment in Shiprocket dashboard.",
+            shippingError: errorMsg,
             updatedAt: new Date(),
           })
           .where(eq(orders.id, orderId));
@@ -189,8 +201,12 @@ export async function triggerOrderFulfillment(orderId: string) {
       }
     }
 
-    revalidatePath(`/admin/orders/${orderId}`);
-    revalidatePath(`/account/orders/${orderId}`);
+    try {
+      revalidatePath(`/admin/orders/${orderId}`);
+      revalidatePath(`/account/orders/${orderId}`);
+    } catch (revalErr) {
+      console.warn("Path revalidation warning:", revalErr);
+    }
 
     return {
       success: true,

@@ -3,6 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   /* config options here */
   images: {
+    unoptimized: true,
     formats: ["image/avif", "image/webp"],
     deviceSizes: [360, 430, 640, 750, 828, 1080, 1200, 1440, 1920, 2048, 2560, 3840],
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
@@ -14,10 +15,19 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "lh3.googleusercontent.com",
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com",
+      },
     ],
   },
   async redirects() {
     return [
+      {
+        source: "/product/rc-chandni-short-kurti",
+        destination: "/product/rc-chanderi-short-kurti",
+        permanent: true,
+      },
       {
         source: "/collections",
         destination: "/shop",

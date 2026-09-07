@@ -76,7 +76,7 @@ export default function ReviewsSection({ initialReviews = [] }: ReviewsSectionPr
           {/* 1. Header & Eyebrow (Normal Document Flow Above Carousel) */}
           <div className="max-w-2xl mx-auto mb-4 sm:mb-6">
             <span className="text-[10px] sm:text-xs tracking-[0.25em] font-sans uppercase font-bold text-brand-pink mb-2 block">
-              PATRON VOICES & REVIEWS
+              WHAT PEOPLE SAY • OUR REVIEWS
             </span>
 
             <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl text-brand-offwhite leading-[1.15] max-w-xl mx-auto">
@@ -97,7 +97,7 @@ export default function ReviewsSection({ initialReviews = [] }: ReviewsSectionPr
           {/* 3. Editorial Navigation Drag Hint & CTA Button (Normal Document Flow Below Carousel) */}
           <div className="flex flex-col items-center mt-3 sm:mt-5 space-y-4">
             <p className="text-[10px] uppercase font-bold tracking-[0.25em] text-[#FFF9F4]/70 font-sans">
-              ← Drag to explore patron stories →
+              ← Drag to explore what people say →
             </p>
 
             <button

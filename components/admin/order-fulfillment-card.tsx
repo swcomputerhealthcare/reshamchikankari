@@ -20,6 +20,9 @@ interface OrderFulfillmentCardProps {
   courierName?: string | null;
   trackingUrl?: string | null;
   shippingError?: string | null;
+  pickupLocation?: string | null;
+  packageWeightKg?: number;
+  packageDimensionsCm?: string;
 }
 
 export default function OrderFulfillmentCard({
@@ -32,6 +35,9 @@ export default function OrderFulfillmentCard({
   courierName,
   trackingUrl,
   shippingError,
+  pickupLocation = "Home",
+  packageWeightKg = 0.5,
+  packageDimensionsCm = "30 x 25 x 5 cm",
 }: OrderFulfillmentCardProps) {
   const [status, setStatus] = useState(currentStatus);
   const [message, setMessage] = useState("");
@@ -114,6 +120,14 @@ export default function OrderFulfillmentCard({
         <div className="flex justify-between">
           <span className="text-neutral-400 uppercase text-[10px] tracking-wider font-bold">Shipment ID</span>
           <span className="font-mono font-bold text-brand-black">{shiprocketShipmentId || "Not Created"}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-neutral-400 uppercase text-[10px] tracking-wider font-bold">Pickup Location</span>
+          <span className="font-semibold text-brand-black">{pickupLocation || "Home"}</span>
+        </div>
+        <div className="flex justify-between">
+          <span className="text-neutral-400 uppercase text-[10px] tracking-wider font-bold">Package Details</span>
+          <span className="font-semibold text-brand-black">{packageWeightKg} kg ({packageDimensionsCm})</span>
         </div>
         <div className="flex justify-between">
           <span className="text-neutral-400 uppercase text-[10px] tracking-wider font-bold">Courier</span>

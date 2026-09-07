@@ -37,7 +37,11 @@ export default async function AdminOrderDetailPage(props: AdminOrderDetailPagePr
         where: eq(orders.id, id),
         with: {
           user: true,
-          items: true,
+          items: {
+            with: {
+              product: true,
+            },
+          },
           timeline: {
             orderBy: desc(orderTimeline.createdAt),
           },
@@ -190,6 +194,8 @@ export default async function AdminOrderDetailPage(props: AdminOrderDetailPagePr
               courierName={order.courierName}
               trackingUrl={order.trackingUrl}
               shippingError={order.shippingError}
+              pickupLocation={process.env.SHIPROCKET_PICKUP_LOCATION || "Home"}
+              packageWeightKg={Number((order.items.reduce((sum, i) => sum + (i.product?.weightKg ?? 0.5) * i.quantity, 0) || 0.5).toFixed(2))}
             />
 
             {/* Customer info card */}

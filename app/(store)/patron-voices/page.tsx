@@ -9,8 +9,8 @@ import { eq, desc } from "drizzle-orm";
 import PatronVoicesShowcase from "@/components/testimonials/PatronVoicesShowcase";
 
 export const metadata = {
-  title: "Patron Voices — Resham Chikankari",
-  description: "Read reflections and testimonials from patrons and lovers of handcrafted Lucknowi Chikankari.",
+  title: "What People Say — Our Reviews | Resham Chikankari",
+  description: "Read reflections and reviews from patrons and lovers of handcrafted Lucknowi Chikankari.",
 };
 
 export default async function PatronVoicesPage() {
@@ -41,15 +41,15 @@ export default async function PatronVoicesPage() {
         {/* Editorial Hero Header */}
         <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-16 space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#E694AA]/15 border border-[#E694AA]/40 text-[#B66F79] text-[10.5px] sm:text-xs font-bold uppercase tracking-[0.24em]">
-            <span>✦ TESTIMONIALS & CRAFT REFLECTIONS ✦</span>
+            <span>✦ WHAT PEOPLE SAY ✦</span>
           </div>
 
           <h1 className="font-display text-4xl sm:text-5xl lg:text-6xl text-[#7C7A5A] tracking-tight">
-            PATRON VOICES
+            OUR REVIEWS
           </h1>
 
           <p className="font-sans text-sm sm:text-base text-[#69727D] max-w-xl mx-auto leading-relaxed">
-            Reflections from connoisseurs and patrons across India and the globe who cherish the authentic art of Lucknowi Chikankari.
+            Honest reflections and reviews from patrons across India and the globe who cherish the authentic art of Lucknowi Chikankari.
           </p>
           <div className="h-px w-20 bg-[#7C7A5A]/30 mx-auto pt-2" />
         </div>

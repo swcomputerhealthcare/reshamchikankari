@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useTransition, useRef } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { applyCouponAction, removeCouponAction } from "@/actions/coupon";
-import { Check, Loader2, Tag, Lock } from "lucide-react";
+import { Check, Loader2, Tag, Lock, Gift } from "lucide-react";
 import Button from "@/components/ui/button";
 
 interface EditorialOrderSummaryProps {
@@ -162,6 +162,20 @@ export default function EditorialOrderSummary({
           <span className="font-semibold text-[#161616]">
             ₹{(subtotalPaise / 100).toLocaleString("en-IN")}
           </span>
+        </div>
+
+        {/* Complimentary Free Gift Privilege */}
+        <div className="flex justify-between items-center bg-[#FFF9F4] p-2.5 rounded-xl border border-[#7C7A5A]/25 text-xs text-[#7C7A5A]">
+          <span className="flex items-center gap-1.5 font-medium">
+            <Gift className="w-3.5 h-3.5 text-[#E694AA]" />
+            Complimentary Artisan Gift
+          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] text-neutral-400 line-through">₹499</span>
+            <span className="font-bold text-[11px] uppercase tracking-wider text-[#7C7A5A]">
+              FREE
+            </span>
+          </div>
         </div>
 
         {/* Animated Discount Row */}

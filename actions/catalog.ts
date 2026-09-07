@@ -15,6 +15,17 @@ const imageInputSchema = z.object({
   sortOrder: z.number().default(0),
 });
 
+const variantInputSchema = z.object({
+  name: z.string().min(1, "Variant name is required"),
+  sku: z.string().min(1, "Variant SKU is required"),
+  stock: z.number().int().nonnegative().default(10),
+  isAvailable: z.boolean().default(true),
+  pricePaise: z.number().int().positive().optional().nullable(),
+  colorName: z.string().optional().nullable(),
+  colorCode: z.string().optional().nullable(),
+  size: z.string().optional().nullable(),
+});
+
 const productInputSchema = z.object({
   name: z.string().min(1, "Name is required"),
   slug: z.string().min(1, "Slug is required"),
@@ -26,6 +37,7 @@ const productInputSchema = z.object({
   isActive: z.boolean().default(true),
   image: z.string().optional().nullable(),
   images: z.array(imageInputSchema).optional(),
+  variants: z.array(variantInputSchema).optional(),
   fabric: z.string().optional().nullable(),
   color: z.string().optional().nullable(),
   washCare: z.string().optional().nullable(),
@@ -74,10 +86,19 @@ export async function createProductAction(formData: z.infer<typeof productInputS
       categoryId: data.categoryId,
       name: data.name,
       slug: data.slug.toLowerCase(),
-      description: data.description,
+      description: data.description || null,
       sku: data.sku.toUpperCase(),
       pricePaise: data.pricePaise,
-      compareAtPricePaise: data.compareAtPricePaise,
+      compareAtPricePaise: data.compareAtPricePaise || null,
+      fabric: data.fabric || null,
+      color: data.color || null,
+      length: data.length || null,
+      neckline: data.neckline || null,
+      sleeves: data.sleeves || null,
+      occasion: data.occasion || null,
+      washCare: data.washCare || null,
+      featured: data.featured || false,
+      productNumber: data.productNumber || null,
       isActive: data.isActive,
     });
 
@@ -109,21 +130,44 @@ export async function createProductAction(formData: z.infer<typeof productInputS
       });
     }
 
-    // Insert a default size variant
-    await db.insert(productVariants).values({
-      id: `var_${Math.random().toString(36).substring(2, 11)}`,
-      productId: id,
-      sku: `${data.sku.toUpperCase()}-M`,
-      name: "M",
-      pricePaise: data.pricePaise,
-      stock: 10,
-      isActive: true,
-    });
+    if (data.variants && data.variants.length > 0) {
+      for (const v of data.variants) {
+        await db.insert(productVariants).values({
+          id: `var_${Math.random().toString(36).substring(2, 11)}`,
+          productId: id,
+          sku: v.sku.toUpperCase(),
+          name: v.name,
+          colorName: v.colorName || null,
+          colorCode: v.colorCode || null,
+          size: v.size || v.name,
+          pricePaise: v.pricePaise || data.pricePaise,
+          stock: v.stock,
+          inventoryQuantity: v.stock,
+          isAvailable: v.isAvailable,
+          isActive: true,
+        });
+      }
+    } else {
+      // Insert default M variant if none passed
+      await db.insert(productVariants).values({
+        id: `var_${Math.random().toString(36).substring(2, 11)}`,
+        productId: id,
+        sku: `${data.sku.toUpperCase()}-M`,
+        name: "M",
+        size: "M",
+        pricePaise: data.pricePaise,
+        stock: 10,
+        inventoryQuantity: 10,
+        isAvailable: true,
+        isActive: true,
+      });
+    }
 
     const adminUser = await requireAdmin();
 
     revalidatePath("/shop");
     revalidatePath("/admin/products");
+    revalidatePath("/");
     
     const { logger } = await import("@/lib/logger");
     logger.info({
@@ -135,7 +179,7 @@ export async function createProductAction(formData: z.infer<typeof productInputS
     return { success: true, id };
   } catch (error: any) {
     console.error("DB Create Product failed:", error);
-    return { success: false, error: "Failed to create product in database." };
+    return { success: false, error: error.message || "Failed to create product in database." };
   }
 }
 

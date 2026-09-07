@@ -72,6 +72,7 @@ export default function ProductGallery({ images, selectedColor }: ProductGallery
               alt={activeImage.alt || "Product image"}
               fill
               priority
+              unoptimized
               className="object-contain bg-[#FFF9F4] pointer-events-none"
               sizes="(max-width: 768px) 100vw, 50vw"
             />
@@ -124,6 +125,7 @@ export default function ProductGallery({ images, selectedColor }: ProductGallery
                 src={img.url}
                 alt={img.alt || `Thumbnail ${idx + 1}`}
                 fill
+                unoptimized
                 className="object-contain bg-[#FFF9F4]"
                 sizes="64px"
               />
