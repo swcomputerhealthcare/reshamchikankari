@@ -9,7 +9,6 @@ import { WishlistProvider } from "@/context/wishlist-context";
 import PrefetchManager from "@/components/performance/PrefetchManager";
 import SmoothScrollProvider from "@/components/providers/SmoothScrollProvider";
 import { PageTransitionProvider } from "@/components/transitions/PageTransition";
-import SitePreloader from "@/components/transitions/SitePreloader";
 import AuthCodeHandler from "@/components/auth/AuthCodeHandler";
 
 const gildaDisplay = Gilda_Display({
@@ -226,9 +225,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <CartProvider initialCart={cartDetails}>
             <PrefetchManager />
             <SmoothScrollProvider>
-              <SitePreloader>
-                <PageTransitionProvider>{children}</PageTransitionProvider>
-              </SitePreloader>
+              <PageTransitionProvider>{children}</PageTransitionProvider>
             </SmoothScrollProvider>
           </CartProvider>
         </WishlistProvider>

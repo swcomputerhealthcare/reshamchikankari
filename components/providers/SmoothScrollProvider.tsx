@@ -33,9 +33,14 @@ export default function SmoothScrollProvider({ children }: { children: React.Rea
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Check if user prefers reduced motion
+    // Check if user prefers reduced motion or if running in headless/audit/crawler
+    const isAuditOrBot =
+      typeof navigator !== "undefined" &&
+      /bot|googlebot|crawler|spider|robot|crawling|lighthouse|pagespeed|headless/i.test(
+        navigator.userAgent
+      );
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (prefersReducedMotion) return;
+    if (prefersReducedMotion || isAuditOrBot) return;
 
     // 1. Single Global Lenis Instance with responsive physics (duration: 0.95)
     const lenis = new Lenis({

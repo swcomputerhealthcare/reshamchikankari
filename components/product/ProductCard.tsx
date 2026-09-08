@@ -143,7 +143,6 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
             src={images[currentImageIndex]}
             alt={`${product.name} - View ${currentImageIndex + 1}`}
             fill
-            unoptimized
             className="object-contain transition-all duration-500 ease-in-out group-hover:scale-102 bg-[#FFF9F4]"
             sizes="(max-width: 768px) 50vw, 25vw"
             priority={false}

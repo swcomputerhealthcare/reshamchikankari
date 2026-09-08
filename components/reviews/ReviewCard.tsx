@@ -35,8 +35,6 @@ export default function ReviewCard({ review, className = "", style }: ReviewCard
           src={photo}
           alt={review.authorName}
           fill
-          priority
-          unoptimized
           sizes="(max-width: 640px) 280px, 340px"
           className="object-cover object-top filter brightness-102"
         />

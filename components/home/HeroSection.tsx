@@ -163,7 +163,7 @@ export default function HeroSection() {
       className="relative w-full h-[58vh] min-h-[420px] max-h-[520px] sm:h-[68vh] sm:min-h-[500px] sm:max-h-[640px] lg:h-[90vh] lg:min-h-[680px] lg:max-h-none bg-[#1a1c18] overflow-hidden select-none"
     >
       {/* Background Image Carousel with Cross-Fade */}
-      <AnimatePresence mode="sync">
+      <AnimatePresence mode="sync" initial={false}>
         <motion.div
           key={currentSlide.id}
           initial={{ opacity: 0 }}
@@ -179,7 +179,7 @@ export default function HeroSection() {
               alt={currentSlide.alt}
               fill
               priority={currentIndex === 0}
-              unoptimized={true}
+              fetchPriority={currentIndex === 0 ? "high" : "auto"}
               sizes="100vw"
               className={`hero-slide-image transition-all duration-700 ${
                 currentSlide.mobileFit === "contain"
@@ -212,7 +212,7 @@ export default function HeroSection() {
 
       {/* Foreground Content (Left-Aligned on Desktop/Tablet, Lower Anchor on Mobile) */}
       <div className="relative z-20 max-w-7xl mx-auto h-full flex flex-col justify-end sm:justify-center px-5 sm:px-12 lg:px-16 pb-14 sm:pb-0">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={currentSlide.id}
             initial={{ opacity: 0, y: 16 }}
