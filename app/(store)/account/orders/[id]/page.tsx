@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import Container from "@/components/ui/container";
 import AnimatedTicket from "@/components/checkout/animated-ticket";
@@ -301,7 +302,6 @@ export default async function CustomerOrderDetailPage(props: OrderDetailsPagePro
                   </div>
                 )}
               </div>
-            </div>
 
             {/* Shipping Address */}
             <div className="bg-white border border-[#ECE9E2] p-6 sm:p-8 rounded-2xl shadow-xs space-y-3 text-xs">
