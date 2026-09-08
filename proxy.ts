@@ -5,7 +5,12 @@ export async function proxy(request: NextRequest) {
   // Enforce HTTPS redirect in production
   const proto = request.headers.get("x-forwarded-proto");
   const host = request.headers.get("host");
-  if (proto === "http" && host && !host.includes("localhost") && !host.includes("127.0.0.1")) {
+  if (
+    proto === "http" &&
+    host &&
+    !host.includes("localhost") &&
+    !host.includes("127.0.0.1")
+  ) {
     return NextResponse.redirect(
       `https://${host}${request.nextUrl.pathname}${request.nextUrl.search}`,
       301
@@ -35,56 +40,50 @@ export async function proxy(request: NextRequest) {
     },
   });
 
-  // Skip auth session refresh on /auth/callback so we don't clear PKCE cookies before code exchange
+  // Skip auth session refresh on /auth/callback so we do not mutate or clear PKCE cookies before code exchange
   if (request.nextUrl.pathname.startsWith("/auth/callback")) {
     return supabaseResponse;
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://woavdlhvmjikobigadqc.supabase.co";
-  const supabaseKey =
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    "https://woavdlhvmjikobigadqc.supabase.co";
+  const key =
     process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     "sb_publishable_ADKS42lpLMQX__UratAPsg_8jhAD-ND";
 
-  const isProdDomain = request.nextUrl.hostname.endsWith("reshamchikankari.com");
-  const cookieDomain = isProdDomain ? ".reshamchikankari.com" : undefined;
-
   try {
-    const supabase = createServerClient(
-      supabaseUrl,
-      supabaseKey,
-      {
-        cookies: {
-          getAll() {
-            return request.cookies.getAll();
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value }) =>
-              request.cookies.set(name, value),
-            );
-            supabaseResponse = NextResponse.next({
-              request: {
-                headers: requestHeaders,
-              },
-            });
-            cookiesToSet.forEach(({ name, value, options }) =>
-              supabaseResponse.cookies.set(name, value, {
-                ...options,
-                ...(cookieDomain ? { domain: cookieDomain } : {}),
-                path: options?.path ?? "/",
-                sameSite: "lax",
-              }),
-            );
-          },
+    const supabase = createServerClient(url, key, {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) =>
+            request.cookies.set(name, value)
+          );
+          supabaseResponse = NextResponse.next({
+            request: {
+              headers: requestHeaders,
+            },
+          });
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, {
+              ...options,
+              path: options?.path ?? "/",
+              sameSite: options?.sameSite ?? "lax",
+              secure: process.env.NODE_ENV === "production",
+            })
+          );
         },
       },
-    );
+    });
 
-    // Triggers refresh-token rotation and writes the new cookies via setAll.
+    // Refresh auth session cookies if expired
     await supabase.auth.getUser();
   } catch (err) {
-    // Prevent unhandled middleware exceptions from crashing the entire app with 500
-    console.warn("Middleware auth error:", err);
+    console.warn("Proxy auth session refresh warning:", err);
   }
 
   return supabaseResponse;

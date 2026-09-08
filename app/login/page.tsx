@@ -17,6 +17,7 @@ function LoginForm() {
   
   // Google button states: "idle" | "loading" | "redirecting" | "error"
   const [googleState, setGoogleState] = useState<"idle" | "loading" | "redirecting" | "error">("idle");
+  const isConnectingOAuthRef = React.useRef(false);
   
   const searchParams = useSearchParams();
 
@@ -27,6 +28,8 @@ function LoginForm() {
   useEffect(() => {
     if (urlError) {
       setError(urlError);
+      isConnectingOAuthRef.current = false;
+      setGoogleState("idle");
     }
   }, [urlError]);
 
@@ -118,17 +121,18 @@ function LoginForm() {
   };
 
   const handleGoogleLogin = async () => {
-    if (googleState !== "idle" || isLoading) return;
+    if (isConnectingOAuthRef.current || googleState !== "idle" || isLoading) return;
+    isConnectingOAuthRef.current = true;
     setError("");
     setGoogleState("loading");
 
     try {
       const supabase = createClient();
-      const currentOrigin =
+      const origin =
         typeof window !== "undefined" && window.location.origin
           ? window.location.origin
-          : (process.env.NEXT_PUBLIC_SITE_URL || "https://www.reshamchikankari.com");
-      const redirectToUrl = `${currentOrigin}/auth/callback?next=${encodeURIComponent(callbackURL)}`;
+          : (process.env.NEXT_PUBLIC_SITE_URL || "https://reshamchikankari.com");
+      const redirectToUrl = `${origin}/auth/callback?next=${encodeURIComponent(callbackURL)}`;
 
       const { error: authError } = await supabase.auth.signInWithOAuth({
         provider: "google",
@@ -141,15 +145,18 @@ function LoginForm() {
       });
 
       if (authError) {
+        console.error("Google OAuth initiation error:", authError);
+        isConnectingOAuthRef.current = false;
         setGoogleState("error");
-        setError(authError.message || "Unable to sign in with Google. Please try again.");
+        setError("Unable to complete Google sign-in. Please try again.");
       } else {
         setGoogleState("redirecting");
       }
     } catch (err: unknown) {
+      console.error("Unexpected error during Google Sign In:", err);
+      isConnectingOAuthRef.current = false;
       setGoogleState("error");
-      const message = err instanceof Error ? err.message : "An unexpected error occurred during Google Sign In.";
-      setError(message);
+      setError("Unable to complete Google sign-in. Please try again.");
     }
   };
 

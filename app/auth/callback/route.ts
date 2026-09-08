@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get("code");
   const next = searchParams.get("next") ?? "/account";
 
-  // Validate redirect destination
+  // Validate redirect destination (Open Redirect Protection)
   let redirectUrl = new URL("/account", origin);
   if (next.startsWith("/")) {
     redirectUrl = new URL(next, origin);
@@ -18,12 +18,19 @@ export async function GET(request: NextRequest) {
         redirectUrl = parsed;
       }
     } catch {
-      // Ignore URL parsing errors
+      // Ignore URL parsing errors and fallback to /account
     }
   }
 
-  // Open redirect protection: restrict paths to internal ecommerce pages
-  const allowedPaths = ["/account", "/orders", "/wishlist", "/checkout", "/cart", "/shop", "/product", "/login"];
+  const allowedPaths = [
+    "/account",
+    "/orders",
+    "/wishlist",
+    "/checkout",
+    "/cart",
+    "/shop",
+    "/product",
+  ];
   const isAllowed =
     redirectUrl.pathname === "/" ||
     allowedPaths.some((p) => redirectUrl.pathname.startsWith(p));
@@ -32,69 +39,65 @@ export async function GET(request: NextRequest) {
     redirectUrl = new URL("/account", origin);
   }
 
-  // Prepare redirect response so session cookies can be attached with Path=/
-  const response = NextResponse.redirect(redirectUrl);
-
-  if (code) {
-    const cookieStore = await cookies();
-    const supabaseUrl =
-      process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      "https://woavdlhvmjikobigadqc.supabase.co";
-    const supabaseKey =
-      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-      "sb_publishable_ADKS42lpLMQX__UratAPsg_8jhAD-ND";
-
-    const isProdDomain = request.nextUrl.hostname.endsWith("reshamchikankari.com");
-    const cookieDomain = isProdDomain ? ".reshamchikankari.com" : undefined;
-
-    const supabase = createServerClient(
-      supabaseUrl,
-      supabaseKey,
-      {
-        cookies: {
-          getAll() {
-            const reqCookies = request.cookies.getAll();
-            const storeCookies = cookieStore.getAll();
-            const map = new Map<string, any>();
-            reqCookies.forEach((c) => map.set(c.name, c));
-            storeCookies.forEach((c) => map.set(c.name, c));
-            return Array.from(map.values());
-          },
-          setAll(cookiesToSet) {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              const opts = {
-                ...options,
-                ...(cookieDomain ? { domain: cookieDomain } : {}),
-                path: "/",
-                sameSite: "lax" as const,
-              };
-              try { cookieStore.set(name, value, opts); } catch {}
-              try { response.cookies.set(name, value, opts); } catch {}
-            });
-          },
-        },
-      },
-    );
-
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      return response;
-    }
-    console.error("Supabase OAuth code exchange failed:", error.message);
+  if (!code) {
+    console.warn("OAuth callback invoked without code parameter.");
     return NextResponse.redirect(
       new URL(
-        `/login?error=${encodeURIComponent(error.message || "Unable to complete Google sign in. Please try again.")}`,
+        "/login?error=" +
+          encodeURIComponent("Unable to complete Google sign-in. Please try again."),
         origin
       )
     );
   }
 
-  // If code exchange failed, redirect to login page with a descriptive message
-  return NextResponse.redirect(
-    new URL(
-      "/login?error=Invalid auth callback code. Please try logging in again.",
-      origin
-    )
-  );
+  // Create redirect response early so session cookies can be attached to the response headers
+  const response = NextResponse.redirect(redirectUrl);
+  const cookieStore = await cookies();
+
+  const url =
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    "https://woavdlhvmjikobigadqc.supabase.co";
+  const key =
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    "sb_publishable_ADKS42lpLMQX__UratAPsg_8jhAD-ND";
+
+  const supabase = createServerClient(url, key, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet) {
+        cookiesToSet.forEach(({ name, value, options }) => {
+          const cookieOpts = {
+            ...options,
+            path: options?.path ?? "/",
+            sameSite: options?.sameSite ?? "lax",
+            secure: process.env.NODE_ENV === "production",
+          };
+          try {
+            cookieStore.set(name, value, cookieOpts);
+          } catch {}
+          try {
+            response.cookies.set(name, value, cookieOpts);
+          } catch {}
+        });
+      },
+    },
+  });
+
+  const { error } = await supabase.auth.exchangeCodeForSession(code);
+
+  if (error) {
+    console.error("OAuth callback exchange failed:", error.message, error);
+    return NextResponse.redirect(
+      new URL(
+        "/login?error=" +
+          encodeURIComponent("Unable to complete Google sign-in. Please try again."),
+        origin
+      )
+    );
+  }
+
+  return response;
 }

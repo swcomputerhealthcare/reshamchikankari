@@ -1,5 +1,9 @@
 import { createBrowserClient } from "@supabase/ssr";
 
+/**
+ * Browser-side Supabase client for Client Components.
+ * Uses @supabase/ssr to store the PKCE code verifier and auth tokens in cookies.
+ */
 export function createClient() {
   const url =
     process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -9,20 +13,5 @@ export function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     "sb_publishable_ADKS42lpLMQX__UratAPsg_8jhAD-ND";
 
-  const isProdDomain =
-    typeof window !== "undefined" &&
-    window.location.hostname.endsWith("reshamchikankari.com");
-
-  return createBrowserClient(url, key, {
-    cookieOptions: isProdDomain
-      ? {
-          domain: ".reshamchikankari.com",
-          path: "/",
-          sameSite: "lax",
-        }
-      : {
-          path: "/",
-          sameSite: "lax",
-        },
-  });
+  return createBrowserClient(url, key);
 }
