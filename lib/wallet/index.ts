@@ -239,9 +239,20 @@ export async function lockWalletFunds(
   walletId: string,
   amountPaise: number,
   payoutMethodId: string,
-  idempotencyKey: string
+  idempotencyKey: string,
+  extraDetails?: {
+    method?: string;
+    destinationReference?: string;
+    provider?: string;
+    metadata?: Record<string, any>;
+  }
 ) {
   if (amountPaise <= 0) throw new Error("Lock amount must be positive");
+
+  const method = extraDetails?.method || null;
+  const destinationReference = extraDetails?.destinationReference || null;
+  const provider = extraDetails?.provider || "MANUAL";
+  const metadata = extraDetails?.metadata || {};
 
   if (!hasDatabase()) {
     const store = readMockStore();
@@ -269,11 +280,13 @@ export async function lockWalletFunds(
       feePaise: 0,
       netAmountPaise: amountPaise,
       status: "PENDING",
-      provider: "MANUAL",
+      method,
+      destinationReference,
+      provider,
       providerReferenceId: null,
       idempotencyKey,
       requestedAt: new Date().toISOString(),
-      metadata: {},
+      metadata,
     };
 
     store.withdrawalRequests.push(newRequest);
@@ -287,8 +300,10 @@ export async function lockWalletFunds(
       balanceAfterPaise: wallet.availableBalancePaise,
       referenceType: "withdrawal",
       referenceId: reqId,
-      description: `Funds locked for withdrawal request ${reqId}`,
-      metadata: {},
+      description: destinationReference
+        ? `Funds locked for payout to ${destinationReference}`
+        : `Funds locked for withdrawal request ${reqId}`,
+      metadata,
       createdAt: new Date().toISOString(),
     });
 
@@ -338,8 +353,11 @@ export async function lockWalletFunds(
       feePaise: 0,
       netAmountPaise: amountPaise,
       status: "PENDING",
-      provider: "MANUAL",
+      method,
+      destinationReference,
+      provider,
       idempotencyKey,
+      metadata,
     };
 
     await tx.insert(withdrawalRequests).values(newRequest);
@@ -353,7 +371,10 @@ export async function lockWalletFunds(
       balanceAfterPaise: nextAvail,
       referenceType: "withdrawal",
       referenceId: reqId,
-      description: `Funds locked for withdrawal request ${reqId}`,
+      description: destinationReference
+        ? `Funds locked for payout to ${destinationReference}`
+        : `Funds locked for withdrawal request ${reqId}`,
+      metadata,
     });
 
     return newRequest;
@@ -454,7 +475,14 @@ export async function releaseWalletFunds(
   });
 }
 
-export async function completeWalletWithdrawal(withdrawalRequestId: string, providerRef: string) {
+export async function completeWalletWithdrawal(
+  withdrawalRequestId: string,
+  providerRef: string,
+  extraDetails?: {
+    provider?: string;
+  }
+) {
+  const provider = extraDetails?.provider;
   if (!hasDatabase()) {
     const store = readMockStore();
     const request = store.withdrawalRequests.find((r) => r.id === withdrawalRequestId);
@@ -482,6 +510,7 @@ export async function completeWalletWithdrawal(withdrawalRequestId: string, prov
 
     request.status = "COMPLETED";
     request.providerReferenceId = providerRef;
+    if (provider) request.provider = provider;
     request.completedAt = new Date().toISOString();
 
     writeMockStore(store);
@@ -526,16 +555,21 @@ export async function completeWalletWithdrawal(withdrawalRequestId: string, prov
       });
     }
 
+    const updateData: any = {
+      status: "COMPLETED",
+      providerReferenceId: providerRef,
+      completedAt: new Date(),
+    };
+    if (provider) {
+      updateData.provider = provider;
+    }
+
     await tx
       .update(withdrawalRequests)
-      .set({
-        status: "COMPLETED",
-        providerReferenceId: providerRef,
-        completedAt: new Date(),
-      })
+      .set(updateData)
       .where(eq(withdrawalRequests.id, withdrawalRequestId));
 
-    return { ...request, status: "COMPLETED", providerReferenceId: providerRef };
+    return { ...request, status: "COMPLETED", providerReferenceId: providerRef, ...(provider ? { provider } : {}) };
   });
 }
 

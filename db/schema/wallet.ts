@@ -42,6 +42,7 @@ export const payoutMethods = pgTable("payout_methods", {
   type: text("type").notNull(), // 'UPI' | 'BANK'
   accountHolderName: text("account_holder_name"),
   upiId: text("upi_id"),
+  accountNumber: text("account_number"),
   bankAccountLast4: text("bank_account_last4"),
   ifsc: text("ifsc"),
   isVerified: boolean("is_verified").notNull().default(false),

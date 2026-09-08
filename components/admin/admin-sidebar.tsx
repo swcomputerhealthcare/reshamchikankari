@@ -9,6 +9,7 @@ import {
   Package,
   ShoppingBag,
   Star,
+  Wallet,
   Settings as SettingsIcon,
   ExternalLink,
   LogOut,
@@ -47,6 +48,7 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
     { name: "Overview", href: "/admin", icon: LayoutDashboard },
     { name: "Products", href: "/admin/products", icon: Package },
     { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
+    { name: "RC Wallet", href: "/admin/wallet", icon: Wallet },
     { name: "Reviews", href: "/admin/reviews", icon: Star },
     { name: "Settings", href: "/admin/settings", icon: SettingsIcon },
   ];

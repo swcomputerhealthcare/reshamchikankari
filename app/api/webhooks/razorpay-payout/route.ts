@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     }
 
     if (event === "payout.processed" || event === "payout.completed") {
-      await completeWalletWithdrawal(withdrawalId, providerRef);
+      await completeWalletWithdrawal(withdrawalId, providerRef, { provider: "RAZORPAY" });
       console.log(`Webhook payout success: completed request ${withdrawalId}`);
     } else if (event === "payout.failed" || event === "payout.reversed") {
       const code = payout.failure_reason || "PAYOUT_FAILED";

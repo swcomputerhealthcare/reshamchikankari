@@ -11,7 +11,27 @@ export interface RazorpayXPayoutResult {
   success: boolean;
   payoutId?: string;
   status?: string;
+  isQueuedForManual?: boolean;
   error?: string;
+}
+
+/**
+ * Payout destination validation helpers
+ */
+export function isValidUPI(upi: string): boolean {
+  if (!upi || typeof upi !== "string") return false;
+  return /^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/.test(upi.trim());
+}
+
+export function isValidIFSC(ifsc: string): boolean {
+  if (!ifsc || typeof ifsc !== "string") return false;
+  return /^[A-Z]{4}0[A-Z0-9]{6}$/i.test(ifsc.trim());
+}
+
+export function isValidBankAccount(acc: string): boolean {
+  if (!acc || typeof acc !== "string") return false;
+  const clean = acc.replace(/[\s\-]/g, "");
+  return /^\d{9,18}$/.test(clean);
 }
 
 /**
@@ -106,6 +126,7 @@ export async function executeRazorpayXPayout(
     type: "UPI" | "BANK";
     accountHolderName?: string | null;
     upiId?: string | null;
+    accountNumber?: string | null;
     bankAccountLast4?: string | null;
     ifsc?: string | null;
   },
@@ -113,18 +134,19 @@ export async function executeRazorpayXPayout(
 ): Promise<RazorpayXPayoutResult> {
   const accountNumber = process.env.RAZORPAYX_ACCOUNT_NUMBER;
   const isRazorpayXConfigured =
-    accountNumber &&
+    Boolean(accountNumber &&
     accountNumber !== "dummy_account" &&
     RAZORPAY_KEY_ID &&
-    !RAZORPAY_KEY_ID.includes("dummy");
+    !RAZORPAY_KEY_ID.includes("dummy"));
 
   if (!isRazorpayXConfigured) {
-    // Safe Test Mode Simulation for RazorpayX Payouts
-    console.log(`RazorpayX Payout Test Mode: Payout ${amountPaise} paise for withdrawal ${withdrawalId}`);
+    // If RazorpayX is not configured, queue the request for manual transfer
+    console.log(`RazorpayX Payout: Queued for direct payout ${amountPaise} paise for withdrawal ${withdrawalId}`);
     return {
       success: true,
-      payoutId: `pout_test_${Math.random().toString(36).substring(2, 11)}`,
-      status: "processing",
+      isQueuedForManual: true,
+      payoutId: `pout_pending_${Math.random().toString(36).substring(2, 11)}`,
+      status: "pending",
     };
   }
 
@@ -139,19 +161,50 @@ export async function executeRazorpayXPayout(
       mode,
       purpose: "refund",
       reference_id: withdrawalId,
+      narration: "Resham Chikankari Refund",
       notes: {
         withdrawal_id: withdrawalId,
       },
     };
 
-    if (payoutDetails.type === "UPI" && payoutDetails.upiId) {
+    if (payoutDetails.type === "UPI") {
+      const upi = payoutDetails.upiId?.trim();
+      if (!upi) {
+        return {
+          success: false,
+          error: "UPI ID is required for UPI payout transfer.",
+        };
+      }
       payload.fund_account = {
         account_type: "vpa",
         vpa: {
-          address: payoutDetails.upiId,
+          address: upi,
         },
         contact: {
-          name: payoutDetails.accountHolderName || "Resham Customer",
+          name: payoutDetails.accountHolderName?.trim() || "Resham Customer",
+          type: "customer",
+        },
+      };
+    } else if (payoutDetails.type === "BANK") {
+      const acctNum = payoutDetails.accountNumber?.trim();
+      const ifsc = payoutDetails.ifsc?.trim().toUpperCase();
+
+      if (!acctNum || !ifsc) {
+        return {
+          success: false,
+          error: "Full Bank Account Number and IFSC Code are required for bank payout.",
+        };
+      }
+
+      payload.fund_account = {
+        account_type: "bank_account",
+        bank_account: {
+          name: payoutDetails.accountHolderName?.trim() || "Resham Customer",
+          ifsc,
+          account_number: acctNum,
+        },
+        contact: {
+          name: payoutDetails.accountHolderName?.trim() || "Resham Customer",
           type: "customer",
         },
       };
@@ -175,16 +228,39 @@ export async function executeRazorpayXPayout(
         status: data.status || "processing",
       };
     } else {
-      console.error("RazorpayX Payout API error:", data);
+      console.warn("RazorpayX Payout API non-200 response:", data);
+      const desc = data.error?.description || data.message || "RazorpayX Payout API execution failed.";
+
+      // If RazorpayX is not enabled or account needs activation, queue as pending instead of failing
+      const isConfigIssue =
+        desc.toLowerCase().includes("not enabled") ||
+        desc.toLowerCase().includes("account") ||
+        desc.toLowerCase().includes("feature") ||
+        desc.toLowerCase().includes("balance");
+
+      if (isConfigIssue) {
+        return {
+          success: true,
+          isQueuedForManual: true,
+          payoutId: `pout_manual_${Math.random().toString(36).substring(2, 11)}`,
+          status: "pending",
+          error: desc,
+        };
+      }
+
       return {
         success: false,
-        error: data.error?.description || data.message || "RazorpayX Payout API execution failed.",
+        error: desc,
       };
     }
   } catch (err: any) {
     console.error("RazorpayX Payout request exception:", err);
+    // Queue as manual fallback on unexpected network/service outage
     return {
-      success: false,
+      success: true,
+      isQueuedForManual: true,
+      payoutId: `pout_err_queued_${Math.random().toString(36).substring(2, 11)}`,
+      status: "pending",
       error: err.message || "Failed to communicate with RazorpayX Payout service.",
     };
   }
