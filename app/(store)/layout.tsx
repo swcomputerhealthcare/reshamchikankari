@@ -2,6 +2,7 @@ import React from "react";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import AnnouncementCarousel from "@/components/layout/AnnouncementCarousel";
+import FloatingWhatsApp from "@/components/ui/FloatingWhatsApp";
 import { getCachedSiteSettings } from "@/lib/settings";
 
 interface StoreLayoutProps {
@@ -35,6 +36,9 @@ export default async function StoreLayout({ children }: StoreLayoutProps) {
 
       {/* Global Canonical Footer */}
       <Footer />
+
+      {/* Floating WhatsApp Contact Button */}
+      <FloatingWhatsApp />
     </div>
   );
 }

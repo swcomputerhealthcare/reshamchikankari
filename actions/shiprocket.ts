@@ -47,16 +47,50 @@ export async function triggerOrderFulfillment(orderId: string) {
       return { success: false, error: `Order is not confirmed for shipping (Status: ${orderData.status}, Payment: ${orderData.paymentStatus}).` };
     }
 
-    // IDEMPOTENCY GUARD: If shiprocket_order_id already exists, return existing status
+    // IDEMPOTENCY GUARD: If shiprocket_order_id already exists, return existing status or sync AWB
     if (orderData.shiprocketOrderId) {
-      console.log(`Order ${orderId} already has Shiprocket Order ID ${orderData.shiprocketOrderId}. Skipping creation.`);
-      return {
-        success: true,
-        alreadyProcessed: true,
-        shiprocketOrderId: orderData.shiprocketOrderId,
-        awbCode: orderData.awbCode,
-        fulfillmentStatus: orderData.fulfillmentStatus,
-      };
+      if (orderData.awbCode) {
+        console.log(`Order ${orderId} already has Shiprocket Order ID ${orderData.shiprocketOrderId} and AWB ${orderData.awbCode}. Skipping creation.`);
+        return {
+          success: true,
+          alreadyProcessed: true,
+          shiprocketOrderId: orderData.shiprocketOrderId,
+          awbCode: orderData.awbCode,
+          fulfillmentStatus: orderData.fulfillmentStatus,
+        };
+      }
+
+      // If shiprocketOrderId exists but no awbCode, try to pull AWB from Shiprocket order details
+      try {
+        const { getShiprocketOrderDetails } = await import("@/lib/shiprocket");
+        const srDetails = await getShiprocketOrderDetails(orderData.shiprocketOrderId);
+        const shipment = srDetails.data?.data?.shipments?.[0];
+        const liveAwb = shipment?.awb_code || shipment?.awb;
+        if (liveAwb) {
+          const courierName = shipment?.courier_name || shipment?.courier || null;
+          const trackingUrl = `https://shiprocket.co/tracking/${liveAwb}`;
+          await db
+            .update(orders)
+            .set({
+              awbCode: liveAwb,
+              courierName,
+              trackingUrl,
+              fulfillmentStatus: "AWB_ASSIGNED",
+              shippingError: null,
+              updatedAt: new Date(),
+            })
+            .where(eq(orders.id, orderId));
+
+          return {
+            success: true,
+            shiprocketOrderId: orderData.shiprocketOrderId,
+            awbCode: liveAwb,
+            courierName,
+          };
+        }
+      } catch (checkErr) {
+        console.warn("Could not check live Shiprocket order AWB status:", checkErr);
+      }
     }
 
     // Build shipment order object
@@ -139,7 +173,15 @@ export async function triggerOrderFulfillment(orderId: string) {
         console.warn("Serviceability lookup error during AWB assignment:", e);
       }
 
-      const awbRes = await assignShiprocketAWB(srShipmentId, courierId);
+      let awbRes = await assignShiprocketAWB(srShipmentId, courierId);
+      // Fallback: If assigning with recommended courier failed, retry without courierId so Shiprocket auto-allocates
+      if ((!awbRes.success || !awbRes.data?.response?.data?.awb_code) && courierId) {
+        console.warn(`AWB assignment with courier ${courierId} failed. Retrying without specific courier...`);
+        const fallbackRes = await assignShiprocketAWB(srShipmentId);
+        if (fallbackRes.success && fallbackRes.data?.response?.data?.awb_code) {
+          awbRes = fallbackRes;
+        }
+      }
       if (awbRes.success && awbRes.data?.response?.data?.awb_code) {
         const awbData = awbRes.data.response.data;
         awbCode = awbData.awb_code;
@@ -243,8 +285,13 @@ export async function adminRetryAssignAWBAction(orderId: string) {
     }
 
     const awbRes = await assignShiprocketAWB(orderData.shiprocketShipmentId);
-    if (!awbRes.success || !awbRes.data?.response?.data) {
-      return { success: false, error: awbRes.error || "Failed to assign AWB." };
+    if (!awbRes.success || !awbRes.data?.response?.data?.awb_code) {
+      const detailedError =
+        (awbRes.data?.response?.data as any)?.awb_assign_error ||
+        (awbRes.data as any)?.message ||
+        awbRes.error ||
+        "Failed to assign AWB. Please ensure your Shiprocket wallet has sufficient balance or assign courier directly via Shiprocket dashboard.";
+      return { success: false, error: detailedError };
     }
 
     const awbData = awbRes.data.response.data;
@@ -314,7 +361,42 @@ export async function syncOrderTrackingAction(orderId: string) {
       where: eq(orders.id, orderId),
     });
 
-    if (!orderData || !orderData.awbCode) {
+    if (!orderData) {
+      return { success: false, error: "Order not found." };
+    }
+
+    // If order has no AWB yet, check if Shiprocket has assigned one
+    if (!orderData.awbCode && orderData.shiprocketOrderId) {
+      try {
+        const { getShiprocketOrderDetails } = await import("@/lib/shiprocket");
+        const srDetails = await getShiprocketOrderDetails(orderData.shiprocketOrderId);
+        const shipment = srDetails.data?.data?.shipments?.[0];
+        const liveAwb = shipment?.awb_code || shipment?.awb;
+        if (liveAwb) {
+          const courierName = shipment?.courier_name || shipment?.courier || null;
+          const trackingUrl = `https://shiprocket.co/tracking/${liveAwb}`;
+          await db
+            .update(orders)
+            .set({
+              awbCode: liveAwb,
+              courierName,
+              trackingUrl,
+              fulfillmentStatus: "AWB_ASSIGNED",
+              shippingError: null,
+              updatedAt: new Date(),
+            })
+            .where(eq(orders.id, orderId));
+
+          revalidatePath(`/admin/orders/${orderId}`);
+          revalidatePath(`/account/orders/${orderId}`);
+          return { success: true, awbCode: liveAwb, courierName };
+        }
+      } catch (checkErr) {
+        console.warn("Could not sync live AWB during tracking sync:", checkErr);
+      }
+    }
+
+    if (!orderData.awbCode) {
       return { success: false, error: "No AWB code available for tracking." };
     }
 

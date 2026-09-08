@@ -145,120 +145,162 @@ export default async function CustomerOrderDetailPage(props: OrderDetailsPagePro
                 </div>
               </div>
             </div>
-
-            {/* Items List */}
-            <div className="bg-white border border-[#ECE9E2] p-6 sm:p-8 rounded-2xl shadow-xs space-y-4">
-              <h3 className="text-xs font-bold uppercase tracking-widest text-[#7C7A5A] border-b border-[#ECE9E2] pb-3">
-                Ordered Items ({order.items?.length || 0})
-              </h3>
-
-              <div className="divide-y divide-[#ECE9E2]">
-                {order.items && order.items.length > 0 ? (
-                  order.items.map((item: any) => (
-                    <div key={item.id} className="py-4 flex justify-between items-center text-xs">
-                      <div>
-                        <h4 className="font-semibold text-[#161616]">{item.productName}</h4>
-                        <p className="text-[10px] text-[#69727D] mt-0.5">
-                          Size: {item.variantSnapshot || "Standard"} | Qty: {item.quantity} | SKU: {item.sku}
+              
+              {/* Order Items */}
+              <div className="bg-white border border-[#ECE9E2] p-6 sm:p-8 rounded-2xl shadow-xs space-y-6">
+                <h3 className="font-bold uppercase tracking-widest text-xs text-[#7C7A5A] border-b border-[#ECE9E2] pb-3">
+                  Purchased Items ({order.items.length})
+                </h3>
+                <div className="divide-y divide-[#ECE9E2]">
+                  {order.items.map((item: any) => (
+                    <div key={item.id} className="py-4 first:pt-0 last:pb-0 flex gap-4 items-center">
+                      <div className="w-16 h-20 bg-[#F4F1EA] rounded-md overflow-hidden relative shrink-0 border border-[#ECE9E2]">
+                        {item.product?.images?.[0] ? (
+                          <Image
+                            src={item.product.images[0]}
+                            alt={item.productName}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[10px] text-neutral-400 font-serif">
+                            Resham
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-grow min-w-0">
+                        <h4 className="text-sm font-semibold text-[#161616] truncate">{item.productName}</h4>
+                        <p className="text-xs text-neutral-500 mt-0.5">
+                          Qty: {item.quantity} {item.size && `• Size: ${item.size}`} {item.color && `• Color: ${item.color}`}
+                        </p>
+                        <p className="text-xs font-semibold text-[#7C7A5A] mt-1">
+                          ₹{(item.lineTotalPaise / 100).toLocaleString("en-IN")}
                         </p>
                       </div>
-                      <div className="text-right font-bold text-[#161616]">
-                        ₹{((item.unitPricePaise * item.quantity) / 100).toLocaleString("en-IN")}
-                      </div>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-xs text-neutral-500 italic py-2">No individual item details available.</p>
+                  ))}
+                </div>
+
+                {/* Price Breakdown */}
+                <div className="border-t border-[#ECE9E2] pt-4 space-y-2 text-xs text-neutral-600">
+                  <div className="flex justify-between">
+                    <span>Subtotal</span>
+                    <span>₹{(order.subtotalPaise / 100).toLocaleString("en-IN")}</span>
+                  </div>
+                  {order.discountPaise > 0 && (
+                    <div className="flex justify-between text-[#E694AA]">
+                      <span>Discount / Privilege applied</span>
+                      <span>-₹{(order.discountPaise / 100).toLocaleString("en-IN")}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <span>Complimentary Express Shipping</span>
+                    <span>{order.shippingPaise === 0 ? "FREE" : `₹${(order.shippingPaise / 100).toLocaleString("en-IN")}`}</span>
+                  </div>
+                  {order.walletAmountPaise > 0 && (
+                    <div className="flex justify-between text-[#7C7A5A]">
+                      <span>Wallet Balance Applied</span>
+                      <span>-₹{(order.walletAmountPaise / 100).toLocaleString("en-IN")}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between font-bold text-sm text-[#161616] pt-2 border-t border-[#ECE9E2]">
+                    <span>Total Amount Paid</span>
+                    <span>₹{(order.totalPaise / 100).toLocaleString("en-IN")}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Shipping & Shipment Tracking Card */}
+              <div className="bg-white border border-[#ECE9E2] p-5 sm:p-8 rounded-2xl shadow-xs space-y-4 text-xs">
+                <div className="flex justify-between items-center border-b border-[#ECE9E2] pb-3">
+                  <h3 className="font-bold uppercase tracking-widest text-[#7C7A5A] flex items-center gap-1.5">
+                    <Truck className="w-4 h-4" /> Shipment & Tracking
+                  </h3>
+                  <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 bg-[#7C7A5A]/10 text-[#7C7A5A] rounded-full">
+                    {order.fulfillmentStatus || "PREPARING"}
+                  </span>
+                </div>
+
+                {/* Courier & AWB detail */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 bg-[#F8F2EC] p-3.5 sm:p-4 rounded-xl text-xs">
+                  <div>
+                    <span className="text-[9px] uppercase tracking-widest text-[#69727D] font-bold block mb-0.5">Courier Partner</span>
+                    <span className="font-bold text-[#161616] text-xs sm:text-sm break-words">{order.courierName || "Assigning Courier..."}</span>
+                  </div>
+                  <div>
+                    <span className="text-[9px] uppercase tracking-widest text-[#69727D] font-bold block mb-0.5">AWB Tracking No.</span>
+                    <span className="font-mono font-bold text-[#161616] text-xs sm:text-sm break-all">{order.awbCode || "Generating AWB..."}</span>
+                  </div>
+                </div>
+
+                {/* Tracking Step Indicator */}
+                <div className="space-y-3 pt-2">
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#69727D] block">Fulfillment Journey</span>
+                  <div className="grid grid-cols-5 gap-1 sm:gap-2 text-[8px] sm:text-[10px] font-bold text-center uppercase">
+                    <div
+                      className={`py-2 px-1 min-h-[44px] sm:min-h-[48px] rounded-md sm:rounded-lg border flex flex-col items-center justify-center transition-all ${
+                        order.fulfillmentStatus
+                          ? "bg-[#7C7A5A] text-white border-[#7C7A5A] shadow-2xs"
+                          : "bg-neutral-50 text-neutral-400 border-neutral-200"
+                      }`}
+                    >
+                      <span className="leading-tight tracking-tight sm:tracking-wider">Confirmed</span>
+                    </div>
+                    <div
+                      className={`py-2 px-1 min-h-[44px] sm:min-h-[48px] rounded-md sm:rounded-lg border flex flex-col items-center justify-center transition-all ${
+                        ["AWB_ASSIGNED", "PICKUP_SCHEDULED", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"].includes(
+                          order.fulfillmentStatus
+                        )
+                          ? "bg-[#7C7A5A] text-white border-[#7C7A5A] shadow-2xs"
+                          : "bg-neutral-50 text-neutral-400 border-neutral-200"
+                      }`}
+                    >
+                      <span className="leading-tight tracking-tight sm:tracking-wider">Packed</span>
+                    </div>
+                    <div
+                      className={`py-2 px-1 min-h-[44px] sm:min-h-[48px] rounded-md sm:rounded-lg border flex flex-col items-center justify-center transition-all ${
+                        ["SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"].includes(order.fulfillmentStatus)
+                          ? "bg-[#7C7A5A] text-white border-[#7C7A5A] shadow-2xs"
+                          : "bg-neutral-50 text-neutral-400 border-neutral-200"
+                      }`}
+                    >
+                      <span className="leading-tight tracking-tight sm:tracking-wider">Shipped</span>
+                    </div>
+                    <div
+                      className={`py-2 px-1 min-h-[44px] sm:min-h-[48px] rounded-md sm:rounded-lg border flex flex-col items-center justify-center transition-all ${
+                        ["OUT_FOR_DELIVERY", "DELIVERED"].includes(order.fulfillmentStatus)
+                          ? "bg-[#7C7A5A] text-white border-[#7C7A5A] shadow-2xs"
+                          : "bg-neutral-50 text-neutral-400 border-neutral-200"
+                      }`}
+                    >
+                      <span className="leading-tight tracking-tight sm:tracking-wider">Out for Delivery</span>
+                    </div>
+                    <div
+                      className={`py-2 px-1 min-h-[44px] sm:min-h-[48px] rounded-md sm:rounded-lg border flex flex-col items-center justify-center transition-all ${
+                        order.fulfillmentStatus === "DELIVERED"
+                          ? "bg-[#7C7A5A] text-white border-[#7C7A5A] shadow-2xs"
+                          : "bg-neutral-50 text-neutral-400 border-neutral-200"
+                      }`}
+                    >
+                      <span className="leading-tight tracking-tight sm:tracking-wider">Delivered</span>
+                    </div>
+                  </div>
+                </div>
+
+                {order.trackingUrl && (
+                  <div className="pt-2 flex justify-end">
+                    <a
+                      href={order.trackingUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#7C7A5A] text-white font-bold uppercase tracking-widest text-[10px] rounded-full hover:bg-black transition-colors"
+                    >
+                      <span>Track Live Shipment</span>
+                      <Truck className="w-3.5 h-3.5" />
+                    </a>
+                  </div>
                 )}
               </div>
-
-              {/* Price Breakdown */}
-              <div className="pt-4 border-t border-[#ECE9E2] space-y-2 text-xs">
-                <div className="flex justify-between text-[#69727D]">
-                  <span>Subtotal</span>
-                  <span>₹{(order.subtotalPaise / 100).toLocaleString("en-IN")}</span>
-                </div>
-                {order.discountPaise > 0 && (
-                  <div className="flex justify-between text-[#E694AA]">
-                    <span>Discount Applied</span>
-                    <span>-₹{(order.discountPaise / 100).toLocaleString("en-IN")}</span>
-                  </div>
-                )}
-                <div className="flex justify-between text-[#69727D]">
-                  <span>Shipping Fee</span>
-                  <span>{order.shippingPaise === 0 ? "FREE" : `₹${(order.shippingPaise / 100).toLocaleString("en-IN")}`}</span>
-                </div>
-                {order.walletAmountPaise > 0 && (
-                  <div className="flex justify-between text-[#7C7A5A]">
-                    <span>Wallet Balance Applied</span>
-                    <span>-₹{(order.walletAmountPaise / 100).toLocaleString("en-IN")}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-sm text-[#161616] pt-2 border-t border-[#ECE9E2]">
-                  <span>Total Amount Paid</span>
-                  <span>₹{(order.totalPaise / 100).toLocaleString("en-IN")}</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Shipping & Shipment Tracking Card */}
-            <div className="bg-white border border-[#ECE9E2] p-6 sm:p-8 rounded-2xl shadow-xs space-y-4 text-xs">
-              <div className="flex justify-between items-center border-b border-[#ECE9E2] pb-3">
-                <h3 className="font-bold uppercase tracking-widest text-[#7C7A5A] flex items-center gap-1.5">
-                  <Truck className="w-4 h-4" /> Shipment & Tracking
-                </h3>
-                <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 bg-[#7C7A5A]/10 text-[#7C7A5A] rounded-full">
-                  {order.fulfillmentStatus || "PREPARING"}
-                </span>
-              </div>
-
-              {/* Courier & AWB detail */}
-              <div className="grid grid-cols-2 gap-4 bg-[#F8F2EC] p-4 rounded-xl text-xs">
-                <div>
-                  <span className="text-[9px] uppercase tracking-widest text-[#69727D] font-bold block">Courier Partner</span>
-                  <span className="font-bold text-[#161616]">{order.courierName || "Assigning Courier..."}</span>
-                </div>
-                <div>
-                  <span className="text-[9px] uppercase tracking-widest text-[#69727D] font-bold block">AWB Tracking No.</span>
-                  <span className="font-mono font-bold text-[#161616]">{order.awbCode || "Generating AWB..."}</span>
-                </div>
-              </div>
-
-              {/* Tracking Step Indicator */}
-              <div className="space-y-3 pt-2">
-                <span className="text-[10px] uppercase font-bold tracking-widest text-[#69727D] block">Fulfillment Journey</span>
-                <div className="grid grid-cols-5 gap-1 text-[9px] font-bold text-center uppercase tracking-wider">
-                  <div className={`p-2 rounded-xs border ${order.fulfillmentStatus ? "bg-[#7C7A5A] text-white border-[#7C7A5A]" : "bg-neutral-100 text-neutral-400 border-neutral-200"}`}>
-                    Confirmed
-                  </div>
-                  <div className={`p-2 rounded-xs border ${["AWB_ASSIGNED", "PICKUP_SCHEDULED", "SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"].includes(order.fulfillmentStatus) ? "bg-[#7C7A5A] text-white border-[#7C7A5A]" : "bg-neutral-100 text-neutral-400 border-neutral-200"}`}>
-                    Packed
-                  </div>
-                  <div className={`p-2 rounded-xs border ${["SHIPPED", "IN_TRANSIT", "OUT_FOR_DELIVERY", "DELIVERED"].includes(order.fulfillmentStatus) ? "bg-[#7C7A5A] text-white border-[#7C7A5A]" : "bg-neutral-100 text-neutral-400 border-neutral-200"}`}>
-                    Shipped
-                  </div>
-                  <div className={`p-2 rounded-xs border ${["OUT_FOR_DELIVERY", "DELIVERED"].includes(order.fulfillmentStatus) ? "bg-[#7C7A5A] text-white border-[#7C7A5A]" : "bg-neutral-100 text-neutral-400 border-neutral-200"}`}>
-                    Out For Delivery
-                  </div>
-                  <div className={`p-2 rounded-xs border ${order.fulfillmentStatus === "DELIVERED" ? "bg-[#7C7A5A] text-white border-[#7C7A5A]" : "bg-neutral-100 text-neutral-400 border-neutral-200"}`}>
-                    Delivered
-                  </div>
-                </div>
-              </div>
-
-              {order.trackingUrl && (
-                <div className="pt-2 flex justify-end">
-                  <a
-                    href={order.trackingUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#7C7A5A] text-white font-bold uppercase tracking-widest text-[10px] rounded-full hover:bg-black transition-colors"
-                  >
-                    <span>Track Live Shipment</span>
-                    <Truck className="w-3.5 h-3.5" />
-                  </a>
-                </div>
-              )}
             </div>
 
             {/* Shipping Address */}

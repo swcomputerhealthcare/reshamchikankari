@@ -77,3 +77,28 @@ export async function generateShiprocketPickup(shipmentId: number | string) {
 
   return res;
 }
+
+export async function getShiprocketOrderDetails(orderId: number | string) {
+  const res = await shiprocketFetch<{
+    data: {
+      id: number;
+      channel_order_id?: string;
+      status?: string;
+      status_code?: number;
+      shipments?: Array<{
+        id: number;
+        awb?: string;
+        awb_code?: string;
+        courier?: string;
+        courier_name?: string;
+        courier_company_id?: number;
+        status?: string;
+      }>;
+    };
+  }>(`/orders/show/${orderId}`, {
+    method: "GET",
+  });
+
+  return res;
+}
+

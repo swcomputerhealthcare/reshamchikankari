@@ -30,6 +30,9 @@ export const envSchema = z.object({
   SHIPROCKET_PICKUP_LOCATION: z.string().optional(),
   SHIPROCKET_WEBHOOK_SECRET: z.string().optional(),
 
+  // Cloudflare
+  CLOUDFLARE_API_TOKEN: z.string().optional(),
+
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 });
 
@@ -53,6 +56,7 @@ export const env = {
   SHIPROCKET_PASSWORD: process.env.SHIPROCKET_PASSWORD || "shiprocket_test_password",
   SHIPROCKET_PICKUP_LOCATION: process.env.SHIPROCKET_PICKUP_LOCATION || "Primary",
   SHIPROCKET_WEBHOOK_SECRET: process.env.SHIPROCKET_WEBHOOK_SECRET || "shiprocket_wh_secret_reshamk_test",
+  CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN || "",
   NODE_ENV: (process.env.NODE_ENV || "development") as "development" | "production" | "test",
 };
 

@@ -129,6 +129,14 @@ export async function POST(req: Request) {
           updatedAt: now,
         };
 
+        if (awbCode && !targetOrder.awbCode) {
+          updateData.awbCode = String(awbCode);
+          updateData.trackingUrl = `https://shiprocket.co/tracking/${awbCode}`;
+        }
+        if (payload.courier_name && !targetOrder.courierName) {
+          updateData.courierName = String(payload.courier_name);
+        }
+
         if (internalStatus === "IN_TRANSIT" && !targetOrder.shippedAt) {
           updateData.shippedAt = now;
         }
@@ -140,6 +148,11 @@ export async function POST(req: Request) {
         }
 
         await db.update(orders).set(updateData).where(eq(orders.id, targetOrder.id));
+
+        try {
+          revalidatePath(`/account/orders/${targetOrder.id}`);
+          revalidatePath(`/admin/orders/${targetOrder.id}`);
+        } catch {}
 
         // Insert tracking event idempotently
         await db.insert(shipmentTrackingEvents).values({
