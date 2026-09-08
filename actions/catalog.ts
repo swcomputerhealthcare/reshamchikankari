@@ -165,9 +165,10 @@ export async function createProductAction(formData: z.infer<typeof productInputS
 
     const adminUser = await requireAdmin();
 
+    revalidatePath("/", "layout");
     revalidatePath("/shop");
     revalidatePath("/admin/products");
-    revalidatePath("/");
+    revalidatePath(`/product/${data.slug.toLowerCase()}`);
     
     const { logger } = await import("@/lib/logger");
     logger.info({
@@ -234,7 +235,7 @@ export async function updateProductAction(id: string, formData: Partial<z.infer<
       }
     }
 
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     revalidatePath(`/product/${formData.slug || ""}`);
     revalidatePath("/shop");
     revalidatePath("/admin/products");
@@ -258,7 +259,7 @@ export async function deactivateProductAction(id: string, active: boolean) {
       where: eq(products.id, id),
     });
     await db.update(products).set({ isActive: active }).where(eq(products.id, id));
-    revalidatePath("/");
+    revalidatePath("/", "layout");
     revalidatePath("/shop");
     revalidatePath("/admin/products");
     if (prod?.slug) {
@@ -474,14 +475,77 @@ export async function deleteProductAction(id: string) {
   }
 
   try {
+    const prod = await db.query.products.findFirst({
+      where: eq(products.id, id),
+    });
+
+    // 1. Clean up dependent cart items
+    try {
+      const { cartItems } = await import("@/db/schema/cart");
+      await db.delete(cartItems).where(eq(cartItems.productId, id));
+    } catch (e) {
+      console.warn("Could not delete dependent cart items:", e);
+    }
+
+    // 2. Clean up dependent wishlist items
+    try {
+      const { wishlistItems } = await import("@/db/schema/wishlist");
+      await db.delete(wishlistItems).where(eq(wishlistItems.productId, id));
+    } catch (e) {
+      console.warn("Could not delete dependent wishlist items:", e);
+    }
+
+    // 3. Clean up dependent reviews
+    try {
+      const { reviews } = await import("@/db/schema/review");
+      await db.delete(reviews).where(eq(reviews.productId, id));
+    } catch (e) {
+      console.warn("Could not delete dependent reviews:", e);
+    }
+
+    // 4. Detach from existing orders snapshot (set null so historical orders don't break)
+    try {
+      const { orderItems } = await import("@/db/schema/order");
+      await db.update(orderItems).set({ productId: null, variantId: null }).where(eq(orderItems.productId, id));
+    } catch (e) {
+      console.warn("Could not detach order items:", e);
+    }
+
+    // 5. Delete product images
+    try {
+      await db.delete(productImages).where(eq(productImages.productId, id));
+    } catch (e) {
+      console.warn("Could not delete product images:", e);
+    }
+
+    // 6. Delete product variants
+    try {
+      await db.delete(productVariants).where(eq(productVariants.productId, id));
+    } catch (e) {
+      console.warn("Could not delete product variants:", e);
+    }
+
+    // 7. Delete product options and option values
+    try {
+      const { productOptions } = await import("@/db/schema/catalog");
+      await db.delete(productOptions).where(eq(productOptions.productId, id));
+    } catch (e) {
+      console.warn("Could not delete product options:", e);
+    }
+
+    // 8. Delete the product itself
     await db.delete(products).where(eq(products.id, id));
-    revalidatePath("/");
+
+    revalidatePath("/", "layout");
     revalidatePath("/shop");
     revalidatePath("/admin/products");
+    if (prod?.slug) {
+      revalidatePath(`/product/${prod.slug}`);
+    }
     return { success: true };
   } catch (error: any) {
     console.error("Delete product failed:", error);
-    return { success: false, error: "Failed to delete product. It may be referenced by existing orders." };
+    return { success: false, error: error.message || "Failed to delete product." };
   }
 }
 

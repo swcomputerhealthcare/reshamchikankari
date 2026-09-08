@@ -129,6 +129,18 @@ export const MOCK_CATEGORIES: Category[] = [
     createdAt: new Date(),
     updatedAt: new Date(),
   },
+  {
+    id: "cat_premium",
+    name: "Premium Collection",
+    slug: "premium",
+    description: "Masterpiece hand-embroidered Lucknowi Chikankari ensembles featuring intricate shadow-work and fine Mukaish embellishments.",
+    image: "/images/reshamchikankari/New folder 21/IMG_3192.JPG",
+    imageUrl: "/images/reshamchikankari/New folder 21/IMG_3192.JPG",
+    sortOrder: 3,
+    isActive: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  },
 ];
 
 export const MOCK_PRODUCTS: CatalogProductInput[] = [
@@ -1653,7 +1665,7 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
   },
   {
     "id": "prod_rc_7",
-    "categoryId": "cat_coord",
+    "categoryId": "cat_premium",
     "name": "RC Muslin MK set",
     "slug": "rc-muslin-mk-set",
     "description": "Premium Muslin MK set showcasing heavy floral embroidery details along the front panel and cuffs, offering a rich ethnic look.",
@@ -2244,7 +2256,7 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
   },
   {
     "id": "prod_rc_10",
-    "categoryId": "cat_coord",
+    "categoryId": "cat_premium",
     "name": "RC Viscose Spaghetti set",
     "slug": "rc-viscose-spaghetti-set",
     "description": "A modern sleeveless spaghetti top paired with comfortable matching palazzos, featuring heavy Chikankari work on Viscose.",
@@ -4629,7 +4641,7 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
   },
   {
     "id": "prod_rc_19",
-    "categoryId": "cat_coord",
+    "categoryId": "cat_premium",
     "name": "RC Viscose Rose MK Kurta Set",
     "slug": "rc-viscose-rose-mk-kurta-set-19",
     "description": "Premium Rose MK kurta and pants set, embroidered with fine rose-motifs Chikankari work on soft viscose fabric.",
@@ -4761,7 +4773,7 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
   },
   {
     "id": "prod_rc_20",
-    "categoryId": "cat_coord",
+    "categoryId": "cat_premium",
     "name": "RC Viscose Rose MK Kurta Set",
     "slug": "rc-viscose-rose-mk-kurta-set-20",
     "description": "Elegant deep wine Viscose Rose MK kurta set, perfect for evening gatherings and family get-togethers.",

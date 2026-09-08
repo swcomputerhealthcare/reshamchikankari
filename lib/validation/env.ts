@@ -37,27 +37,69 @@ export const envSchema = z.object({
 });
 
 export const env = {
-  DATABASE_URL: process.env.DATABASE_URL || "postgres://localhost:5432/dummy",
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || "https://woavdlhvmjikobigadqc.supabase.co",
-  NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_ADKS42lpLMQX__UratAPsg_8jhAD-ND",
-  SUPABASE_SECRET_KEY: process.env.SUPABASE_SECRET_KEY || "sb_secret_dummy",
-  BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET || "dummy_secret_32_chars_long_minimum",
-  BETTER_AUTH_URL: process.env.BETTER_AUTH_URL || "http://localhost:3000",
-  BETTER_AUTH_API_KEY: process.env.BETTER_AUTH_API_KEY || "ba_ebnmgmbkvwc3jbodrmm1dz4g7t0z7b45",
-  RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || "rzp_live_TYIGUQfADESI9t",
-  RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || "S6foaXaoR516ySbyqwbmrR3c",
-  RAZORPAY_WEBHOOK_SECRET: process.env.RAZORPAY_WEBHOOK_SECRET || "rzp_webhook_secret_reshamk_live",
-  NEXT_PUBLIC_RAZORPAY_KEY_ID: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "rzp_live_TYIGUQfADESI9t",
-  CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME || "dummy",
-  CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY || "dummy",
-  CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET || "dummy",
-  RESEND_API_KEY: process.env.RESEND_API_KEY || "dummy",
-  SHIPROCKET_EMAIL: process.env.SHIPROCKET_EMAIL || "orders@reshamchikankari.com",
-  SHIPROCKET_PASSWORD: process.env.SHIPROCKET_PASSWORD || "shiprocket_test_password",
-  SHIPROCKET_PICKUP_LOCATION: process.env.SHIPROCKET_PICKUP_LOCATION || "Primary",
-  SHIPROCKET_WEBHOOK_SECRET: process.env.SHIPROCKET_WEBHOOK_SECRET || "shiprocket_wh_secret_reshamk_test",
-  CLOUDFLARE_API_TOKEN: process.env.CLOUDFLARE_API_TOKEN || "",
-  NODE_ENV: (process.env.NODE_ENV || "development") as "development" | "production" | "test",
+  get DATABASE_URL() {
+    return process.env.DATABASE_URL || "";
+  },
+  get NEXT_PUBLIC_SUPABASE_URL() {
+    return process.env.NEXT_PUBLIC_SUPABASE_URL || "https://woavdlhvmjikobigadqc.supabase.co";
+  },
+  get NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY() {
+    return process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_ADKS42lpLMQX__UratAPsg_8jhAD-ND";
+  },
+  get SUPABASE_SECRET_KEY() {
+    return process.env.SUPABASE_SECRET_KEY || "";
+  },
+  get BETTER_AUTH_SECRET() {
+    return process.env.BETTER_AUTH_SECRET || "dummy_secret_32_chars_long_minimum";
+  },
+  get BETTER_AUTH_URL() {
+    return process.env.BETTER_AUTH_URL || "http://localhost:3000";
+  },
+  get BETTER_AUTH_API_KEY() {
+    return process.env.BETTER_AUTH_API_KEY || "ba_ebnmgmbkvwc3jbodrmm1dz4g7t0z7b45";
+  },
+  get RAZORPAY_KEY_ID() {
+    return process.env.RAZORPAY_KEY_ID || "rzp_live_TYIGUQfADESI9t";
+  },
+  get RAZORPAY_KEY_SECRET() {
+    return process.env.RAZORPAY_KEY_SECRET || "S6foaXaoR516ySbyqwbmrR3c";
+  },
+  get RAZORPAY_WEBHOOK_SECRET() {
+    return process.env.RAZORPAY_WEBHOOK_SECRET || "rzp_webhook_secret_reshamk_live";
+  },
+  get NEXT_PUBLIC_RAZORPAY_KEY_ID() {
+    return process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "rzp_live_TYIGUQfADESI9t";
+  },
+  get CLOUDINARY_CLOUD_NAME() {
+    return process.env.CLOUDINARY_CLOUD_NAME || "";
+  },
+  get CLOUDINARY_API_KEY() {
+    return process.env.CLOUDINARY_API_KEY || "";
+  },
+  get CLOUDINARY_API_SECRET() {
+    return process.env.CLOUDINARY_API_SECRET || "";
+  },
+  get RESEND_API_KEY() {
+    return process.env.RESEND_API_KEY || "";
+  },
+  get SHIPROCKET_EMAIL() {
+    return process.env.SHIPROCKET_EMAIL || "orders@reshamchikankari.com";
+  },
+  get SHIPROCKET_PASSWORD() {
+    return process.env.SHIPROCKET_PASSWORD || "";
+  },
+  get SHIPROCKET_PICKUP_LOCATION() {
+    return process.env.SHIPROCKET_PICKUP_LOCATION || "Home";
+  },
+  get SHIPROCKET_WEBHOOK_SECRET() {
+    return process.env.SHIPROCKET_WEBHOOK_SECRET || "";
+  },
+  get CLOUDFLARE_API_TOKEN() {
+    return process.env.CLOUDFLARE_API_TOKEN || "";
+  },
+  get NODE_ENV() {
+    return (process.env.NODE_ENV || "development") as "development" | "production" | "test";
+  },
 };
 
 export type EnvType = z.infer<typeof envSchema>;

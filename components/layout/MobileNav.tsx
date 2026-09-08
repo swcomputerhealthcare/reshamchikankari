@@ -198,6 +198,14 @@ export default function MobileNav({ user, variant = "default" }: MobileNavProps)
                       Bottom Wear
                     </Link>
                     <Link
+                      href="/shop/premium"
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center justify-between hover:text-brand-pink transition-colors uppercase font-bold text-brand-pink text-[10px] tracking-wider"
+                    >
+                      <span>Premium Collection</span>
+                      <span className="text-[8px] bg-brand-pink/15 text-brand-pink px-1.5 py-0.5 rounded uppercase font-bold">Luxury</span>
+                    </Link>
+                    <Link
                       href="/shop"
                       onClick={() => setIsOpen(false)}
                       className="block hover:text-brand-pink transition-colors uppercase font-bold text-brand-black text-[10px] tracking-wider"

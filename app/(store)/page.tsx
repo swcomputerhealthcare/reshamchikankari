@@ -49,9 +49,10 @@ export default async function StorefrontHome() {
     isVerified: r.isVerified ?? true,
   }));
 
-  const [wishlistIds, { products }] = await Promise.all([
+  const [wishlistIds, { products: newArrivals }, { products: premiumProducts }] = await Promise.all([
     getWishlistItems(),
     getProducts({ limit: 4 }),
+    getProducts({ categorySlug: "premium", limit: 4 }),
   ]);
 
   return (
@@ -79,7 +80,7 @@ export default async function StorefrontHome() {
 
           <ScrollReveal direction="up" delay={0.15}>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
-              {products.slice(0, 4).map((product, idx) => (
+              {newArrivals.slice(0, 4).map((product, idx) => (
                 <div
                   key={product.id}
                   className={idx % 2 === 1 ? "lg:translate-y-8 transition-transform duration-300" : ""}
@@ -104,10 +105,55 @@ export default async function StorefrontHome() {
         </Container>
       </section>
 
-      {/* Section 3: Shop by Fabric (Editorial Textile Archive Spec) */}
+      {/* Section 3: The Premium Collection (Haute Couture Archive > ₹4,000) */}
+      {premiumProducts.length > 0 && (
+        <section className="relative z-10 w-full py-16 sm:py-24 lg:py-28 bg-[#FFF9F4] text-[#161616] border-t border-[#ECE9E2]">
+          <Container>
+            <ScrollReveal direction="up">
+              <div className="flex flex-col md:flex-row md:items-end justify-between mb-10 sm:mb-14 gap-6">
+                <div>
+                  <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#E694AA]/15 border border-[#E694AA]/25 rounded-full mb-3">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#E694AA]"></span>
+                    <span className="text-[9px] sm:text-[10px] uppercase font-bold tracking-[0.25em] text-[#7C7A5A]">
+                      HAUTE COUTURE ARCHIVE
+                    </span>
+                  </div>
+                  <h2 className="font-display text-3xl sm:text-4xl lg:text-5xl text-[#161616] tracking-tight">
+                    The Premium Collection
+                  </h2>
+                  <p className="font-sans text-xs sm:text-sm text-neutral-600 mt-2 max-w-lg leading-relaxed">
+                    Exquisite bridal, Mukaish, and intricate royal shadow-work ensembles priced above ₹4,000. Handcrafted for discerning patrons who revere heritage authenticity.
+                  </p>
+                </div>
+                <Link
+                  href="/shop/premium"
+                  className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[#7C7A5A] hover:text-[#E694AA] transition-colors group self-start md:self-end"
+                >
+                  <span>Explore Premium Archive</span>
+                  <span className="transition-transform duration-200 group-hover:translate-x-1">→</span>
+                </Link>
+              </div>
+            </ScrollReveal>
+
+            <ScrollReveal direction="up" delay={0.15}>
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 lg:gap-8">
+                {premiumProducts.map((product) => (
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    initialWishlisted={wishlistIds.includes(product.id)}
+                  />
+                ))}
+              </div>
+            </ScrollReveal>
+          </Container>
+        </section>
+      )}
+
+      {/* Section 4: Shop by Fabric (Editorial Textile Archive Spec) */}
       <ShopByFabric />
 
-      {/* Section 4: What People Say & Customer Reviews Arc */}
+      {/* Section 5: What People Say & Customer Reviews Arc */}
       <ReviewsSection initialReviews={initialReviews} />
 
       {/* Section 6: Quiet Editorial Contact CTA */}

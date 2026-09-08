@@ -88,6 +88,16 @@ export default function NavbarLinks({ variant = "default" }: { variant?: "defaul
                 >
                   Bottom Wear
                 </TransitionLink>
+                <TransitionLink
+                  href="/shop/premium"
+                  onClick={() => setIsShopOpen(false)}
+                  className="px-5 py-2.5 hover:bg-brand-black/5 text-[#E694AA] hover:text-[#7C7A5A] transition-colors text-left flex items-center justify-between font-bold"
+                >
+                  <span>Premium Collection</span>
+                  <span className="text-[8px] bg-[#E694AA]/20 text-[#E694AA] px-1.5 py-0.5 rounded font-extrabold tracking-wider">
+                    Luxury
+                  </span>
+                </TransitionLink>
 
                 <div className="border-t border-brand-black/5 my-1.5"></div>
                 

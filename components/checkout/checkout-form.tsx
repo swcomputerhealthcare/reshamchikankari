@@ -576,7 +576,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
               <div className="flex-1 min-w-0 font-sans text-xs text-left">
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-semibold text-brand-black truncate">
-                    Hand-Embroidered Keepsake Gift
+                    Free Gift on Every Order
                   </h3>
                   <span className="text-[8.5px] uppercase font-extrabold tracking-wider bg-[#7C7A5A]/15 text-[#7C7A5A] px-1.5 py-0.5 rounded">
                     FREE

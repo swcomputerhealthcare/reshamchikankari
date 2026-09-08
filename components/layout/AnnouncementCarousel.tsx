@@ -14,7 +14,7 @@ interface AnnouncementItem {
 const DEFAULT_ANNOUNCEMENTS: AnnouncementItem[] = [
   {
     id: "free-gift",
-    text: "✨ Free Gift with every purchase from our side! Handcrafted keepsake included",
+    text: "✨ Free gift on every order from our side!",
     badge: "FREE GIFT",
     icon: Gift,
   },
@@ -26,7 +26,7 @@ const DEFAULT_ANNOUNCEMENTS: AnnouncementItem[] = [
   },
   {
     id: "checkout-gift",
-    text: "Complimentary hand-embroidered Lucknowi gift added to your order summary at checkout",
+    text: "Free gift on every order added at checkout",
     badge: "PATRON PRIVILEGE",
     icon: Gift,
   },
@@ -35,12 +35,6 @@ const DEFAULT_ANNOUNCEMENTS: AnnouncementItem[] = [
     text: "Free shipping on international orders of $200 and above",
     badge: "WORLDWIDE",
     icon: Globe,
-  },
-  {
-    id: "domestic",
-    text: "Complimentary Lucknow Express Delivery on orders above ₹4,000",
-    badge: "PAN-INDIA",
-    icon: Truck,
   },
   {
     id: "authenticity",

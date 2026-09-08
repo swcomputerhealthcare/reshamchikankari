@@ -168,7 +168,7 @@ export default function EditorialOrderSummary({
         <div className="flex justify-between items-center bg-[#FFF9F4] p-2.5 rounded-xl border border-[#7C7A5A]/25 text-xs text-[#7C7A5A]">
           <span className="flex items-center gap-1.5 font-medium">
             <Gift className="w-3.5 h-3.5 text-[#E694AA]" />
-            Complimentary Artisan Gift
+            Free Gift on Every Order
           </span>
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] text-neutral-400 line-through">₹499</span>

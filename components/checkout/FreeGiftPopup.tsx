@@ -94,7 +94,7 @@ export default function FreeGiftPopup({ onClaim }: FreeGiftPopupProps) {
               Free Gift Added!
             </h2>
             <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed max-w-xs mx-auto mb-5">
-              As our thank you for choosing authentic handcrafted Chikankari, a complimentary artisan keepsake has been added to your order summary at zero cost.
+              As our thank you for choosing authentic Chikankari, a complimentary free gift has been added to your order summary at zero cost.
             </p>
 
             {/* Gift Preview Box */}
@@ -105,11 +105,11 @@ export default function FreeGiftPopup({ onClaim }: FreeGiftPopupProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   <span className="font-semibold text-xs text-brand-black truncate">
-                    Hand-Embroidered Chikankari Keepsake
+                    Free Gift on Every Order
                   </span>
                 </div>
                 <p className="text-[10px] text-neutral-500 mt-0.5">
-                  Artisan crafted potli & token of appreciation
+                  Artisan crafted keepsake & token of appreciation
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-[10px] text-neutral-400 line-through">₹499</span>

@@ -178,6 +178,11 @@ export default function Footer() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/shop/premium" className="hover:text-brand-pink text-[#E694AA] font-bold transition-colors block py-0.5">
+                    Premium Collection ✨
+                  </Link>
+                </li>
+                <li>
                   <Link href="/shop" className="hover:text-brand-pink transition-colors block py-0.5">
                     All Collections
                   </Link>
