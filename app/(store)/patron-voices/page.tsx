@@ -8,9 +8,30 @@ import { profiles } from "@/db/schema/auth";
 import { eq, desc } from "drizzle-orm";
 import PatronVoicesShowcase from "@/components/testimonials/PatronVoicesShowcase";
 
-export const metadata = {
-  title: "What People Say — Our Reviews | Resham Chikankari",
-  description: "Read reflections and reviews from patrons and lovers of handcrafted Lucknowi Chikankari.",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Patron Voices & Reviews — Resham Chikankari",
+  description:
+    "Read genuine reviews and testimonials from patrons of Resham Chikankari across India. Real feedback on fit, authentic Lucknow craftsmanship, and fabric quality.",
+  alternates: {
+    canonical: "https://www.reshamchikankari.com/patron-voices",
+  },
+  openGraph: {
+    title: "Patron Voices & Reviews | Resham Chikankari",
+    description: "Honest customer reflections on authentic Lucknowi Chikankari garments.",
+    url: "https://www.reshamchikankari.com/patron-voices",
+    siteName: "Resham Chikankari",
+    type: "website",
+    images: [
+      {
+        url: "https://www.reshamchikankari.com/images/about.png",
+        width: 1200,
+        height: 630,
+        alt: "Resham Chikankari Patron Reviews",
+      },
+    ],
+  },
 };
 
 export default async function PatronVoicesPage() {

@@ -1,9 +1,14 @@
 import React from "react";
 import Container from "@/components/ui/container";
 
-export const metadata = {
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
   title: "Terms & Conditions — Resham Chikankari",
-  description: "Read our Terms and Conditions of service and orders.",
+  description: "Read the terms and conditions governing purchases, use of website, and orders at Resham Chikankari.",
+  alternates: {
+    canonical: "https://www.reshamchikankari.com/terms",
+  },
 };
 
 export default function TermsPage() {

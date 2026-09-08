@@ -10,9 +10,15 @@ interface SearchPageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-export const metadata = {
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
   title: "Search Catalog — Resham Chikankari",
-  description: "Search Lucknowi hand-embroidered Kurtis.",
+  description: "Search Lucknowi hand-embroidered Kurtis, co-ord sets, and bottom wear.",
+  robots: {
+    index: false,
+    follow: true,
+  },
 };
 
 export default async function SearchPage(props: SearchPageProps) {

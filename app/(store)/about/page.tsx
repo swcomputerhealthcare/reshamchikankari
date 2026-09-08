@@ -3,14 +3,88 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Target, Compass } from "lucide-react";
 
-export const metadata = {
-  title: "Our Story — Resham Chikankari",
-  description: "Learn about our journey, family vision, mission, and commitment to preserving handcrafted Lucknowi Chikankari while empowering women artisans.",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Our Heritage & Story — Handcrafted Lucknowi Chikankari Artisans | Resham",
+  description:
+    "Learn about Resham Chikankari's founding journey in Lucknow, our family heritage, and our commitment to preserving 400-year-old Awadhi hand embroidery while empowering over 100 rural women artisans.",
+  alternates: {
+    canonical: "https://www.reshamchikankari.com/about",
+  },
+  openGraph: {
+    title: "Our Story & Artisan Heritage | Resham Chikankari",
+    description:
+      "A shared family dream woven in thread, dedicated to empowering local women artisans in Lucknow.",
+    url: "https://www.reshamchikankari.com/about",
+    siteName: "Resham Chikankari",
+    type: "website",
+    images: [
+      {
+        url: "https://www.reshamchikankari.com/images/about.png",
+        width: 1200,
+        height: 630,
+        alt: "Resham Chikankari Founders — Our Story",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Our Story & Artisan Heritage | Resham Chikankari",
+    description: "Preserving Lucknow's heritage handcraft while empowering local women artisans.",
+    images: ["https://www.reshamchikankari.com/images/about.png"],
+  },
 };
 
 export default function AboutPage() {
+  const aboutSchema = {
+    "@context": "https://schema.org",
+    "@type": "AboutPage",
+    name: "Our Story — Resham Chikankari",
+    url: "https://www.reshamchikankari.com/about",
+    description:
+      "The founding story, artisan empowerment mission, and Lucknow heritage of Resham Chikankari.",
+    mainEntity: {
+      "@type": "Organization",
+      name: "Resham Chikankari",
+      url: "https://www.reshamchikankari.com",
+      foundingLocation: {
+        "@type": "Place",
+        name: "Lucknow, Uttar Pradesh, India",
+      },
+    },
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://www.reshamchikankari.com",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Our Story",
+        item: "https://www.reshamchikankari.com/about",
+      },
+    ],
+  };
+
   return (
-    <div className="bg-[#FFF9F4] text-[#1b1c19] min-h-screen font-sans selection:bg-[#7C7A5A] selection:text-[#FFF9F4]">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <div className="bg-[#FFF9F4] text-[#1b1c19] min-h-screen font-sans selection:bg-[#7C7A5A] selection:text-[#FFF9F4]">
       <main className="max-w-[1440px] mx-auto px-5 sm:px-8 lg:px-16 pt-8 pb-20 sm:pb-32 space-y-16 sm:space-y-24">
         {/* Header Hero Section */}
         <section className="text-center max-w-3xl mx-auto pt-6 sm:pt-10 space-y-4">
@@ -149,5 +223,6 @@ export default function AboutPage() {
         </section>
       </main>
     </div>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import React, { Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import type { Metadata } from "next";
 import Container from "@/components/ui/container";
 import Button from "@/components/ui/button";
 import { getProducts, getCategories } from "@/lib/catalog";
@@ -8,9 +9,45 @@ import ShopFilters from "@/components/product/shop-filters";
 import { getWishlistItems } from "@/lib/wishlist";
 import ProductCard from "@/components/product/ProductCard";
 
-export const metadata = {
-  title: "Shop All Kurtis — Resham Chikankari",
-  description: "Browse our collection of hand-embroidered Lucknowi Chikankari Kurtis. Premium fabrics and intricate artisanal thread-work.",
+export const metadata: Metadata = {
+  title: "Shop All Kurtis & Ensembles — Authentic Lucknowi Chikankari",
+  description:
+    "Browse our complete catalog of authentic hand-embroidered Lucknowi Chikankari Kurtis, coord sets, and bottom wear. Pure modal, georgette, and chanderi silk direct from Lucknow artisans.",
+  keywords: [
+    "Shop Lucknowi Chikankari",
+    "Chikankari Kurtis Online",
+    "Handcrafted Kurtas",
+    "Lucknow Ethnic Wear",
+    "Georgette Chikankari",
+    "Pure Cotton Kurtis",
+    "Chikankari Palazzos",
+    "Resham Chikankari",
+  ],
+  alternates: {
+    canonical: "https://www.reshamchikankari.com/shop",
+  },
+  openGraph: {
+    title: "Shop Authentic Lucknowi Chikankari Kurtis | Resham Chikankari",
+    description:
+      "Handcrafted Lucknowi Chikankari Kurtis, suits, and co-ord sets with pure fabrics and fine artisan thread-work.",
+    url: "https://www.reshamchikankari.com/shop",
+    siteName: "Resham Chikankari",
+    type: "website",
+    images: [
+      {
+        url: "https://www.reshamchikankari.com/images/about.png",
+        width: 1200,
+        height: 630,
+        alt: "Shop Lucknowi Chikankari Kurtis",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Shop Authentic Lucknowi Chikankari Kurtis | Resham Chikankari",
+    description: "Handcrafted Lucknowi Chikankari Kurtis with pure fabrics and fine thread-work.",
+    images: ["https://www.reshamchikankari.com/images/about.png"],
+  },
 };
 
 interface ShopPageProps {
@@ -47,8 +84,54 @@ export default async function ShopPage(props: ShopPageProps) {
 
   const totalPages = Math.ceil(total / limit);
 
+  // Schema.org CollectionPage & BreadcrumbList
+  const collectionSchema = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    name: "Resham Chikankari — Full Catalogue",
+    description: "Collection of authentic handcrafted Lucknowi Chikankari Kurtis, suits, and ethnic wear.",
+    url: "https://www.reshamchikankari.com/shop",
+    mainEntity: {
+      "@type": "ItemList",
+      numberOfItems: total,
+      itemListElement: products.map((prod, index) => ({
+        "@type": "ListItem",
+        position: index + 1,
+        url: `https://www.reshamchikankari.com/product/${prod.slug}`,
+        name: prod.name,
+      })),
+    },
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://www.reshamchikankari.com",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Shop All",
+        item: "https://www.reshamchikankari.com/shop",
+      },
+    ],
+  };
+
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
 
       {/* Shop Layout */}
       <div className="py-12 sm:py-16">

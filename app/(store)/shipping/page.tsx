@@ -1,9 +1,22 @@
 import React from "react";
 import Container from "@/components/ui/container";
 
-export const metadata = {
-  title: "Shipping & Returns — Resham Chikankari",
-  description: "Read our processing timelines, domestic delivery details, and 5-day exchange policies.",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Shipping & Exchange Policy — Resham Chikankari",
+  description:
+    "Read our processing timelines, pan-India domestic express delivery details, and 5-day exchange policies for authentic Chikankari garments.",
+  alternates: {
+    canonical: "https://www.reshamchikankari.com/shipping",
+  },
+  openGraph: {
+    title: "Shipping & Returns Policy | Resham Chikankari",
+    description: "Pan-India express delivery and 5-day exchange policies.",
+    url: "https://www.reshamchikankari.com/shipping",
+    siteName: "Resham Chikankari",
+    type: "website",
+  },
 };
 
 export default function ShippingPage() {

@@ -2,9 +2,22 @@ import React from "react";
 import Link from "next/link";
 import Container from "@/components/ui/container";
 
-export const metadata = {
-  title: "Garment Care Guide — Resham Chikankari",
-  description: "Learn how to preserve and wash your delicate hand-embroidered Lucknowi Chikankari kurtis.",
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Garment Care & Wash Guide — Resham Chikankari",
+  description:
+    "Learn how to preserve, wash, and iron your delicate hand-embroidered Lucknowi Chikankari kurtis and pure silk garments.",
+  alternates: {
+    canonical: "https://www.reshamchikankari.com/care",
+  },
+  openGraph: {
+    title: "Chikankari Garment Care Guide | Resham Chikankari",
+    description: "Preserve the beauty of hand-embroidered Lucknowi Chikankari garments.",
+    url: "https://www.reshamchikankari.com/care",
+    siteName: "Resham Chikankari",
+    type: "website",
+  },
 };
 
 export default function CarePage() {

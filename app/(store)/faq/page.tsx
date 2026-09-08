@@ -3,9 +3,31 @@ import Link from "next/link";
 import Container from "@/components/ui/container";
 import { HelpCircle, Sparkles, MessageCircle, ShieldCheck } from "lucide-react";
 
-export const metadata = {
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
   title: "Frequently Asked Questions (FAQ) — Resham Chikankari",
-  description: "Find answers to frequently asked questions about Resham Chikankari products, sizing, payment methods, shipping, returns, and care instructions.",
+  description:
+    "Find answers to frequently asked questions about Resham Chikankari kurtis, sizing, pure fabrics, COD payment, pan-India express shipping, and 5-day exchange policies.",
+  alternates: {
+    canonical: "https://www.reshamchikankari.com/faq",
+  },
+  openGraph: {
+    title: "FAQ | Resham Chikankari — Handcrafted Lucknowi Kurtis",
+    description:
+      "Answers to questions about sizing, care, delivery, and authenticity of handcrafted Lucknowi Chikankari.",
+    url: "https://www.reshamchikankari.com/faq",
+    siteName: "Resham Chikankari",
+    type: "website",
+    images: [
+      {
+        url: "https://www.reshamchikankari.com/images/about.png",
+        width: 1200,
+        height: 630,
+        alt: "Resham Chikankari FAQ",
+      },
+    ],
+  },
 };
 
 const FAQS = [
@@ -97,8 +119,26 @@ const FAQS = [
 ];
 
 export default function FAQPage() {
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: FAQS.map((faq) => ({
+      "@type": "Question",
+      name: faq.q,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.a,
+      },
+    })),
+  };
+
   return (
-    <div className="bg-[#FFF9F4] min-h-screen text-brand-black selection:bg-brand-pink/20 pb-24 pt-10">
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <div className="bg-[#FFF9F4] min-h-screen text-brand-black selection:bg-brand-pink/20 pb-24 pt-10">
       <Container className="max-w-3xl font-sans">
         
         {/* Header Title Section */}
@@ -164,5 +204,6 @@ export default function FAQPage() {
 
       </Container>
     </div>
+    </>
   );
 }

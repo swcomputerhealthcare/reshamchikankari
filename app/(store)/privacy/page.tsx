@@ -1,9 +1,14 @@
 import React from "react";
 import Container from "@/components/ui/container";
 
-export const metadata = {
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
   title: "Privacy Policy — Resham Chikankari",
-  description: "Learn how we protect and manage your personal information.",
+  description: "Learn how Resham Chikankari securely handles, protects, and respects your personal data and privacy.",
+  alternates: {
+    canonical: "https://www.reshamchikankari.com/privacy",
+  },
 };
 
 export default function PrivacyPolicyPage() {
