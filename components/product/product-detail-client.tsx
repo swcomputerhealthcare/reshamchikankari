@@ -1,11 +1,12 @@
 'use client';
 
 import React, { useState, useMemo } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import ProductGallery from "@/components/product/product-gallery";
 import ProductActionPanel from "@/components/product/product-action-panel";
 import { type CatalogProduct } from "@/lib/catalog";
-
-import { Star } from "lucide-react";
+import { Star, ArrowLeft } from "lucide-react";
 
 interface ProductDetailClientProps {
   product: CatalogProduct;
@@ -20,6 +21,8 @@ export default function ProductDetailClient({
   reviewsCount = 0,
   averageRating = null,
 }: ProductDetailClientProps) {
+  const router = useRouter();
+
   // Determine if product has 2 or more distinct colors in its variants
   const distinctColors = useMemo(() => {
     const colors = new Set<string>();
@@ -39,15 +42,51 @@ export default function ProductDetailClient({
   const displayRating = averageRating || "5.0";
   const numericRating = Math.round(parseFloat(displayRating));
 
+  const handleBack = () => {
+    if (typeof window !== "undefined" && window.history.length > 1) {
+      router.back();
+    } else {
+      router.push("/shop");
+    }
+  };
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-12 sm:gap-16">
-      {/* Gallery Column */}
-      <div className="md:col-span-7">
-        <ProductGallery
-          images={product.images}
-          selectedColor={selectedColor}
-        />
+    <div className="space-y-6">
+      {/* Top Mobile-Friendly Back Navigation Bar & Breadcrumb */}
+      <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-brand-black/5">
+        <button
+          type="button"
+          onClick={handleBack}
+          className="inline-flex items-center gap-2 px-4 py-2.5 text-xs font-sans font-bold uppercase tracking-wider text-brand-black bg-brand-black/5 hover:bg-brand-black hover:text-brand-offwhite rounded-full transition-all cursor-pointer border border-brand-black/10 active:scale-95 shadow-xs"
+          aria-label="Back to previous page"
+        >
+          <ArrowLeft className="w-4 h-4 stroke-[2.5]" />
+          <span>Back to Previous Page</span>
+        </button>
+
+        <div className="flex items-center gap-1.5 text-[11px] text-neutral-500 font-sans uppercase tracking-wider overflow-x-auto">
+          <Link href="/" className="hover:text-brand-black transition-colors font-medium">Home</Link>
+          <span>/</span>
+          <Link href="/shop" className="hover:text-brand-black transition-colors font-medium">Shop</Link>
+          {product.category && (
+            <>
+              <span>/</span>
+              <Link href={`/shop/${product.category.slug}`} className="hover:text-brand-black transition-colors font-medium">
+                {product.category.name}
+              </Link>
+            </>
+          )}
+        </div>
       </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-12 sm:gap-16 pt-2">
+        {/* Gallery Column */}
+        <div className="md:col-span-7">
+          <ProductGallery
+            images={product.images}
+            selectedColor={selectedColor}
+          />
+        </div>
 
       {/* Actions Panel Column */}
       <div className="md:col-span-5 space-y-8">
@@ -163,5 +202,6 @@ export default function ProductDetailClient({
         </div>
       </div>
     </div>
-  );
+  </div>
+);
 }

@@ -137,7 +137,7 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
     >
       {/* Image Gallery Column / Aspect ratio 3:4 */}
       <div className="relative aspect-[3/4] w-full overflow-hidden bg-white">
-        <Link href={`/product/${product.slug}`} className="block w-full h-full relative bg-[#FFF9F4]">
+        <Link href={`/product/${product.slug}`} className="block w-full h-full relative bg-[#FFF9F4] cursor-pointer">
           <Image
             key={images[currentImageIndex]}
             src={images[currentImageIndex]}
@@ -151,17 +151,17 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
 
         {/* Carousel overlay navigation arrows */}
         {images.length > 1 && (
-          <div className="absolute inset-0 flex items-center justify-between p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10">
+          <div className="absolute inset-0 flex items-center justify-between p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none">
             <button
               onClick={prevImage}
-              className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-xs shadow-xs hover:bg-white flex items-center justify-center cursor-pointer border-none"
+              className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-xs shadow-xs hover:bg-white flex items-center justify-center cursor-pointer border-none pointer-events-auto"
               aria-label="Previous image"
             >
               <ChevronLeft className="h-4 w-4 text-brand-black" />
             </button>
             <button
               onClick={nextImage}
-              className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-xs shadow-xs hover:bg-white flex items-center justify-center cursor-pointer border-none"
+              className="h-8 w-8 rounded-full bg-white/80 backdrop-blur-xs shadow-xs hover:bg-white flex items-center justify-center cursor-pointer border-none pointer-events-auto"
               aria-label="Next image"
             >
               <ChevronRight className="h-4 w-4 text-brand-black" />
@@ -171,7 +171,7 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
 
         {/* Slide Indicators dot bar */}
         {images.length > 1 && (
-          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
+          <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10 pointer-events-none">
             {images.map((_, index) => (
               <button
                 key={index}
@@ -180,7 +180,7 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
                   e.stopPropagation();
                   setCurrentImageIndex(index);
                 }}
-                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer border-none ${
+                className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer border-none pointer-events-auto ${
                   index === currentImageIndex ? "bg-brand-sage w-4" : "bg-brand-sage/30 w-1.5"
                 }`}
                 aria-label={`Go to slide ${index + 1}`}
@@ -190,12 +190,12 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
         )}
 
         {/* Wishlist Button Overlay */}
-        <div className="absolute top-3 right-3 z-10">
+        <div className="absolute top-3 right-3 z-10 pointer-events-auto">
           <WishlistButton productId={product.id} initialWishlisted={initialWishlisted} />
         </div>
 
         {/* Top Badges (Sale / Discount / New) */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 text-[9px] uppercase tracking-widest font-bold font-sans">
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 text-[9px] uppercase tracking-widest font-bold font-sans pointer-events-none">
           {hasDiscount && (
             <span className="bg-brand-pink text-brand-offwhite px-2 py-0.5 shadow-xs">
               -{discountPercent}% OFF

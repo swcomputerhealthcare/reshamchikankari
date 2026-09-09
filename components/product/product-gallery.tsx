@@ -2,8 +2,9 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Maximize2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import ImageZoomModal from "@/components/product/image-zoom-modal";
 
 interface ProductGalleryProps {
   images: { id: string; url: string; alt?: string | null; colorName?: string | null }[];
@@ -12,6 +13,7 @@ interface ProductGalleryProps {
 
 export default function ProductGallery({ images, selectedColor }: ProductGalleryProps) {
   const [activeIdx, setActiveIdx] = useState(0);
+  const [isZoomOpen, setIsZoomOpen] = useState(false);
 
   // Filter images by selected color if provided and matching images exist
   const displayImages = React.useMemo(() => {
@@ -47,6 +49,20 @@ export default function ProductGallery({ images, selectedColor }: ProductGallery
     <div className="flex flex-col gap-4">
       {/* Active Main Image Container */}
       <div className="relative w-full aspect-[3/4] bg-white border border-brand-black/5 overflow-hidden group select-none rounded-none">
+        {/* Glassmorphic Icon-Only Zoom Button */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsZoomOpen(true);
+          }}
+          className="absolute top-3 right-3 sm:top-4 sm:right-4 z-20 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-white/40 hover:bg-white/80 backdrop-blur-md border border-white/60 text-neutral-800 flex items-center justify-center shadow-sm transition-all duration-300 cursor-pointer hover:scale-110 active:scale-95 group/zoom"
+          title="Zoom Image"
+          aria-label="Zoom Image"
+        >
+          <Maximize2 className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-neutral-800 transition-transform group-hover/zoom:scale-110" />
+        </button>
+
         <AnimatePresence mode="popLayout">
           <motion.div
             key={activeIdx}
@@ -54,7 +70,8 @@ export default function ProductGallery({ images, selectedColor }: ProductGallery
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25, ease: "easeOut" }}
-            className="w-full h-full absolute inset-0 cursor-grab active:cursor-grabbing"
+            className="w-full h-full absolute inset-0 cursor-zoom-in"
+            onClick={() => setIsZoomOpen(true)}
             drag="x"
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.2}
@@ -84,7 +101,10 @@ export default function ProductGallery({ images, selectedColor }: ProductGallery
           <>
             {/* Left Arrow */}
             <button
-              onClick={handlePrev}
+              onClick={(e) => {
+                e.stopPropagation();
+                handlePrev();
+              }}
               className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white border border-brand-black/5 hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-xs z-10 sm:opacity-0 group-hover:opacity-100 duration-300"
               aria-label="Previous image"
             >
@@ -93,7 +113,10 @@ export default function ProductGallery({ images, selectedColor }: ProductGallery
 
             {/* Right Arrow */}
             <button
-              onClick={handleNext}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleNext();
+              }}
               className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/90 hover:bg-white border border-brand-black/5 hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-xs z-10 sm:opacity-0 group-hover:opacity-100 duration-300"
               aria-label="Next image"
             >
@@ -101,7 +124,7 @@ export default function ProductGallery({ images, selectedColor }: ProductGallery
             </button>
 
             {/* Page Counter Indicator */}
-            <div className="absolute bottom-4 right-4 bg-brand-black/85 text-brand-offwhite text-[9px] tracking-widest px-2.5 py-1 font-sans font-semibold uppercase">
+            <div className="absolute bottom-4 right-4 bg-brand-black/85 text-brand-offwhite text-[9px] tracking-widest px-2.5 py-1 font-sans font-semibold uppercase pointer-events-none">
               {activeIdx + 1} / {displayImages.length}
             </div>
           </>
@@ -113,7 +136,7 @@ export default function ProductGallery({ images, selectedColor }: ProductGallery
         <div className="flex gap-2.5 overflow-x-auto py-1">
           {displayImages.map((img, idx) => (
             <button
-              key={img.id}
+              key={img.id || idx}
               onClick={() => setActiveIdx(idx)}
               className={`relative w-16 h-20 border transition-all cursor-pointer flex-shrink-0 ${
                 idx === activeIdx
@@ -133,6 +156,14 @@ export default function ProductGallery({ images, selectedColor }: ProductGallery
           ))}
         </div>
       )}
+
+      {/* Full-Screen Elderly-Friendly Zoom Modal */}
+      <ImageZoomModal
+        isOpen={isZoomOpen}
+        onClose={() => setIsZoomOpen(false)}
+        images={displayImages}
+        initialIndex={activeIdx}
+      />
     </div>
   );
 }
