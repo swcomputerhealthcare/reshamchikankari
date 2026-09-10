@@ -251,22 +251,34 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
           <div className="flex items-center gap-1.5 pt-0.5">
             {uniqueColors.map((c) => {
               const isSelected = activeColor === c.name;
+              const isColorOutOfStock = product.variants
+                .filter((v) => v.colorName === c.name)
+                .every((v) => v.stock === 0 || !v.isAvailable);
+
               return (
                 <button
                   key={c.name}
                   type="button"
-                  title={c.name}
+                  title={`${c.name}${isColorOutOfStock ? " (Out of Stock)" : ""}`}
                   aria-label={`Select color ${c.name}`}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     handleColorClick(c.name);
                   }}
-                  className={`w-3.5 h-3.5 rounded-full border border-black/15 transition-all cursor-pointer ${
-                    isSelected ? "ring-2 ring-brand-black ring-offset-1 scale-110 shadow-xs" : "hover:scale-105 opacity-80"
+                  className={`relative w-3.5 h-3.5 rounded-full border border-black/15 transition-all cursor-pointer overflow-hidden ${
+                    isSelected
+                      ? "ring-2 ring-brand-black ring-offset-1 scale-110 shadow-xs"
+                      : isColorOutOfStock
+                      ? "opacity-40 cursor-not-allowed"
+                      : "hover:scale-105 opacity-80"
                   }`}
                   style={{ backgroundColor: c.code }}
-                />
+                >
+                  {isColorOutOfStock && (
+                    <span className="absolute inset-0 m-auto w-full h-[1.5px] bg-red-500 -rotate-45 pointer-events-none" />
+                  )}
+                </button>
               );
             })}
             <span className="text-[10px] text-neutral-500 uppercase tracking-wider ml-1 font-medium">
@@ -284,7 +296,7 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
             <div className="flex flex-wrap gap-1.5">
               {displayedVariants.map((v) => {
                 const isSelected = selectedVarId === v.id;
-                const isOutOfStock = v.stock === 0;
+                const isOutOfStock = v.stock === 0 || !v.isAvailable;
                 const displaySize = v.size || (v.name.includes("/") ? v.name.split("/")[1].trim() : v.name);
                 return (
                   <button
@@ -294,15 +306,18 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
                       e.preventDefault();
                       setSelectedVarId(v.id);
                     }}
-                    className={`h-7 px-2.5 min-w-[28px] text-[10px] font-bold uppercase transition-all duration-200 border cursor-pointer select-none rounded-md flex items-center justify-center ${
+                    className={`relative h-7 px-2.5 min-w-[28px] text-[10px] font-bold uppercase transition-all duration-200 border cursor-pointer select-none rounded-md flex items-center justify-center overflow-hidden ${
                       isSelected
                         ? "bg-brand-black text-brand-offwhite border-brand-black"
                         : isOutOfStock
-                        ? "bg-neutral-50 text-neutral-300 border-neutral-100 line-through cursor-not-allowed"
+                        ? "bg-neutral-50 text-neutral-300 border-neutral-200 line-through cursor-not-allowed opacity-60"
                         : "bg-transparent text-neutral-600 border-brand-black/10 hover:border-brand-black"
                     }`}
                   >
-                    {displaySize}
+                    <span className="relative z-10">{displaySize}</span>
+                    {isOutOfStock && (
+                      <span className="absolute inset-0 m-auto w-full h-[1.5px] bg-red-500/80 -rotate-45 pointer-events-none z-0" />
+                    )}
                   </button>
                 );
               })}

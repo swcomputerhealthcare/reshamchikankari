@@ -195,7 +195,7 @@ export const AnimatedTicket = React.forwardRef<HTMLDivElement, OrderTicketProps>
 
     const getPaymentBadge = () => {
       const pm = (paymentMethod || "").toUpperCase();
-      if (pm === "COD") {
+      if (pm === "COD" || pm.includes("COD")) {
         return (
           <div className="bg-[#7C7A5A]/5 p-3.5 rounded-xl border border-[#7C7A5A]/15 flex items-center space-x-3.5 text-left">
             <div className="w-9 h-9 bg-[#7C7A5A]/10 rounded-lg flex items-center justify-center shrink-0">

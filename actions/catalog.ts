@@ -61,6 +61,22 @@ const hasDatabase = () => {
   return !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
 };
 
+export async function revalidateCatalog(slug?: string) {
+  try {
+    revalidatePath("/", "layout");
+    revalidatePath("/shop");
+    revalidatePath("/cart");
+    revalidatePath("/search");
+    revalidatePath("/admin/products");
+    revalidatePath("/admin/categories");
+    if (slug) {
+      revalidatePath(`/product/${slug.toLowerCase()}`);
+    }
+  } catch (err) {
+    console.warn("Catalog revalidation error:", err);
+  }
+}
+
 export async function createProductAction(formData: z.infer<typeof productInputSchema>) {
   // 1. Authorize Admin
   await requireAdmin();
@@ -165,10 +181,7 @@ export async function createProductAction(formData: z.infer<typeof productInputS
 
     const adminUser = await requireAdmin();
 
-    revalidatePath("/", "layout");
-    revalidatePath("/shop");
-    revalidatePath("/admin/products");
-    revalidatePath(`/product/${data.slug.toLowerCase()}`);
+    await revalidateCatalog(data.slug);
     
     const { logger } = await import("@/lib/logger");
     logger.info({
@@ -235,10 +248,7 @@ export async function updateProductAction(id: string, formData: Partial<z.infer<
       }
     }
 
-    revalidatePath("/", "layout");
-    revalidatePath(`/product/${formData.slug || ""}`);
-    revalidatePath("/shop");
-    revalidatePath("/admin/products");
+    await revalidateCatalog(formData.slug);
     return { success: true };
   } catch (error) {
     console.error("DB Update Product failed:", error);
@@ -259,12 +269,7 @@ export async function deactivateProductAction(id: string, active: boolean) {
       where: eq(products.id, id),
     });
     await db.update(products).set({ isActive: active }).where(eq(products.id, id));
-    revalidatePath("/", "layout");
-    revalidatePath("/shop");
-    revalidatePath("/admin/products");
-    if (prod?.slug) {
-      revalidatePath(`/product/${prod.slug}`);
-    }
+    await revalidateCatalog(prod?.slug);
     return { success: true };
   } catch (error) {
     console.error("DB Deactivate Product failed:", error);
@@ -298,8 +303,7 @@ export async function createCategoryAction(formData: z.infer<typeof categoryInpu
       isActive: data.isActive,
     });
 
-    revalidatePath("/shop");
-    revalidatePath("/admin/categories");
+    await revalidateCatalog();
     return { success: true, id };
   } catch (error) {
     console.error("DB Create Category failed:", error);
@@ -324,8 +328,7 @@ export async function updateCategoryAction(id: string, formData: Partial<z.infer
 
     await db.update(categories).set(updateData).where(eq(categories.id, id));
 
-    revalidatePath("/shop");
-    revalidatePath("/admin/categories");
+    await revalidateCatalog();
     return { success: true };
   } catch (error: any) {
     console.error("DB Update Category failed:", error);
@@ -342,8 +345,7 @@ export async function deleteCategoryAction(id: string) {
 
   try {
     await db.delete(categories).where(eq(categories.id, id));
-    revalidatePath("/shop");
-    revalidatePath("/admin/categories");
+    await revalidateCatalog();
     return { success: true };
   } catch (error: any) {
     console.error("DB Delete Category failed:", error);
@@ -457,8 +459,7 @@ export async function duplicateProductAction(id: string) {
       }
     }
 
-    revalidatePath("/shop");
-    revalidatePath("/admin/products");
+    await revalidateCatalog(original.slug);
 
     return { success: true, id: newProductId };
   } catch (error: any) {
@@ -536,12 +537,7 @@ export async function deleteProductAction(id: string) {
     // 8. Delete the product itself
     await db.delete(products).where(eq(products.id, id));
 
-    revalidatePath("/", "layout");
-    revalidatePath("/shop");
-    revalidatePath("/admin/products");
-    if (prod?.slug) {
-      revalidatePath(`/product/${prod.slug}`);
-    }
+    await revalidateCatalog(prod?.slug);
     return { success: true };
   } catch (error: any) {
     console.error("Delete product failed:", error);
@@ -566,6 +562,17 @@ export async function updateProductVariantAction(
   if (!hasDatabase()) return { success: true };
 
   try {
+    const v = await db.query.productVariants.findFirst({
+      where: eq(productVariants.id, variantId),
+    });
+    let slug: string | undefined;
+    if (v?.productId) {
+      const prod = await db.query.products.findFirst({
+        where: eq(products.id, v.productId),
+      });
+      slug = prod?.slug;
+    }
+
     const updateData: Record<string, any> = {
       stock: data.stock,
       inventoryQuantity: data.inventoryQuantity,
@@ -584,7 +591,7 @@ export async function updateProductVariantAction(
       .set(updateData)
       .where(eq(productVariants.id, variantId));
 
-    revalidatePath("/shop");
+    await revalidateCatalog(slug);
     return { success: true };
   } catch (error: any) {
     console.error("Update variant failed:", error);
@@ -610,6 +617,10 @@ export async function createProductVariantAction(
   if (!hasDatabase()) return { success: true };
 
   try {
+    const prod = await db.query.products.findFirst({
+      where: eq(products.id, productId),
+    });
+
     const id = `var_${Math.random().toString(36).substring(2, 11)}`;
     await db.insert(productVariants).values({
       id,
@@ -625,7 +636,7 @@ export async function createProductVariantAction(
       isAvailable: data.isAvailable,
     });
 
-    revalidatePath("/shop");
+    await revalidateCatalog(prod?.slug);
     return { success: true, id };
   } catch (error: any) {
     console.error("Create variant failed:", error);
@@ -645,6 +656,10 @@ export async function batchGenerateVariantsAction(
   if (!hasDatabase()) return { success: true };
 
   try {
+    const prod = await db.query.products.findFirst({
+      where: eq(products.id, productId),
+    });
+
     const createdIds: string[] = [];
 
     for (const color of colors) {
@@ -672,8 +687,7 @@ export async function batchGenerateVariantsAction(
       }
     }
 
-    revalidatePath("/shop");
-    revalidatePath("/admin/products");
+    await revalidateCatalog(prod?.slug);
     return { success: true, count: createdIds.length };
   } catch (error: any) {
     console.error("Batch generate variants failed:", error);
@@ -686,8 +700,19 @@ export async function deleteProductVariantAction(variantId: string) {
   if (!hasDatabase()) return { success: true };
 
   try {
+    const v = await db.query.productVariants.findFirst({
+      where: eq(productVariants.id, variantId),
+    });
+    let slug: string | undefined;
+    if (v?.productId) {
+      const prod = await db.query.products.findFirst({
+        where: eq(products.id, v.productId),
+      });
+      slug = prod?.slug;
+    }
+
     await db.delete(productVariants).where(eq(productVariants.id, variantId));
-    revalidatePath("/shop");
+    await revalidateCatalog(slug);
     return { success: true };
   } catch (error: any) {
     console.error("Delete variant failed:", error);
@@ -703,6 +728,10 @@ export async function createProductImageAction(
   if (!hasDatabase()) return { success: true };
 
   try {
+    const prod = await db.query.products.findFirst({
+      where: eq(products.id, productId),
+    });
+
     const id = `img_${Math.random().toString(36).substring(2, 11)}`;
     await db.insert(productImages).values({
       id,
@@ -715,7 +744,7 @@ export async function createProductImageAction(
       sortOrder: data.sortOrder,
     });
 
-    revalidatePath("/shop");
+    await revalidateCatalog(prod?.slug);
     return { success: true, id };
   } catch (error: any) {
     console.error("Create image failed:", error);
@@ -728,8 +757,19 @@ export async function deleteProductImageAction(imageId: string) {
   if (!hasDatabase()) return { success: true };
 
   try {
+    const img = await db.query.productImages.findFirst({
+      where: eq(productImages.id, imageId),
+    });
+    let slug: string | undefined;
+    if (img?.productId) {
+      const prod = await db.query.products.findFirst({
+        where: eq(products.id, img.productId),
+      });
+      slug = prod?.slug;
+    }
+
     await db.delete(productImages).where(eq(productImages.id, imageId));
-    revalidatePath("/shop");
+    await revalidateCatalog(slug);
     return { success: true };
   } catch (error: any) {
     console.error("Delete image failed:", error);
@@ -754,7 +794,7 @@ export async function reorderProductImagesAction(
         .where(eq(productImages.id, img.id));
     }
 
-    revalidatePath("/shop");
+    await revalidateCatalog();
     return { success: true };
   } catch (error: any) {
     console.error("Reorder images failed:", error);

@@ -210,7 +210,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                     response.razorpay_signature
                   );
                   if (verifyRes.success && verifyRes.orderNumber) {
-                    router.push(`/checkout/success?orderNumber=${verifyRes.orderNumber}`);
+                    router.push(`/checkout/success?orderNumber=${encodeURIComponent(verifyRes.orderNumber)}&pm=ONLINE&name=${encodeURIComponent(form.fullName.trim())}&total=${totalPaise}`);
                   } else {
                     setError(verifyRes.error || "Payment verification failed. Please contact support.");
                   }
@@ -241,7 +241,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                 try {
                   const statusCheck = await checkOrderPaymentStatusAction(result.orderId!);
                   if (statusCheck.isPaid && statusCheck.orderNumber) {
-                    router.push(`/checkout/success?orderNumber=${statusCheck.orderNumber}`);
+                    router.push(`/checkout/success?orderNumber=${encodeURIComponent(statusCheck.orderNumber)}&pm=ONLINE&name=${encodeURIComponent(form.fullName.trim())}&total=${totalPaise}`);
                     return;
                   }
                 } catch { }
@@ -264,13 +264,13 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
               if (statusCheck.isPaid && statusCheck.orderNumber) {
                 cleanupPoller();
                 try { rzp.close(); } catch {}
-                router.push(`/checkout/success?orderNumber=${statusCheck.orderNumber}`);
+                router.push(`/checkout/success?orderNumber=${encodeURIComponent(statusCheck.orderNumber)}&pm=ONLINE&name=${encodeURIComponent(form.fullName.trim())}&total=${totalPaise}`);
               }
             } catch { }
           }, 2500);
 
         } else if (result.orderNumber) {
-          router.push(`/checkout/success?orderNumber=${result.orderNumber}`);
+          router.push(`/checkout/success?orderNumber=${encodeURIComponent(result.orderNumber)}&pm=${encodeURIComponent(paymentMethod)}&name=${encodeURIComponent(form.fullName.trim())}&total=${totalPaise}`);
         }
       } catch (submitErr: any) {
         console.error("Checkout submission error:", submitErr);

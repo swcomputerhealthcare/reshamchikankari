@@ -8,7 +8,7 @@ import { eq } from "drizzle-orm";
 import { ArrowLeft, ShoppingBag, History } from "lucide-react";
 
 interface SuccessPageProps {
-  searchParams: Promise<{ orderNumber?: string }>;
+  searchParams: Promise<{ orderNumber?: string; pm?: string; total?: string; name?: string }>;
 }
 
 export const metadata = {
@@ -19,14 +19,17 @@ export const metadata = {
 export default async function CheckoutSuccessPage(props: SuccessPageProps) {
   const searchParams = await props.searchParams;
   const orderRef = searchParams.orderNumber || "RES-UNKNOWN";
+  const pmQuery = searchParams.pm || "COD";
+  const nameQuery = searchParams.name ? decodeURIComponent(searchParams.name) : "Valued Patron";
+  const totalQuery = searchParams.total ? parseInt(searchParams.total, 10) : 0;
 
   const isDbAvailable = !!process.env.DATABASE_URL && !process.env.DATABASE_URL.includes("[YOUR-PASSWORD]");
 
   let orderData = {
     orderNumber: orderRef,
-    totalPaise: 100,
-    customerName: "Valued Patron",
-    paymentProvider: "RAZORPAY",
+    totalPaise: totalQuery || 100,
+    customerName: nameQuery,
+    paymentProvider: pmQuery,
     paymentId: null as string | null,
     date: new Date(),
     orderId: orderRef,
@@ -41,12 +44,12 @@ export default async function CheckoutSuccessPage(props: SuccessPageProps) {
         .limit(1);
 
       if (dbOrder) {
-        const address = dbOrder.shippingAddressSnapshot as any;
+        const address = (dbOrder.shippingAddressSnapshot as any) || {};
         orderData = {
           orderNumber: dbOrder.orderNumber,
           totalPaise: dbOrder.totalPaise,
-          customerName: address?.fullName || "Valued Patron",
-          paymentProvider: dbOrder.paymentProvider || "ONLINE",
+          customerName: address?.fullName || address?.name || nameQuery,
+          paymentProvider: dbOrder.paymentProvider || address?.paymentMethod || pmQuery,
           paymentId: dbOrder.paymentId,
           date: dbOrder.createdAt ? new Date(dbOrder.createdAt) : new Date(),
           orderId: dbOrder.id,
@@ -60,12 +63,12 @@ export default async function CheckoutSuccessPage(props: SuccessPageProps) {
           .limit(1);
 
         if (dbOrderById) {
-          const address = dbOrderById.shippingAddressSnapshot as any;
+          const address = (dbOrderById.shippingAddressSnapshot as any) || {};
           orderData = {
             orderNumber: dbOrderById.orderNumber,
             totalPaise: dbOrderById.totalPaise,
-            customerName: address?.fullName || "Valued Patron",
-            paymentProvider: dbOrderById.paymentProvider || "ONLINE",
+            customerName: address?.fullName || address?.name || nameQuery,
+            paymentProvider: dbOrderById.paymentProvider || address?.paymentMethod || pmQuery,
             paymentId: dbOrderById.paymentId,
             date: dbOrderById.createdAt ? new Date(dbOrderById.createdAt) : new Date(),
             orderId: dbOrderById.id,

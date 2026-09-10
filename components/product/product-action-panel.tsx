@@ -245,24 +245,33 @@ export default function ProductActionPanel({
                 <button
                   key={c.colorName}
                   type="button"
-                  aria-label={`Select colour ${c.colorName}`}
+                  aria-label={`Select colour ${c.colorName}${isColorOutOfStock ? ", out of stock" : ""}`}
                   aria-pressed={isSelected}
                   onClick={() => handleColorSelect(c.colorName)}
-                  className={`group relative flex items-center gap-2.5 px-3.5 py-2 rounded-full border text-xs tracking-wider transition-all cursor-pointer select-none ${
+                  className={`group relative flex items-center gap-2.5 px-3.5 py-2 rounded-full border text-xs tracking-wider transition-all cursor-pointer select-none overflow-hidden ${
                     isSelected
                       ? "border-brand-black bg-brand-black/5 text-brand-black font-bold shadow-xs"
                       : isColorOutOfStock
-                      ? "border-neutral-200 opacity-40 cursor-not-allowed"
+                      ? "border-neutral-200 opacity-50 cursor-not-allowed bg-neutral-50/50"
                       : "border-brand-black/15 hover:border-brand-black text-neutral-700"
                   }`}
                 >
                   <span
-                    className={`w-4 h-4 rounded-full border border-black/15 shadow-inner shrink-0 ${
+                    className={`relative w-4 h-4 rounded-full border border-black/15 shadow-inner shrink-0 overflow-hidden ${
                       isSelected ? "ring-2 ring-brand-black ring-offset-1" : ""
                     }`}
                     style={{ backgroundColor: c.colorCode }}
-                  />
-                  <span className="uppercase font-medium text-[11px]">{c.colorName}</span>
+                  >
+                    {isColorOutOfStock && (
+                      <span className="absolute inset-0 m-auto w-full h-[1.5px] bg-red-500 -rotate-45 pointer-events-none" />
+                    )}
+                  </span>
+                  <span className={`uppercase font-medium text-[11px] ${isColorOutOfStock ? "line-through text-neutral-400" : ""}`}>
+                    {c.colorName}
+                  </span>
+                  {isColorOutOfStock && (
+                    <span className="absolute inset-0 m-auto w-full h-[1.5px] bg-red-400/60 -rotate-45 pointer-events-none z-10" />
+                  )}
                 </button>
               );
             })}
@@ -308,15 +317,18 @@ export default function ProductActionPanel({
                   aria-label={`Select size ${size}${isOutOfStock ? ", out of stock" : ""}`}
                   aria-pressed={isSelected}
                   onClick={() => handleSizeSelect(size)}
-                  className={`w-12 h-12 flex items-center justify-center border text-xs tracking-wider transition-all rounded-lg select-none cursor-pointer ${
+                  className={`relative w-12 h-12 flex items-center justify-center border text-xs tracking-wider transition-all rounded-lg select-none cursor-pointer overflow-hidden ${
                     isSelected
                       ? "border-brand-black bg-brand-black text-brand-offwhite font-bold shadow-xs"
                       : isOutOfStock
-                      ? "border-neutral-100 text-neutral-300 line-through cursor-not-allowed opacity-50"
+                      ? "border-neutral-200 bg-neutral-50/80 text-neutral-400 line-through cursor-not-allowed opacity-60"
                       : "border-brand-black/15 hover:border-brand-black text-neutral-700 font-medium"
                   }`}
                 >
-                  {size}
+                  <span className="relative z-10">{size}</span>
+                  {isOutOfStock && (
+                    <span className="absolute inset-0 m-auto w-full h-[1.5px] bg-red-500/80 -rotate-45 pointer-events-none z-0" />
+                  )}
                 </button>
               );
             })}
