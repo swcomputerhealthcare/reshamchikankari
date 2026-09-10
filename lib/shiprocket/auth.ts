@@ -21,12 +21,8 @@ export async function getShiprocketToken(): Promise<string> {
   const email = process.env.SHIPROCKET_EMAIL || env.SHIPROCKET_EMAIL;
   const password = process.env.SHIPROCKET_PASSWORD || env.SHIPROCKET_PASSWORD;
 
-  if (!email || !password || email === "orders@reshamchikankari.com") {
-    // In development mode or missing credentials, fallback gracefully to mock token
-    if (env.NODE_ENV === "development") {
-      console.warn("⚠️ Shiprocket test credentials active. Using test token mode.");
-      return "mock_shiprocket_token_dev_mode";
-    }
+  if (!email || !password) {
+    throw new Error("Shiprocket credentials (SHIPROCKET_EMAIL, SHIPROCKET_PASSWORD) are not configured in environment variables.");
   }
 
   try {
@@ -59,9 +55,6 @@ export async function getShiprocketToken(): Promise<string> {
     return data.token;
   } catch (error: any) {
     console.error("Shiprocket authentication error:", error);
-    if (env.NODE_ENV === "development") {
-      return "mock_shiprocket_token_dev_mode";
-    }
     throw error;
   }
 }
