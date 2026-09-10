@@ -79,7 +79,7 @@ export default function NavbarLinks({ variant = "default" }: { variant?: "defaul
                   onClick={() => setIsShopOpen(false)}
                   className="px-5 py-2.5 hover:bg-brand-black/5 hover:text-brand-sage transition-colors text-left text-neutral-700"
                 >
-                  Co-ord Sets
+                  Coord Sets & Kurta Sets
                 </TransitionLink>
                 <TransitionLink
                   href="/shop/bottom-wear"

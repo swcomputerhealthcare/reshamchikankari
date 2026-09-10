@@ -47,7 +47,7 @@ export default function HeaderNavigation() {
                   onClick={() => setIsOpen(false)}
                   className="px-5 py-2.5 hover:bg-brand-black/5 hover:text-brand-pink transition-colors text-left"
                 >
-                  Co-ord Sets
+                  Coord Sets & Kurta Sets
                 </Link>
                 <Link
                   href="/shop/bottom-wear"

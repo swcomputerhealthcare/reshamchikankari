@@ -13,28 +13,16 @@ interface AnnouncementItem {
 
 const DEFAULT_ANNOUNCEMENTS: AnnouncementItem[] = [
   {
-    id: "free-gift",
-    text: "✨ Free gift on every order from our side!",
-    badge: "FREE GIFT",
-    icon: Gift,
+    id: "international",
+    text: "Free international shipping on purchase of $200 and above",
+    badge: "WORLDWIDE",
+    icon: Globe,
   },
   {
     id: "exchange",
     text: "Hassle-free exchange within 5 days of delivery",
     badge: "5-DAY GUARANTEE",
     icon: RefreshCw,
-  },
-  {
-    id: "checkout-gift",
-    text: "Free gift on every order added at checkout",
-    badge: "PATRON PRIVILEGE",
-    icon: Gift,
-  },
-  {
-    id: "international",
-    text: "Free shipping on international orders of $200 and above",
-    badge: "WORLDWIDE",
-    icon: Globe,
   },
   {
     id: "authenticity",

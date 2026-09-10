@@ -169,7 +169,7 @@ export default function Footer() {
                 </li>
                 <li>
                   <Link href="/shop/coord-sets" className="hover:text-brand-pink transition-colors block py-0.5">
-                    Co-ord Sets
+                    Coord Sets & Kurta Sets
                   </Link>
                 </li>
                 <li>

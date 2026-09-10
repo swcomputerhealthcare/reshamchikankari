@@ -10,7 +10,7 @@ interface StoreLayoutProps {
 }
 
 export default async function StoreLayout({ children }: StoreLayoutProps) {
-  let announcement = "Free gift on every order from our side! 🎁 | Hassle-free exchange within 5 days of delivery | Free shipping on international orders of $200 and above | Surprise artisan gift included in every order";
+  let announcement = "Free international shipping on purchase of $200 and above | Hassle-free exchange within 5 days of delivery | 100% Authentic Hand-Embroidered Lucknowi Chikankari Direct from Lucknow";
 
   try {
     const settings = await getCachedSiteSettings();

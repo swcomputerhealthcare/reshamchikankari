@@ -188,7 +188,7 @@ export default function MobileNav({ user, variant = "default" }: MobileNavProps)
                       onClick={() => setIsOpen(false)}
                       className="block hover:text-brand-pink transition-colors uppercase text-[10px] tracking-wider"
                     >
-                      Co-ord Sets
+                      Coord Sets & Kurta Sets
                     </Link>
                     <Link
                       href="/shop/bottom-wear"
