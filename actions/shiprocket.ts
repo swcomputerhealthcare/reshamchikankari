@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/auth/helpers";
 import { db } from "@/db";
 import { orders, shipmentTrackingEvents } from "@/db/schema/order";
-import { products } from "@/db/schema/catalog";
 import { eq, or } from "drizzle-orm";
 import {
   createShiprocketOrder,
@@ -12,7 +11,6 @@ import {
   generateShiprocketPickup,
   trackShiprocketShipment,
   checkCourierServiceability,
-  mapShiprocketStatusToInternal,
   type DBOrderForShipment,
 } from "@/lib/shiprocket";
 

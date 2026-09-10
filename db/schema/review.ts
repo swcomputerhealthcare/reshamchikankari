@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, integer, boolean, uuid, check, unique } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, integer, boolean, uuid, check } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 import { relations } from "drizzle-orm";
 import { profiles } from "./auth";

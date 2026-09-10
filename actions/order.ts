@@ -106,7 +106,6 @@ export async function createOrderAction(
     }
 
     const remainingCashTotalPaise = Math.max(0, orderTotalPaise - walletAmountPaise);
-    const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
 
     // Resolve final order payment status
     let paymentStatus = "PENDING";

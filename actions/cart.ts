@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getCartDetails, addToCart, updateCartItemQuantity, removeCartItem, clearCart } from "@/lib/cart";
 import { MOCK_PRODUCTS } from "@/lib/catalog";
