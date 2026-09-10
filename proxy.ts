@@ -17,6 +17,37 @@ export async function proxy(request: NextRequest) {
     );
   }
 
+  // Check Maintenance Mode (controlled via MAINTENANCE_MODE=true or NEXT_PUBLIC_MAINTENANCE_MODE=true)
+  const isMaintenanceMode =
+    process.env.MAINTENANCE_MODE === "true" ||
+    process.env.NEXT_PUBLIC_MAINTENANCE_MODE === "true";
+  const bypassQuery =
+    request.nextUrl.searchParams.get("bypass") === "admin" ||
+    request.nextUrl.searchParams.get("preview") === "true";
+  const hasBypassCookie = request.cookies.get("maintenance_bypass")?.value === "true";
+
+  if (bypassQuery) {
+    const response = NextResponse.next();
+    response.cookies.set("maintenance_bypass", "true", { path: "/", maxAge: 86400 });
+    return response;
+  }
+
+  if (isMaintenanceMode && !hasBypassCookie) {
+    const pathname = request.nextUrl.pathname;
+    const isAllowedPath =
+      pathname.startsWith("/maintenance") ||
+      pathname.startsWith("/admin") ||
+      pathname.startsWith("/auth") ||
+      pathname.startsWith("/api") ||
+      pathname.startsWith("/_next") ||
+      pathname.startsWith("/favicon") ||
+      pathname.includes(".");
+
+    if (!isAllowedPath) {
+      return NextResponse.redirect(new URL("/maintenance", request.url));
+    }
+  }
+
   // If OAuth redirected to root / or any other route with ?code=, forward directly to /auth/callback to exchange for session
   const code = request.nextUrl.searchParams.get("code");
   if (code && !request.nextUrl.pathname.startsWith("/auth/callback")) {
