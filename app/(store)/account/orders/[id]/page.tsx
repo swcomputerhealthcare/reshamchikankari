@@ -51,6 +51,21 @@ export default async function CustomerOrderDetailPage(props: OrderDetailsPagePro
           },
         });
       }
+
+      // Auto-sync live AWB tracking details if order was submitted to Shiprocket but AWB was pending
+      if (order && order.shiprocketOrderId && !order.awbCode) {
+        try {
+          const { syncOrderTrackingAction } = await import("@/actions/shiprocket");
+          await syncOrderTrackingAction(order.id);
+          const refreshed = await db.query.orders.findFirst({
+            where: eq(orders.id, order.id),
+            with: { items: true, timeline: true },
+          });
+          if (refreshed) order = refreshed;
+        } catch (syncErr) {
+          console.warn("Auto AWB sync notice on order details page:", syncErr);
+        }
+      }
     } catch (e) {
       console.error("Failed to query order details:", e);
     }
@@ -288,7 +303,7 @@ export default async function CustomerOrderDetailPage(props: OrderDetailsPagePro
                   </div>
                 </div>
 
-                {order.trackingUrl && (
+                {order.trackingUrl && order.awbCode && (
                   <div className="pt-2 flex justify-end">
                     <a
                       href={order.trackingUrl}

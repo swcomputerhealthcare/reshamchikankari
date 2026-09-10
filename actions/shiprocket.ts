@@ -173,23 +173,25 @@ export async function triggerOrderFulfillment(orderId: string) {
         console.warn("Serviceability lookup error during AWB assignment:", e);
       }
 
+      // Attempt automatic AWB assignment with Shiprocket's recommended/auto courier allocation
       let awbRes = await assignShiprocketAWB(srShipmentId, courierId);
-      // Fallback: If assigning with recommended courier failed, retry without courierId so Shiprocket auto-allocates
-      if ((!awbRes.success || !awbRes.data?.response?.data?.awb_code) && courierId) {
-        console.warn(`AWB assignment with courier ${courierId} failed. Retrying without specific courier...`);
+      if (!awbRes.success || !(awbRes.data?.response?.data?.awb_code || (awbRes.data as any)?.awb_code)) {
+        // Fallback: Retry auto-assignment without explicit courierId
+        console.warn(`AWB assignment notice for shipment ${srShipmentId}. Attempting auto courier allocation...`);
         const fallbackRes = await assignShiprocketAWB(srShipmentId);
-        if (fallbackRes.success && fallbackRes.data?.response?.data?.awb_code) {
+        if (fallbackRes.success) {
           awbRes = fallbackRes;
         }
       }
-      if (awbRes.success && awbRes.data?.response?.data?.awb_code) {
-        const awbData = awbRes.data.response.data;
-        awbCode = awbData.awb_code;
-        courierName = awbData.courier_name;
-        courierCompanyId = awbData.courier_company_id;
+
+      const awbData = awbRes.data?.response?.data || (awbRes.data as any);
+      if (awbRes.success && awbData && (awbData.awb_code || awbData.awb)) {
+        awbCode = awbData.awb_code || awbData.awb;
+        courierName = awbData.courier_name || awbData.courier || "Express Courier";
+        courierCompanyId = awbData.courier_company_id ? Number(awbData.courier_company_id) : null;
       } else {
         const errorMsg =
-          (awbRes.data?.response?.data as any)?.awb_assign_error ||
+          awbData?.awb_assign_error ||
           (awbRes.data as any)?.message ||
           awbRes.error ||
           "Awaiting manual courier/AWB assignment in Shiprocket dashboard.";
