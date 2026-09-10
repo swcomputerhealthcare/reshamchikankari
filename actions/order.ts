@@ -147,20 +147,36 @@ export async function createOrderAction(
       const { payments } = await import("@/db/schema/payment");
       const { profiles } = await import("@/db/schema/auth");
 
-      // Ensure profile row exists to satisfy foreign key orders_user_id_profiles_id_fk
+      // Safely upsert profile row to satisfy foreign key orders_user_id_profiles_id_fk
       try {
-        const { eq } = await import("drizzle-orm");
-        const [prof] = await db.select({ id: profiles.id }).from(profiles).where(eq(profiles.id, userId)).limit(1);
-        if (!prof) {
-          await db.insert(profiles).values({
-            id: userId,
+        await db.insert(profiles).values({
+          id: userId,
+          fullName: userName,
+          email: userEmail,
+          role: userRole,
+        }).onConflictDoUpdate({
+          target: profiles.id,
+          set: {
             fullName: userName,
             email: userEmail,
-            role: userRole,
-          }).onConflictDoNothing();
-        }
+            updatedAt: new Date(),
+          },
+        });
       } catch (profileErr) {
-        console.warn("Profile auto-insert warning for order placement:", profileErr);
+        console.warn("Profile auto-upsert warning for order placement:", profileErr);
+      }
+
+      // Safely check if couponId exists in DB before linking FK
+      let validCouponId: string | null = null;
+      if (couponId) {
+        try {
+          const { coupons } = await import("@/db/schema/coupon");
+          const { eq } = await import("drizzle-orm");
+          const [c] = await db.select({ id: coupons.id }).from(coupons).where(eq(coupons.id, couponId)).limit(1);
+          if (c) validCouponId = c.id;
+        } catch (cErr) {
+          console.warn("Coupon FK check notice:", cErr);
+        }
       }
 
       await db.insert(orders).values({
@@ -185,7 +201,7 @@ export async function createOrderAction(
         paymentId: null,
         walletAmountPaise,
         currency: "INR",
-        couponId,
+        couponId: validCouponId,
         billingAddressSnapshot: {
           ...address,
           paymentMethod,
