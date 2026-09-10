@@ -71,6 +71,9 @@ export default function ShippingPage() {
               <h3 className="font-semibold text-brand-black text-sm uppercase tracking-wider">
                 Shipping Charges
               </h3>
+              <p className="text-neutral-700 text-xs sm:text-sm leading-relaxed font-medium text-brand-black">
+                Free international shipping on purchase of $200 and above.
+              </p>
               <p className="text-neutral-700 text-xs sm:text-sm leading-relaxed">
                 Shipping charges, if applicable, will be displayed at checkout before you complete your purchase. Any applicable promotional free-shipping offers will be clearly mentioned on our website.
               </p>

@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import { ArrowLeft, X, ChevronLeft, ChevronRight } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, X, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
+import { motion, AnimatePresence, useMotionValue } from "framer-motion";
 
 interface ImageZoomModalProps {
   isOpen: boolean;
@@ -19,23 +19,70 @@ export default function ImageZoomModal({
   initialIndex = 0,
 }: ImageZoomModalProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
-  const [zoomScale, setZoomScale] = useState(1.8);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [zoomScale, setZoomScale] = useState(1.0);
   const [isDragging, setIsDragging] = useState(false);
+  const [bounds, setBounds] = useState({ x: 0, y: 0 });
+
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
   const containerRef = useRef<HTMLDivElement>(null);
+  const imageBoxRef = useRef<HTMLDivElement>(null);
 
   // Touch pinch tracking
   const touchStartDistRef = useRef<number | null>(null);
-  const initialScaleRef = useRef<number>(1.8);
+  const initialScaleRef = useRef<number>(1.0);
+
+  // Helper to recalculate drag bounds based on container vs scaled image size
+  const updateBounds = useCallback((scale: number) => {
+    if (!containerRef.current || !imageBoxRef.current) return { x: 0, y: 0 };
+
+    const containerRect = containerRef.current.getBoundingClientRect();
+    const imageRect = imageBoxRef.current.getBoundingClientRect();
+
+    if (containerRect.width === 0 || containerRect.height === 0) return { x: 0, y: 0 };
+
+    // Get current scale to calculate unscaled base dimensions
+    const currentScale = scale || 1;
+    const baseW = imageRect.width / (zoomScale || 1);
+    const baseH = imageRect.height / (zoomScale || 1);
+
+    const scaledW = baseW * currentScale;
+    const scaledH = baseH * currentScale;
+
+    const maxX = Math.max(0, (scaledW - containerRect.width) / 2);
+    const maxY = Math.max(0, (scaledH - containerRect.height) / 2);
+
+    const calculated = { x: maxX, y: maxY };
+    setBounds(calculated);
+
+    // Clamp motion values if current position exceeds new bounds
+    if (Math.abs(x.get()) > maxX) {
+      x.set(Math.sign(x.get() || 1) * maxX);
+    }
+    if (Math.abs(y.get()) > maxY) {
+      y.set(Math.sign(y.get() || 1) * maxY);
+    }
+
+    return calculated;
+  }, [zoomScale, x, y]);
+
+  // Reset zoom & position when modal opens or index changes
+  const resetZoom = useCallback(() => {
+    setZoomScale(1.0);
+    x.set(0);
+    y.set(0);
+    setBounds({ x: 0, y: 0 });
+  }, [x, y]);
 
   useEffect(() => {
     if (isOpen) {
       setCurrentIndex(initialIndex);
-      setZoomScale(1.8);
-      setPosition({ x: 0, y: 0 });
+      resetZoom();
     }
-  }, [isOpen, initialIndex]);
+  }, [isOpen, initialIndex, resetZoom]);
 
+  // Lock body scroll when modal is active
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -47,19 +94,31 @@ export default function ImageZoomModal({
     };
   }, [isOpen]);
 
+  // Update bounds whenever zoomScale, currentIndex, or window size changes
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleResize = () => updateBounds(zoomScale);
+    const timer = setTimeout(() => updateBounds(zoomScale), 50);
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener("resize", handleResize);
+    };
+  }, [isOpen, zoomScale, currentIndex, updateBounds]);
+
   const handleNext = useCallback(() => {
     if (images.length <= 1) return;
     setCurrentIndex((prev) => (prev === images.length - 1 ? 0 : prev + 1));
-    setZoomScale(1.8);
-    setPosition({ x: 0, y: 0 });
-  }, [images.length]);
+    resetZoom();
+  }, [images.length, resetZoom]);
 
   const handlePrev = useCallback(() => {
     if (images.length <= 1) return;
     setCurrentIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1));
-    setZoomScale(1.8);
-    setPosition({ x: 0, y: 0 });
-  }, [images.length]);
+    resetZoom();
+  }, [images.length, resetZoom]);
 
   // Keyboard navigation shortcuts
   useEffect(() => {
@@ -75,15 +134,49 @@ export default function ImageZoomModal({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose, handlePrev, handleNext]);
 
-  // Mouse wheel scroll zoom
+  // Mouse wheel scrolling & zooming
   const handleWheel = (e: React.WheelEvent) => {
     e.preventDefault();
-    const zoomFactor = e.deltaY < 0 ? 0.3 : -0.3;
-    setZoomScale((prev) => {
-      const nextScale = Math.min(Math.max(1, prev + zoomFactor), 4.5);
-      if (nextScale === 1) setPosition({ x: 0, y: 0 });
-      return nextScale;
-    });
+
+    // Pinch or Ctrl + wheel zoom gesture
+    if (e.ctrlKey) {
+      const zoomFactor = -e.deltaY * 0.01;
+      setZoomScale((prev) => {
+        const nextScale = Math.min(Math.max(1, prev + zoomFactor), 4.5);
+        if (nextScale === 1) {
+          x.set(0);
+          y.set(0);
+        }
+        updateBounds(nextScale);
+        return nextScale;
+      });
+      return;
+    }
+
+    // If already zoomed in, mouse wheel vertical scroll pans along the Y axis
+    if (zoomScale > 1) {
+      const panSpeed = 1.2;
+      const currentX = x.get();
+      const currentY = y.get();
+
+      const newX = currentX - e.deltaX * panSpeed;
+      const newY = currentY - e.deltaY * panSpeed;
+
+      x.set(Math.min(Math.max(-bounds.x, newX), bounds.x));
+      y.set(Math.min(Math.max(-bounds.y, newY), bounds.y));
+    } else {
+      // If fit to screen, scrolling wheel up zooms in
+      const zoomFactor = e.deltaY < 0 ? 0.3 : -0.3;
+      setZoomScale((prev) => {
+        const nextScale = Math.min(Math.max(1, prev + zoomFactor), 4.5);
+        if (nextScale === 1) {
+          x.set(0);
+          y.set(0);
+        }
+        updateBounds(nextScale);
+        return nextScale;
+      });
+    }
   };
 
   // Touch pinch zoom handling for mobile
@@ -107,7 +200,11 @@ export default function ImageZoomModal({
       const factor = dist / touchStartDistRef.current;
       const newScale = Math.min(Math.max(1, initialScaleRef.current * factor), 4.5);
       setZoomScale(newScale);
-      if (newScale === 1) setPosition({ x: 0, y: 0 });
+      if (newScale === 1) {
+        x.set(0);
+        y.set(0);
+      }
+      updateBounds(newScale);
     }
   };
 
@@ -122,10 +219,37 @@ export default function ImageZoomModal({
   const handleImageClick = () => {
     if (isDragging) return;
     setZoomScale((prev) => {
-      if (prev <= 1.2) return 2.2;
-      if (prev <= 2.5) return 3.8;
-      setPosition({ x: 0, y: 0 });
-      return 1;
+      let nextScale = 1.0;
+      if (prev <= 1.2) nextScale = 2.2;
+      else if (prev <= 2.5) nextScale = 3.8;
+      else nextScale = 1.0;
+
+      if (nextScale === 1.0) {
+        x.set(0);
+        y.set(0);
+      }
+      updateBounds(nextScale);
+      return nextScale;
+    });
+  };
+
+  const handleZoomIn = () => {
+    setZoomScale((prev) => {
+      const nextScale = Math.min(prev + 0.5, 4.5);
+      updateBounds(nextScale);
+      return nextScale;
+    });
+  };
+
+  const handleZoomOut = () => {
+    setZoomScale((prev) => {
+      const nextScale = Math.max(1.0, prev - 0.5);
+      if (nextScale === 1.0) {
+        x.set(0);
+        y.set(0);
+      }
+      updateBounds(nextScale);
+      return nextScale;
     });
   };
 
@@ -141,7 +265,7 @@ export default function ImageZoomModal({
         aria-modal="true"
         aria-label="Product Image Lightbox"
       >
-        {/* Simple Top Bar - Only Back Button and Close Button, NO UI MENU */}
+        {/* Top Header Bar */}
         <div className="absolute top-4 left-4 right-4 z-30 flex items-center justify-between pointer-events-none">
           {/* Back Arrow Button */}
           <button
@@ -167,7 +291,7 @@ export default function ImageZoomModal({
           </button>
         </div>
 
-        {/* Image Display Container with Scroll & Touch Pinch Zoom */}
+        {/* Main Image Display Container with Pan & Zoom */}
         <div
           ref={containerRef}
           onWheel={handleWheel}
@@ -176,47 +300,50 @@ export default function ImageZoomModal({
           onTouchEnd={handleTouchEnd}
           className="relative flex-1 w-full h-full overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing"
         >
-          {/* Side Arrows for Switching Gallery Photos */}
+          {/* Gallery Prev Arrow */}
           {images.length > 1 && (
-            <>
-              <button
-                type="button"
-                onClick={handlePrev}
-                className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3.5 rounded-full bg-black/75 hover:bg-black border border-white/20 text-white cursor-pointer transition-all shadow-lg active:scale-95"
-                aria-label="Previous photo"
-              >
-                <ChevronLeft className="w-6 h-6 stroke-[3]" />
-              </button>
-              <button
-                type="button"
-                onClick={handleNext}
-                className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3.5 rounded-full bg-black/75 hover:bg-black border border-white/20 text-white cursor-pointer transition-all shadow-lg active:scale-95"
-                aria-label="Next photo"
-              >
-                <ChevronRight className="w-6 h-6 stroke-[3]" />
-              </button>
-            </>
+            <button
+              type="button"
+              onClick={handlePrev}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-30 p-3.5 rounded-full bg-black/75 hover:bg-black border border-white/20 text-white cursor-pointer transition-all shadow-lg active:scale-95"
+              aria-label="Previous photo"
+            >
+              <ChevronLeft className="w-6 h-6 stroke-[3]" />
+            </button>
           )}
 
-          {/* Zoomable Image Container */}
-          <motion.div
-            key={currentImg.id || currentIndex}
-            className="relative w-full h-full flex items-center justify-center"
-            drag={zoomScale > 1}
-            dragConstraints={containerRef}
-            dragElastic={0.05}
-            onDragStart={() => setIsDragging(true)}
-            onDragEnd={() => setTimeout(() => setIsDragging(false), 100)}
-            style={{
-              x: position.x,
-              y: position.y,
-            }}
-          >
+          {/* Gallery Next Arrow */}
+          {images.length > 1 && (
+            <button
+              type="button"
+              onClick={handleNext}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-30 p-3.5 rounded-full bg-black/75 hover:bg-black border border-white/20 text-white cursor-pointer transition-all shadow-lg active:scale-95"
+              aria-label="Next photo"
+            >
+              <ChevronRight className="w-6 h-6 stroke-[3]" />
+            </button>
+          )}
+
+          {/* Zoomable & Pannable Image Element */}
+          <div className="relative w-full h-full flex items-center justify-center">
             <motion.div
+              key={currentImg.id || currentIndex}
+              ref={imageBoxRef}
+              drag={zoomScale > 1}
+              dragConstraints={{
+                left: -bounds.x,
+                right: bounds.x,
+                top: -bounds.y,
+                bottom: bounds.y,
+              }}
+              dragElastic={0.05}
+              onDragStart={() => setIsDragging(true)}
+              onDragEnd={() => setTimeout(() => setIsDragging(false), 80)}
+              style={{ x, y }}
               animate={{ scale: zoomScale }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
               onClick={handleImageClick}
-              className="relative w-full h-full max-w-[95vw] max-h-[85vh] flex items-center justify-center cursor-zoom-in"
+              className="relative w-full h-full max-w-[95vw] max-h-[85vh] flex items-center justify-center cursor-zoom-in select-none"
             >
               <Image
                 src={currentImg.url}
@@ -228,7 +355,55 @@ export default function ImageZoomModal({
                 sizes="100vw"
               />
             </motion.div>
-          </motion.div>
+          </div>
+        </div>
+
+        {/* Floating Zoom Control Bar at Bottom */}
+        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-2 px-4 py-2 bg-black/75 border border-white/20 backdrop-blur-md rounded-full shadow-2xl pointer-events-auto">
+          {/* Zoom Out Button */}
+          <button
+            type="button"
+            onClick={handleZoomOut}
+            disabled={zoomScale <= 1.0}
+            className="p-2 rounded-full hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition-all active:scale-95 cursor-pointer disabled:cursor-not-allowed text-white"
+            title="Zoom Out (-)"
+            aria-label="Zoom Out"
+          >
+            <ZoomOut className="w-4 h-4 stroke-[2.5]" />
+          </button>
+
+          {/* Zoom Scale Percentage Badge */}
+          <span className="text-xs font-mono font-bold tracking-wider px-2 min-w-[50px] text-center text-amber-300">
+            {Math.round(zoomScale * 100)}%
+          </span>
+
+          {/* Zoom In Button */}
+          <button
+            type="button"
+            onClick={handleZoomIn}
+            disabled={zoomScale >= 4.5}
+            className="p-2 rounded-full hover:bg-white/20 disabled:opacity-30 disabled:hover:bg-transparent transition-all active:scale-95 cursor-pointer disabled:cursor-not-allowed text-white"
+            title="Zoom In (+)"
+            aria-label="Zoom In"
+          >
+            <ZoomIn className="w-4 h-4 stroke-[2.5]" />
+          </button>
+
+          {/* Reset Zoom Button */}
+          {zoomScale > 1.0 && (
+            <>
+              <div className="w-[1px] h-4 bg-white/20 mx-1" />
+              <button
+                type="button"
+                onClick={resetZoom}
+                className="p-2 rounded-full hover:bg-white/20 transition-all active:scale-95 cursor-pointer text-white"
+                title="Reset Zoom (100%)"
+                aria-label="Reset Zoom"
+              >
+                <RotateCcw className="w-4 h-4 stroke-[2.5]" />
+              </button>
+            </>
+          )}
         </div>
       </motion.div>
     </AnimatePresence>
