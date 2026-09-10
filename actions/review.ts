@@ -7,6 +7,7 @@ import { products } from "@/db/schema/catalog";
 import { profiles } from "@/db/schema/auth";
 import { getCurrentUser } from "@/lib/auth/helpers";
 import { eq, and, desc } from "drizzle-orm";
+import { isDatabaseConfigured } from "@/lib/utils";
 import { revalidatePath } from "next/cache";
 
 function safeRevalidatePaths(...paths: string[]) {
@@ -42,7 +43,7 @@ export async function submitPublicReviewAction(
     return { success: false, error: "Please write a review message (minimum 5 characters)." };
   }
 
-  const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  const isDbAvailable = isDatabaseConfigured();
 
   if (isDbAvailable) {
     try {
@@ -114,7 +115,7 @@ export async function submitReviewAction(
     return { success: false, error: "Please write a review body (minimum 5 characters)." };
   }
 
-  const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  const isDbAvailable = isDatabaseConfigured();
 
   if (isDbAvailable) {
     try {
@@ -208,7 +209,7 @@ export async function moderateReviewAction(reviewId: string, isApproved: boolean
     return { success: false, error: "Unauthorized access. Admins only." };
   }
 
-  const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  const isDbAvailable = isDatabaseConfigured();
 
   if (isDbAvailable) {
     try {
@@ -250,7 +251,7 @@ export async function adminCreateReviewAction(
     return { success: false, error: "Please write a review body." };
   }
 
-  const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  const isDbAvailable = isDatabaseConfigured();
 
   if (isDbAvailable) {
     try {
@@ -279,7 +280,7 @@ export async function adminCreateReviewAction(
 }
 
 export async function getProductReviewsAction(productId: string) {
-  const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  const isDbAvailable = isDatabaseConfigured();
   if (!isDbAvailable) return [];
 
   try {
@@ -320,7 +321,7 @@ export async function deleteReviewAction(id: string) {
     return { success: false, error: "Unauthorized access." };
   }
 
-  const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  const isDbAvailable = isDatabaseConfigured();
 
   if (isDbAvailable) {
     try {

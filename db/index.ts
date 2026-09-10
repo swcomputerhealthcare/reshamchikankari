@@ -52,9 +52,10 @@ function getDb(): DbClient {
   if (
     !connectionString ||
     connectionString.includes("[YOUR-PROJECT-REF]") ||
+    connectionString.includes("YOUR-PROJECT-REF") ||
     connectionString.includes("[YOUR-PASSWORD]")
   ) {
-    throw new Error("DATABASE_URL is not properly configured (contains template placeholder [YOUR-PROJECT-REF] or [YOUR-PASSWORD]). Please update your environment variables with valid Supabase credentials.");
+    throw new Error("CRITICAL: DATABASE_URL is not properly configured in production environment (contains placeholder YOUR-PROJECT-REF or YOUR-PASSWORD). Please update your production environment variables in Vercel/hosting dashboard with valid Supabase credentials.");
   }
 
   const isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");

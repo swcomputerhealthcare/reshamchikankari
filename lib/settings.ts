@@ -3,10 +3,12 @@ import { db } from "@/db";
 import { siteSettings } from "@/db/schema/content";
 import { eq } from "drizzle-orm";
 
+import { isDatabaseConfigured } from "@/lib/utils";
+
 export const getCachedSiteSettings = unstable_cache(
   async () => {
     try {
-      const hasDb = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+      const hasDb = isDatabaseConfigured();
       if (!hasDb) return null;
 
       const res = await db.query.siteSettings.findFirst({

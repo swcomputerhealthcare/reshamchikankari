@@ -45,8 +45,10 @@ export const MOCK_COUPONS: Coupon[] = [
   },
 ];
 
+import { isDatabaseConfigured } from "@/lib/utils";
+
 const hasDatabase = () => {
-  return !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  return isDatabaseConfigured();
 };
 
 export async function validateCouponCode(code: string, subtotalPaise: number): Promise<CouponValidationResult> {

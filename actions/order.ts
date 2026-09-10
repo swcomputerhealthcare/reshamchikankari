@@ -8,6 +8,7 @@ import { validateCouponCode } from "@/lib/coupon";
 import { db } from "@/db";
 import { orders, orderItems } from "@/db/schema/order";
 
+import { isDatabaseConfigured } from "@/lib/utils";
 import { getOrCreateWallet, debitWalletForOrder, creditWallet } from "@/lib/wallet";
 
 export interface AddressData {
@@ -22,7 +23,7 @@ export interface AddressData {
 
 export async function createOrderAction(
   address: AddressData,
-  paymentMethod: "ONLINE" | "COD",
+  paymentMethod: "ONLINE" = "ONLINE",
   walletAmountPaise = 0
 ) {
   try {
@@ -77,13 +78,11 @@ export async function createOrderAction(
 
     // Calculate Shipping (Free above ₹4000 or for test items)
     const isTestCart = cart.items.some((item) => item.sku?.includes("TEST") || item.slug?.includes("test") || item.pricePaise <= 500);
-    const shippingPaise = (cart.subtotalPaise >= 400000 || isTestCart) ? 0 : 15000;
-
-    // Calculate COD Fee (₹50 additional charge for COD)
-    const codFeePaise = paymentMethod === "COD" ? 5000 : 0;
+    const shippingPaise = (cart.subtotalPaise >= 400000 || isTestCart) ? 0 : 20000;
+    const codFeePaise = 0;
 
     // Total
-    const orderTotalPaise = Math.max(0, cart.subtotalPaise - discountPaise + shippingPaise + codFeePaise);
+    const orderTotalPaise = Math.max(0, cart.subtotalPaise - discountPaise + shippingPaise);
 
     // Validate and Debit Wallet Balance
     const orderId = `ord_${Math.random().toString(36).substring(2, 11)}`;
@@ -108,12 +107,7 @@ export async function createOrderAction(
     const remainingCashTotalPaise = Math.max(0, orderTotalPaise - walletAmountPaise);
 
     // Resolve final order payment status
-    let paymentStatus = "PENDING";
-    if (remainingCashTotalPaise === 0) {
-      paymentStatus = "PAID";
-    } else if (paymentMethod === "COD") {
-      paymentStatus = "COD_PENDING";
-    }
+    let paymentStatus = remainingCashTotalPaise === 0 ? "PAID" : "PENDING";
 
     // Handle Razorpay online payment order creation
     let razorpayOrderId: string | null = null;
@@ -188,28 +182,28 @@ export async function createOrderAction(
         id: orderId,
         orderNumber,
         userId,
-        status: paymentMethod === "COD" ? "CONFIRMED" : "PENDING",
+        status: "PENDING",
         paymentStatus,
         subtotalPaise: cart.subtotalPaise,
         discountPaise,
-        shippingPaise: shippingPaise + codFeePaise, // Fold shipping + COD fee together
+        shippingPaise,
         taxPaise: 0,
         totalPaise: orderTotalPaise,
         couponCodeSnapshot: couponCode,
         shippingAddressSnapshot: {
           ...address,
-          paymentMethod,
+          paymentMethod: "ONLINE",
           walletPaidPaise: walletAmountPaise,
           remainingCashTotalPaise,
         },
-        paymentProvider: paymentMethod === "COD" ? "COD" : (walletAmountPaise === orderTotalPaise ? "WALLET" : "RAZORPAY"),
+        paymentProvider: walletAmountPaise === orderTotalPaise ? "WALLET" : "RAZORPAY",
         paymentId: null,
         walletAmountPaise,
         currency: "INR",
         couponId: validCouponId,
         billingAddressSnapshot: {
           ...address,
-          paymentMethod,
+          paymentMethod: "ONLINE",
           walletPaidPaise: walletAmountPaise,
           remainingCashTotalPaise,
         },
@@ -392,7 +386,7 @@ export async function verifyRazorpayPaymentAction(
     return { success: false, error: "Payment verification failed. Invalid transaction signature from Razorpay." };
   }
 
-  const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  const isDbAvailable = isDatabaseConfigured();
 
   if (isDbAvailable) {
     try {
@@ -496,7 +490,7 @@ export async function updateOrderStatusAction(
 ) {
   await requireAdmin();
 
-  const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  const isDbAvailable = isDatabaseConfigured();
 
   if (isDbAvailable) {
     try {
@@ -535,7 +529,7 @@ export async function updateOrderStatusAction(
 
 export async function checkOrderPaymentStatusAction(orderId: string) {
   try {
-    const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  const isDbAvailable = isDatabaseConfigured();
     if (isDbAvailable) {
       const { eq, or } = await import("drizzle-orm");
       const [order] = await db

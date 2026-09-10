@@ -5087,9 +5087,11 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
   }
 ];
 
+import { isDatabaseConfigured } from "@/lib/utils";
+
 // Helper to determine if DB connection should fallback
 const hasDatabase = () => {
-  return !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  return isDatabaseConfigured();
 };
 
 export async function getCategories(): Promise<Category[]> {

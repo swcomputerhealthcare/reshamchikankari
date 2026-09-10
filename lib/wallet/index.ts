@@ -4,9 +4,11 @@ import { eq, and } from "drizzle-orm";
 import fs from "fs";
 import path from "path";
 
+import { isDatabaseConfigured } from "@/lib/utils";
+
 // Helper to determine if Drizzle DB is available
 const hasDatabase = () => {
-  return !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  return isDatabaseConfigured();
 };
 
 import os from "os";

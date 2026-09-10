@@ -6,8 +6,10 @@ import { eq, and } from "drizzle-orm";
 
 const COOKIE_NAME = "resham_wishlist";
 
+import { isDatabaseConfigured } from "@/lib/utils";
+
 const hasDatabase = () => {
-  return !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  return isDatabaseConfigured();
 };
 
 // Local Cookie Helpers

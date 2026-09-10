@@ -31,8 +31,10 @@ export interface CartDetails {
 
 const COOKIE_NAME = "resham_cart";
 
+import { isDatabaseConfigured } from "@/lib/utils";
+
 const hasDatabase = () => {
-  return !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;
+  return isDatabaseConfigured();
 };
 
 // Local Cookie Parsing Helpers
