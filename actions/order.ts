@@ -124,7 +124,7 @@ export async function createOrderAction(
       try {
         const { razorpay } = await import("@/lib/razorpay");
         const rzpOrder = await razorpay.orders.create({
-          amount: remainingCashTotalPaise,
+          amount: Math.round(remainingCashTotalPaise),
           currency: "INR",
           receipt: orderId,
           notes: {
@@ -143,7 +143,8 @@ export async function createOrderAction(
             console.error("Critical: failed to revert wallet debit:", revertErr);
           }
         }
-        return { success: false, error: err?.message || "Failed to initialize online payment with Razorpay. Please try Cash on Delivery." };
+        const rzpMsg = err?.error?.description || err?.description || err?.message || (typeof err === "string" ? err : "Failed to initialize online payment with Razorpay.");
+        return { success: false, error: rzpMsg };
       }
     }
 
@@ -305,7 +306,8 @@ export async function createOrderAction(
           console.error("Critical: failed to revert wallet debit:", revertErr);
         }
       }
-      return { success: false, error: e?.message || "Failed to place order in database. Any wallet funds have been restored." };
+      const dbErrMsg = pgErr?.detail || pgErr?.message || e?.message || "Failed to place order in database. Any wallet funds have been restored.";
+      return { success: false, error: dbErrMsg };
     }
 
     // Revalidate customer and admin views
