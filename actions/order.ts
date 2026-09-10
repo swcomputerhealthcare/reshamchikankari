@@ -26,7 +26,12 @@ export async function createOrderAction(
   walletAmountPaise = 0
 ) {
   try {
-    let user = await getCurrentUser();
+    let user = null;
+    try {
+      user = await getCurrentUser();
+    } catch (uErr) {
+      console.warn("Could not retrieve current user in createOrderAction:", uErr);
+    }
     
     // Safely resolve valid UUID for database foreign key constraints
     const isUuidStr = (id: string) => typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
@@ -282,7 +287,17 @@ export async function createOrderAction(
         });
       }
     } catch (e: any) {
-      console.error("Failed to save order to database, reverting wallet deduction:", e);
+      const pgErr = e?.cause || e;
+      console.error("Failed to save order to database:", {
+        message: e?.message,
+        code: pgErr?.code,
+        detail: pgErr?.detail,
+        constraint: pgErr?.constraint,
+        table: pgErr?.table,
+        column: pgErr?.column,
+      });
+      console.error("Full exception object:", e);
+
       // Revert wallet debit on database insert failure
       if (walletAmountPaise > 0) {
         try {
