@@ -41,38 +41,23 @@ const globalForDb = globalThis as unknown as {
   db: DbClient | undefined;
 };
 
-// Fallback dummy connection string for build-time static route collection when Vercel env is unpopulated
-const MOCK_BUILD_CONNECTION = "postgresql://postgres:postgres@127.0.0.1:5432/postgres";
-
 function getDb(): DbClient {
   if (globalForDb.db) {
     return globalForDb.db;
   }
 
   const rawUrl = process.env.DATABASE_URL || env.DATABASE_URL || "";
-  let connectionString = rawUrl.replace(/['"]/g, "").trim();
+  const connectionString = rawUrl.replace(/['"]/g, "").trim();
 
-  const isPlaceholder =
+  if (
     !connectionString ||
     connectionString.includes("[YOUR-PROJECT-REF]") ||
     connectionString.includes("YOUR-PROJECT-REF") ||
-    connectionString.includes("[YOUR-PASSWORD]");
-
-  if (isPlaceholder) {
-    // If during Next.js build / page data collection, use dummy connection to allow build to complete cleanly
-    if (
-      process.env.NEXT_PHASE === "phase-production-build" ||
-      process.env.CI ||
-      process.env.VERCEL ||
-      process.env.NODE_ENV === "production"
-    ) {
-      console.warn("⚠️ DATABASE_URL contains placeholder values during build phase. Using dummy connection for static route collection.");
-      connectionString = MOCK_BUILD_CONNECTION;
-    } else {
-      throw new Error(
-        "CRITICAL: DATABASE_URL is not properly configured in production environment (contains placeholder YOUR-PROJECT-REF or YOUR-PASSWORD). Please update your production environment variables in Vercel/hosting dashboard with valid Supabase credentials."
-      );
-    }
+    connectionString.includes("[YOUR-PASSWORD]")
+  ) {
+    throw new Error(
+      "DATABASE_URL is not properly configured. Please set a valid Supabase DATABASE_URL in environment variables."
+    );
   }
 
   const isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
