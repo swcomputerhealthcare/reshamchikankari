@@ -8,6 +8,7 @@ import { profiles } from "@/db/schema/auth";
 import { eq, desc } from "drizzle-orm";
 import PatronVoicesShowcase from "@/components/testimonials/PatronVoicesShowcase";
 
+import { isDatabaseConfigured } from "@/lib/utils";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -36,24 +37,26 @@ export const metadata: Metadata = {
 
 export default async function PatronVoicesPage() {
   let dbReviews: any[] = [];
-  try {
-    dbReviews = await db
-      .select({
-        id: reviews.id,
-        rating: reviews.rating,
-        body: reviews.body,
-        isVerified: reviews.isVerifiedPurchase,
-        userName: profiles.fullName,
-        authorName: reviews.authorName,
-        title: reviews.title,
-      })
-      .from(reviews)
-      .leftJoin(profiles, eq(reviews.userId, profiles.id))
-      .where(eq(reviews.isApproved, true))
-      .orderBy(desc(reviews.createdAt))
-      .limit(8);
-  } catch (e) {
-    console.error("Could not fetch DB reviews:", e);
+  if (isDatabaseConfigured()) {
+    try {
+      dbReviews = await db
+        .select({
+          id: reviews.id,
+          rating: reviews.rating,
+          body: reviews.body,
+          isVerified: reviews.isVerifiedPurchase,
+          userName: profiles.fullName,
+          authorName: reviews.authorName,
+          title: reviews.title,
+        })
+        .from(reviews)
+        .leftJoin(profiles, eq(reviews.userId, profiles.id))
+        .where(eq(reviews.isApproved, true))
+        .orderBy(desc(reviews.createdAt))
+        .limit(8);
+    } catch (e) {
+      console.error("Could not fetch DB reviews:", e);
+    }
   }
 
   return (

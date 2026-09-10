@@ -49,8 +49,12 @@ function getDb(): DbClient {
   const rawUrl = process.env.DATABASE_URL || env.DATABASE_URL || "";
   const connectionString = rawUrl.replace(/['"]/g, "").trim();
 
-  if (!connectionString) {
-    throw new Error("DATABASE_URL is not configured.");
+  if (
+    !connectionString ||
+    connectionString.includes("[YOUR-PROJECT-REF]") ||
+    connectionString.includes("[YOUR-PASSWORD]")
+  ) {
+    throw new Error("DATABASE_URL is not properly configured (contains template placeholder [YOUR-PROJECT-REF] or [YOUR-PASSWORD]). Please update your environment variables with valid Supabase credentials.");
   }
 
   const isLocal = connectionString.includes("localhost") || connectionString.includes("127.0.0.1");
