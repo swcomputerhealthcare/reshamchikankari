@@ -62,15 +62,24 @@ export async function GET(request: NextRequest) {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
     "sb_publishable_ADKS42lpLMQX__UratAPsg_8jhAD-ND";
 
+  const isProdDomain = request.nextUrl.hostname.endsWith("reshamchikankari.com");
+  const cookieDomain = isProdDomain ? ".reshamchikankari.com" : undefined;
+
   const supabase = createServerClient(url, key, {
     cookies: {
       getAll() {
-        return cookieStore.getAll();
+        const reqCookies = request.cookies.getAll();
+        const storeCookies = cookieStore.getAll();
+        const map = new Map<string, { name: string; value: string }>();
+        reqCookies.forEach((c) => map.set(c.name, c));
+        storeCookies.forEach((c) => map.set(c.name, c));
+        return Array.from(map.values());
       },
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value, options }) => {
           const cookieOpts = {
             ...options,
+            ...(cookieDomain ? { domain: cookieDomain } : {}),
             path: options?.path ?? "/",
             sameSite: options?.sameSite ?? "lax",
             secure: process.env.NODE_ENV === "production",
@@ -92,8 +101,7 @@ export async function GET(request: NextRequest) {
     console.error("OAuth callback exchange failed:", error.message, error);
     return NextResponse.redirect(
       new URL(
-        "/login?error=" +
-          encodeURIComponent("Unable to complete Google sign-in. Please try again."),
+        `/login?error=${encodeURIComponent(error.message || "Unable to complete Google sign-in. Please try again.")}`,
         origin
       )
     );

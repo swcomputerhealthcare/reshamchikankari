@@ -131,7 +131,7 @@ function LoginForm() {
       const origin =
         typeof window !== "undefined" && window.location.origin
           ? window.location.origin
-          : (process.env.NEXT_PUBLIC_SITE_URL || "https://reshamchikankari.com");
+          : (process.env.NEXT_PUBLIC_SITE_URL || "https://www.reshamchikankari.com");
       const redirectToUrl = `${origin}/auth/callback?next=${encodeURIComponent(callbackURL)}`;
 
       const { error: authError } = await supabase.auth.signInWithOAuth({
