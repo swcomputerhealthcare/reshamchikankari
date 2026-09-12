@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Heart } from "lucide-react";
 import { useWishlist } from "@/context/wishlist-context";
 import { cn } from "@/lib/utils";
+import { event } from "@/lib/pixel";
 
 interface WishlistButtonProps {
   productId: string;
@@ -21,8 +22,16 @@ export default function WishlistButton({ productId, className = "" }: WishlistBu
     e.preventDefault();
     e.stopPropagation();
 
+    const wasWishlisted = wishlisted;
     setIsPending(true);
-    toggleWishlist(productId).finally(() => {
+    toggleWishlist(productId).then(() => {
+      if (!wasWishlisted) {
+        event("AddToWishlist", {
+          content_ids: [productId],
+          content_type: "product",
+        });
+      }
+    }).finally(() => {
       setIsPending(false);
     });
   };
