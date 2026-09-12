@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import ProductGallery from "@/components/product/product-gallery";
 import ProductActionPanel from "@/components/product/product-action-panel";
 import { type CatalogProduct } from "@/lib/catalog";
+import { event } from "@/lib/pixel";
 import { Star, ArrowLeft } from "lucide-react";
 
 interface ProductDetailClientProps {
@@ -22,6 +23,18 @@ export default function ProductDetailClient({
   averageRating = null,
 }: ProductDetailClientProps) {
   const router = useRouter();
+
+  // Track Meta Pixel ViewContent event
+  useEffect(() => {
+    event("ViewContent", {
+      content_name: product.name,
+      content_category: product.category?.name || "Kurtis & Suits",
+      content_ids: [product.id],
+      content_type: "product",
+      value: (product.pricePaise / 100).toFixed(2),
+      currency: "INR",
+    });
+  }, [product.id, product.name, product.category?.name, product.pricePaise]);
 
   // Determine if product has 2 or more distinct colors in its variants
   const distinctColors = useMemo(() => {

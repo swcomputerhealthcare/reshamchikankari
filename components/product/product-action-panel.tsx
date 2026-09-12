@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useTransition, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { useCart } from "@/context/cart-context";
 import Button from "@/components/ui/button";
 import WishlistButton from "@/components/product/wishlist-button";
 import SizeGuideModal from "@/components/product/size-guide-modal";
+import { event } from "@/lib/pixel";
 
 export interface Variant {
   id: string;
@@ -39,7 +39,6 @@ export default function ProductActionPanel({
   selectedColor: propSelectedColor,
   onColorChange,
 }: ProductActionPanelProps) {
-  const router = useRouter();
   const [, startTransition] = useTransition();
   const { addItemOptimistic } = useCart();
 
@@ -192,6 +191,13 @@ export default function ProductActionPanel({
       setIsAdding(false);
       if (res.success) {
         setIsAdded(true);
+        event("AddToCart", {
+          content_name: product.name,
+          content_ids: [activeVariant.id || product.id],
+          content_type: "product",
+          value: currentPrice * quantity,
+          currency: "INR",
+        });
         setTimeout(() => setIsAdded(false), 2500);
       } else {
         setValidationError(res.error || "Failed to add item to bag");

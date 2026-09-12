@@ -7,6 +7,7 @@ import { getCartDetails } from "@/lib/cart";
 import { validateCouponCode } from "@/lib/coupon";
 import { requireUser } from "@/lib/auth/helpers";
 import CheckoutForm from "@/components/checkout/checkout-form";
+import CheckoutTracker from "@/components/analytics/CheckoutTracker";
 import { getOrCreateWallet } from "@/lib/wallet";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
 
@@ -50,6 +51,10 @@ export default async function CheckoutPage() {
 
   return (
     <div className="bg-[#FFF9F4] min-h-screen text-[#161616] selection:bg-[#E694AA]/20 pb-24 font-sans text-left">
+      <CheckoutTracker
+        subtotalPaise={cart.subtotalPaise}
+        itemCount={cart.items.length}
+      />
       {/* Top Hairline Header */}
       <header className="bg-[#FFF9F4] border-b border-[#ECE9E2] h-20 flex items-center">
         <Container className="w-full">

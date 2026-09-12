@@ -2,10 +2,11 @@ import React from "react";
 import Link from "next/link";
 import Container from "@/components/ui/container";
 import AnimatedTicket from "@/components/checkout/animated-ticket";
+import OrderSuccessTracker from "@/components/analytics/OrderSuccessTracker";
 import { db } from "@/db";
 import { orders } from "@/db/schema/order";
 import { eq } from "drizzle-orm";
-import { ArrowLeft, ShoppingBag, History } from "lucide-react";
+import { ShoppingBag, History } from "lucide-react";
 
 interface SuccessPageProps {
   searchParams: Promise<{ orderNumber?: string; pm?: string; total?: string; name?: string }>;
@@ -82,6 +83,10 @@ export default async function CheckoutSuccessPage(props: SuccessPageProps) {
 
   return (
     <div className="bg-[#FFF9F4] min-h-screen text-[#161616] py-12 sm:py-20 select-none">
+      <OrderSuccessTracker
+        orderNumber={orderData.orderNumber}
+        totalPaise={orderData.totalPaise}
+      />
       <Container className="max-w-xl flex flex-col items-center justify-center text-center space-y-8">
         
         {/* Animated Ticket Confirmation Card */}
