@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { categories, products, type Category, type Product, type ProductImage, type ProductVariant } from "@/db/schema/catalog";
-import { eq, and, like, ilike, gte, lte, asc, desc, inArray, sql } from "drizzle-orm";
+import { eq, ne, and, like, ilike, gte, lte, asc, desc, inArray, sql } from "drizzle-orm";
 
 export interface CatalogProduct extends Product {
   category?: Category;
@@ -5107,6 +5107,7 @@ export async function getCategories(): Promise<Category[]> {
 
 export interface ProductFilters {
   categorySlug?: string;
+  excludeCategorySlug?: string;
   query?: string;
   fabric?: string;
   priceMin?: number;
@@ -5119,7 +5120,7 @@ export interface ProductFilters {
 }
 
 export async function getProducts(filters: ProductFilters = {}): Promise<{ products: CatalogProduct[]; total: number }> {
-  const { categorySlug, query, fabric, priceMin, priceMax, sort, page = 1, limit = 12, productIds, includeInactive = false } = filters;
+  const { categorySlug, excludeCategorySlug, query, fabric, priceMin, priceMax, sort, page = 1, limit = 12, productIds, includeInactive = false } = filters;
 
   if (!hasDatabase()) {
     let list = MOCK_PRODUCTS.map(mapInputToCatalogProduct);
@@ -5136,6 +5137,13 @@ export async function getProducts(filters: ProductFilters = {}): Promise<{ produ
       const cat = MOCK_CATEGORIES.find(c => c.slug === categorySlug);
       if (cat) {
         list = list.filter(p => p.categoryId === cat.id);
+      }
+    }
+
+    if (excludeCategorySlug) {
+      const cat = MOCK_CATEGORIES.find(c => c.slug === excludeCategorySlug);
+      if (cat) {
+        list = list.filter(p => p.categoryId !== cat.id);
       }
     }
 
@@ -5185,6 +5193,13 @@ export async function getProducts(filters: ProductFilters = {}): Promise<{ produ
       const catResult = await db.select().from(categories).where(eq(categories.slug, categorySlug)).limit(1);
       if (catResult.length > 0) {
         conditions.push(eq(products.categoryId, catResult[0].id));
+      }
+    }
+
+    if (excludeCategorySlug) {
+      const catResult = await db.select().from(categories).where(eq(categories.slug, excludeCategorySlug)).limit(1);
+      if (catResult.length > 0) {
+        conditions.push(ne(products.categoryId, catResult[0].id));
       }
     }
 
@@ -5242,7 +5257,7 @@ export async function getProducts(filters: ProductFilters = {}): Promise<{ produ
 
 function getProductsOffline(filters: ProductFilters): { products: CatalogProduct[]; total: number } {
   let list = MOCK_PRODUCTS.map(mapInputToCatalogProduct);
-  const { categorySlug, query, priceMin, priceMax, sort, page = 1, limit = 12, productIds } = filters;
+  const { categorySlug, excludeCategorySlug, query, priceMin, priceMax, sort, page = 1, limit = 12, productIds } = filters;
 
   if (productIds && productIds.length > 0) {
     list = list.filter(p => productIds.includes(p.id));
@@ -5251,6 +5266,12 @@ function getProductsOffline(filters: ProductFilters): { products: CatalogProduct
     const cat = MOCK_CATEGORIES.find(c => c.slug === categorySlug);
     if (cat) {
       list = list.filter(p => p.categoryId === cat.id);
+    }
+  }
+  if (excludeCategorySlug) {
+    const cat = MOCK_CATEGORIES.find(c => c.slug === excludeCategorySlug);
+    if (cat) {
+      list = list.filter(p => p.categoryId !== cat.id);
     }
   }
   if (query) {

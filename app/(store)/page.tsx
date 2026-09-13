@@ -51,7 +51,7 @@ export default async function StorefrontHome() {
 
   const [wishlistIds, { products: newArrivals }, { products: premiumProducts }] = await Promise.all([
     getWishlistItems(),
-    getProducts({ limit: 4 }),
+    getProducts({ excludeCategorySlug: "premium", priceMax: 399900, limit: 4 }),
     getProducts({ categorySlug: "premium", limit: 4 }),
   ]);
 
@@ -67,13 +67,13 @@ export default async function StorefrontHome() {
           <ScrollReveal direction="up">
             <div className="mb-8 sm:mb-12 lg:mb-16 text-brand-offwhite max-w-2xl">
               <span className="text-[10px] sm:text-xs tracking-[0.2em] font-sans uppercase font-bold text-brand-pink mb-2 sm:mb-3 block">
-                NEW ARRIVALS
+                NEW ARRIVALS • EVERYDAY AFFORDABLE
               </span>
               <h2 className="font-display text-3xl sm:text-5xl lg:text-6xl text-brand-offwhite leading-tight">
                 Fresh From Lucknow
               </h2>
               <p className="font-sans text-xs sm:text-sm text-brand-offwhite/70 mt-2 sm:mt-3 max-w-md leading-relaxed">
-                Discover the latest expressions of our craft. Hand-embroidered shadow-work reimagined for the modern wardrobe.
+                Discover our latest affordable everyday Chikankari wear. Hand-embroidered shadow-work reimagined for accessible style without luxury price tags.
               </p>
             </div>
           </ScrollReveal>
