@@ -1,11 +1,14 @@
 import { db } from "@/db";
 import { categories, products, type Category, type Product, type ProductImage, type ProductVariant } from "@/db/schema/catalog";
+import { reviews } from "@/db/schema/review";
 import { eq, ne, and, like, ilike, gte, lte, asc, desc, inArray, sql } from "drizzle-orm";
 
 export interface CatalogProduct extends Product {
   category?: Category;
   images: ProductImage[];
   variants: ProductVariant[];
+  reviewCount?: number;
+  rating?: number | null;
 }
 
 export type CatalogProductInput = Omit<
@@ -5248,11 +5251,57 @@ export async function getProducts(filters: ProductFilters = {}): Promise<{ produ
     const countRes = await countQuery;
     const total = countRes[0]?.total ?? 0;
 
-    return { products: dbProducts as CatalogProduct[], total };
+    const productIdsList = dbProducts.map((p) => p.id);
+    const statsMap = await getBatchProductReviewStats(productIdsList);
+
+    const productsWithStats = dbProducts.map((p) => {
+      const stats = statsMap.get(p.id);
+      return {
+        ...p,
+        reviewCount: stats?.reviewCount ?? 0,
+        rating: stats?.rating ?? null,
+      } as CatalogProduct;
+    });
+
+    return { products: productsWithStats, total };
   } catch (err) {
     console.error("DB Query failed, falling back to mock products:", err);
     return getProductsOffline(filters);
   }
+}
+
+export async function getBatchProductReviewStats(
+  productIds: string[]
+): Promise<Map<string, { reviewCount: number; rating: number | null }>> {
+  const map = new Map<string, { reviewCount: number; rating: number | null }>();
+  if (!productIds || productIds.length === 0 || !hasDatabase()) {
+    return map;
+  }
+
+  try {
+    const stats = await db
+      .select({
+        productId: reviews.productId,
+        reviewCount: sql<number>`count(*)::int`,
+        avgRating: sql<number>`avg(${reviews.rating})::numeric`,
+      })
+      .from(reviews)
+      .where(and(inArray(reviews.productId, productIds), eq(reviews.isApproved, true)))
+      .groupBy(reviews.productId);
+
+    for (const stat of stats) {
+      if (stat.productId) {
+        map.set(stat.productId, {
+          reviewCount: stat.reviewCount ?? 0,
+          rating: stat.avgRating ? Number(Number(stat.avgRating).toFixed(1)) : null,
+        });
+      }
+    }
+  } catch (err) {
+    console.error("Failed to query batch product review stats from DB:", err);
+  }
+
+  return map;
 }
 
 function getProductsOffline(filters: ProductFilters): { products: CatalogProduct[]; total: number } {
@@ -5290,13 +5339,18 @@ function getProductsOffline(filters: ProductFilters): { products: CatalogProduct
   }
   const total = list.length;
   const startIndex = (page - 1) * limit;
-  return { products: list.slice(startIndex, startIndex + limit), total };
+  const paginatedWithStats = list.slice(startIndex, startIndex + limit).map((p) => ({
+    ...p,
+    reviewCount: 0,
+    rating: null,
+  }));
+  return { products: paginatedWithStats, total };
 }
 
 export async function getProductBySlug(slug: string): Promise<CatalogProduct | null> {
   if (!hasDatabase()) {
     const p = MOCK_PRODUCTS.find(p => p.slug === slug);
-    return p ? mapInputToCatalogProduct(p) : null;
+    return p ? { ...mapInputToCatalogProduct(p), reviewCount: 0, rating: null } : null;
   }
 
   try {
@@ -5313,14 +5367,19 @@ export async function getProductBySlug(slug: string): Promise<CatalogProduct | n
     const catResult = await db.select().from(categories).where(eq(categories.id, productResult.categoryId)).limit(1);
     const category = catResult[0] ?? undefined;
 
+    const statsMap = await getBatchProductReviewStats([productResult.id]);
+    const stats = statsMap.get(productResult.id);
+
     return {
       ...productResult,
       category,
+      reviewCount: stats?.reviewCount ?? 0,
+      rating: stats?.rating ?? null,
     } as CatalogProduct;
   } catch (err) {
     console.error("DB Query failed, falling back to mock product:", err);
     const p = MOCK_PRODUCTS.find(p => p.slug === slug);
-    return p ? mapInputToCatalogProduct(p) : null;
+    return p ? { ...mapInputToCatalogProduct(p), reviewCount: 0, rating: null } : null;
   }
 }
 

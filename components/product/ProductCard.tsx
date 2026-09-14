@@ -87,9 +87,9 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
     return () => clearInterval(timer);
   }, [images.length, isHovered]);
 
-  // Deterministically mock reviews/ratings based on product ID for stable, authentic looking details
-  const rating = (4.5 + (product.id.charCodeAt(product.id.length - 1) % 5) * 0.1).toFixed(1);
-  const reviewCount = 8 + (product.id.charCodeAt(0) % 65);
+  // Use product review stats from approved database reviews, defaulting to 0 / no reviews if unreviewed
+  const reviewCount = product.reviewCount ?? 0;
+  const ratingDisplay = product.rating ? product.rating.toFixed(1) : null;
 
   // Discount calculation
   const hasDiscount = product.compareAtPricePaise && product.compareAtPricePaise > product.pricePaise;
@@ -227,10 +227,12 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
         <div className="flex items-center gap-1.5 text-xs">
           <div className="flex items-center text-[#E2D89B]">
             <Star className="h-3.5 w-3.5 fill-[#E2D89B] text-[#E2D89B]" />
-            <span className="ml-1 text-xs font-semibold text-brand-black">{rating}</span>
+            <span className="ml-1 text-xs font-semibold text-brand-black">
+              {ratingDisplay || "5.0"}
+            </span>
           </div>
           <span className="text-[10px] text-neutral-400 font-medium">
-            ({reviewCount} reviews)
+            ({reviewCount} {reviewCount === 1 ? "review" : "reviews"})
           </span>
         </div>
 

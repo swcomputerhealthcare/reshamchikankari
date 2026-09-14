@@ -58,6 +58,27 @@ export async function createSupabaseContext(
   }
 
   const cookieStore = await cookies();
+  const allCookies = cookieStore.getAll();
+  const hasAuthCookie = allCookies.some(
+    (c) =>
+      c.name.startsWith("sb-") ||
+      c.name.includes("auth-token") ||
+      c.name.includes("supabase") ||
+      c.name === "access_token"
+  );
+
+  const isUserAuth =
+    options.auth === "user" ||
+    (Array.isArray(options.auth) && options.auth.includes("user"));
+
+  // Fast-path for anonymous guest visitors: if no auth session cookie is present, return immediately without network latency
+  if (isUserAuth && !hasAuthCookie) {
+    return {
+      data: null,
+      error: new Error("No auth session cookie found for guest visitor"),
+    };
+  }
+
   const ssrClient = createServerClient(
     nextEnv.url,
     nextEnv.publishableKeys.default,
@@ -78,10 +99,6 @@ export async function createSupabaseContext(
       },
     },
   );
-
-  const isUserAuth =
-    options.auth === "user" ||
-    (Array.isArray(options.auth) && options.auth.includes("user"));
 
   // For user auth from SSR cookie storage, authenticate via Supabase Auth directly.
   // This supports all signing algorithms (HS256 and ES256) seamlessly without asymmetric JWKS mismatch.
