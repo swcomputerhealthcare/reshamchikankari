@@ -83,10 +83,10 @@ export const env = {
     return process.env.RESEND_API_KEY || "";
   },
   get SHIPROCKET_EMAIL() {
-    return process.env.SHIPROCKET_EMAIL || "orders@reshamchikankari.com";
+    return process.env.SHIPROCKET_EMAIL || "sw.computerhealthcare@gmail.com";
   },
   get SHIPROCKET_PASSWORD() {
-    return process.env.SHIPROCKET_PASSWORD || "";
+    return process.env.SHIPROCKET_PASSWORD || "@B$EqTdjy&TFH4dD5ZEjXtBbk2sYO!n#";
   },
   get SHIPROCKET_PICKUP_LOCATION() {
     return process.env.SHIPROCKET_PICKUP_LOCATION || "Home";

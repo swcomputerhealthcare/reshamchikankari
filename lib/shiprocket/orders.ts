@@ -102,6 +102,12 @@ export function buildShiprocketOrderPayload(
   cleanAddress = cleanAddress.substring(0, 190);
 
   const subTotalRs = Math.round(order.subtotalPaise / 100);
+  const codFeePaise = (addr.codFeePaise !== undefined) ? addr.codFeePaise : (isCOD ? 5000 : 0);
+  const codFeeRs = Math.round(codFeePaise / 100);
+
+  // If customer paid partially via wallet on a COD order, deduct wallet from collectable COD total
+  const walletPaidRs = Math.round((addr.walletPaidPaise || 0) / 100);
+  const totalDiscountRs = Math.round(order.discountPaise / 100) + (isCOD ? walletPaidRs : 0);
 
   return {
     order_id: order.orderNumber,
@@ -131,7 +137,8 @@ export function buildShiprocketOrderPayload(
     order_items: orderItems,
     payment_method: isCOD ? "COD" : "Prepaid",
     shipping_charges: Math.round(order.shippingPaise / 100),
-    total_discount: Math.round(order.discountPaise / 100),
+    transaction_charges: isCOD ? codFeeRs : 0,
+    total_discount: totalDiscountRs,
     sub_total: Math.max(1, subTotalRs),
     length: maxLengthCm,
     breadth: maxBreadthCm,
