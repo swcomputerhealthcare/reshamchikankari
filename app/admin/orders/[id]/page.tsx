@@ -260,8 +260,14 @@ export default async function AdminOrderDetailPage(props: AdminOrderDetailPagePr
                 )}
                 <div className="flex justify-between">
                   <span>Shipping Fee</span>
-                  <span>₹{(order.shippingPaise / 100).toLocaleString("en-IN")}</span>
+                  <span>{order.shippingPaise === 0 ? "FREE" : `₹${(order.shippingPaise / 100).toLocaleString("en-IN")}`}</span>
                 </div>
+                {((order.shippingAddressSnapshot as any)?.codFeePaise > 0 || (order.paymentProvider === "COD" && order.totalPaise > order.subtotalPaise - order.discountPaise + order.shippingPaise - order.walletAmountPaise)) && (
+                  <div className="flex justify-between text-amber-800 font-semibold">
+                    <span>COD Handling Charge</span>
+                    <span>₹{(((order.shippingAddressSnapshot as any)?.codFeePaise || 5000) / 100).toLocaleString("en-IN")}</span>
+                  </div>
+                )}
                 {order.walletAmountPaise > 0 && (
                   <div className="flex justify-between text-brand-sage font-semibold">
                     <span>Paid via Wallet</span>

@@ -23,7 +23,7 @@ export interface AddressData {
 
 export async function createOrderAction(
   address: AddressData,
-  paymentMethod: "ONLINE" = "ONLINE",
+  paymentMethod: "ONLINE" | "COD" = "ONLINE",
   walletAmountPaise = 0
 ) {
   try {
@@ -79,10 +79,10 @@ export async function createOrderAction(
     // Calculate Shipping (Free above ₹4000 or for test items)
     const isTestCart = cart.items.some((item) => item.sku?.includes("TEST") || item.slug?.includes("test") || item.pricePaise <= 500);
     const shippingPaise = (cart.subtotalPaise >= 400000 || isTestCart) ? 0 : 20000;
-    const codFeePaise = 0;
+    const codFeePaise = paymentMethod === "COD" ? 5000 : 0;
 
     // Total
-    const orderTotalPaise = Math.max(0, cart.subtotalPaise - discountPaise + shippingPaise);
+    const orderTotalPaise = Math.max(0, cart.subtotalPaise - discountPaise + shippingPaise + codFeePaise);
 
     // Validate and Debit Wallet Balance
     const orderId = `ord_${Math.random().toString(36).substring(2, 11)}`;
@@ -178,6 +178,8 @@ export async function createOrderAction(
         }
       }
 
+      const resolvedPaymentProvider = walletAmountPaise === orderTotalPaise ? "WALLET" : (paymentMethod === "COD" ? "COD" : "RAZORPAY");
+
       await db.insert(orders).values({
         id: orderId,
         orderNumber,
@@ -192,18 +194,20 @@ export async function createOrderAction(
         couponCodeSnapshot: couponCode,
         shippingAddressSnapshot: {
           ...address,
-          paymentMethod: "ONLINE",
+          paymentMethod,
+          codFeePaise,
           walletPaidPaise: walletAmountPaise,
           remainingCashTotalPaise,
         },
-        paymentProvider: walletAmountPaise === orderTotalPaise ? "WALLET" : "RAZORPAY",
+        paymentProvider: resolvedPaymentProvider,
         paymentId: null,
         walletAmountPaise,
         currency: "INR",
         couponId: validCouponId,
         billingAddressSnapshot: {
           ...address,
-          paymentMethod: "ONLINE",
+          paymentMethod,
+          codFeePaise,
           walletPaidPaise: walletAmountPaise,
           remainingCashTotalPaise,
         },

@@ -53,7 +53,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
 
-  const paymentMethod = "ONLINE";
+  const [paymentMethod, setPaymentMethod] = useState<"ONLINE" | "COD">("ONLINE");
   const [useWallet, setUseWallet] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -109,7 +109,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
   const subtotalPaise = cart.subtotalPaise;
   const isTestCart = cart.items.some((item) => item.sku?.includes("TEST") || item.slug?.includes("test") || item.pricePaise <= 500);
   const shippingPaise = (subtotalPaise >= 400000 || isTestCart) ? 0 : 20000;
-  const codFeePaise = 0;
+  const codFeePaise = paymentMethod === "COD" ? 5000 : 0;
   const totalPaise = subtotalPaise - discountPaise + shippingPaise + codFeePaise;
 
   const maxWalletDeductPaise = Math.min(wallet.availableBalancePaise, totalPaise);
@@ -469,7 +469,12 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
           <div className="grid grid-cols-1 gap-4 font-sans text-xs">
             {/* Online Payment */}
             <div
-              className="p-5 border border-[#7C7A5A] bg-[#7C7A5A]/5 shadow-xs rounded-xl select-none"
+              onClick={() => setPaymentMethod("ONLINE")}
+              className={`p-5 border rounded-xl select-none cursor-pointer transition-all ${
+                paymentMethod === "ONLINE"
+                  ? "border-[#7C7A5A] bg-[#7C7A5A]/5 shadow-xs"
+                  : "border-neutral-200 bg-white hover:border-neutral-300"
+              }`}
             >
               <div className="flex items-center justify-between">
                 <span className="font-semibold text-brand-black uppercase tracking-wider text-[10px] flex items-center gap-1.5">
@@ -478,13 +483,41 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                 <input
                   type="radio"
                   name="pm"
-                  checked={true}
-                  readOnly
+                  value="ONLINE"
+                  checked={paymentMethod === "ONLINE"}
+                  onChange={() => setPaymentMethod("ONLINE")}
                   className="accent-[#7C7A5A] cursor-pointer"
                 />
               </div>
               <p className="text-[10px] text-neutral-500 leading-relaxed uppercase tracking-wider mt-2">
                 100% Secure payment via Razorpay (UPI, GPay, PhonePe, Paytm, Cards & Netbanking). Instant order confirmation.
+              </p>
+            </div>
+
+            {/* Cash on Delivery (COD) */}
+            <div
+              onClick={() => setPaymentMethod("COD")}
+              className={`p-5 border rounded-xl select-none cursor-pointer transition-all ${
+                paymentMethod === "COD"
+                  ? "border-[#7C7A5A] bg-[#7C7A5A]/5 shadow-xs"
+                  : "border-neutral-200 bg-white hover:border-neutral-300"
+              }`}
+            >
+              <div className="flex items-center justify-between">
+                <span className="font-semibold text-brand-black uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                  <Truck className="w-4 h-4 text-[#7C7A5A]" /> Cash on Delivery (COD)
+                </span>
+                <input
+                  type="radio"
+                  name="pm"
+                  value="COD"
+                  checked={paymentMethod === "COD"}
+                  onChange={() => setPaymentMethod("COD")}
+                  className="accent-[#7C7A5A] cursor-pointer"
+                />
+              </div>
+              <p className="text-[10px] text-neutral-500 leading-relaxed uppercase tracking-wider mt-2">
+                Pay with cash upon delivery. Mandatory ₹50 COD handling charge applies.
               </p>
             </div>
           </div>

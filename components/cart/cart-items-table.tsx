@@ -115,9 +115,9 @@ export default function CartItemsTable({
     );
   }
 
-  // Calculate order totals (Free above ₹4000 or for ₹1 test items)
+  // Calculate order totals (Free above ₹4000 or for test items)
   const isTestCart = items.some((item) => item.sku?.includes("TEST") || item.slug?.includes("test") || item.pricePaise <= 500);
-  const shippingCostPaise = (subtotalPaise >= 400000 || isTestCart) ? 0 : 15000;
+  const shippingCostPaise = (subtotalPaise >= 400000 || isTestCart) ? 0 : 20000;
   const totalCostPaise = subtotalPaise - discountPaise + shippingCostPaise;
 
   return (

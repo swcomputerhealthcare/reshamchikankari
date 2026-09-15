@@ -86,6 +86,9 @@ export async function sendOrderConfirmationEmail(orderId: string) {
       subtotal: `₹${(order.subtotalPaise / 100).toLocaleString("en-IN")}`,
       discount: `₹${(order.discountPaise / 100).toLocaleString("en-IN")}`,
       shipping: order.shippingPaise === 0 ? "FREE" : `₹${(order.shippingPaise / 100).toLocaleString("en-IN")}`,
+      codFee: ((order.shippingAddressSnapshot as any)?.codFeePaise > 0 || (order.paymentProvider === "COD" && order.totalPaise > order.subtotalPaise - order.discountPaise + order.shippingPaise - order.walletAmountPaise))
+        ? `₹${(((order.shippingAddressSnapshot as any)?.codFeePaise || 5000) / 100).toLocaleString("en-IN")}`
+        : "₹0",
       walletPaid: `₹${(order.walletAmountPaise / 100).toLocaleString("en-IN")}`,
       total: `₹${(order.totalPaise / 100).toLocaleString("en-IN")}`,
       items: order.items.map((i) => ({

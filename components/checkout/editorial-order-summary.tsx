@@ -279,7 +279,7 @@ export default function EditorialOrderSummary({
                     handleApplyCoupon();
                   }
                 }}
-                placeholder="Enter coupon code (e.g. FESTIVE500)"
+                placeholder="Enter coupon code (e.g. WELCOME10)"
                 disabled={isPending}
                 className="flex-1 px-4 py-2.5 bg-white border border-[#ECE9E2] rounded-xl text-xs font-mono uppercase tracking-wider text-[#161616] focus:outline-none focus:ring-1 focus:ring-[#7C7A5A] disabled:opacity-50 placeholder:text-neutral-400 placeholder:normal-case placeholder:font-sans"
               />
@@ -301,11 +301,9 @@ export default function EditorialOrderSummary({
 
             {/* Quick Clickable Available Offers Badges */}
             <div className="pt-1 flex flex-wrap gap-1.5 items-center">
-              <span className="text-[9px] uppercase font-extrabold tracking-wider text-neutral-500 mr-0.5">Available Offers:</span>
+              <span className="text-[9px] uppercase font-extrabold tracking-wider text-neutral-500 mr-0.5">Available Offer:</span>
               {[
-                { code: "FESTIVE500", label: "₹500 OFF" },
                 { code: "WELCOME10", label: "10% OFF" },
-                { code: "RESHAM1000", label: "₹1000 OFF" },
               ].map((offer) => (
                 <button
                   key={offer.code}

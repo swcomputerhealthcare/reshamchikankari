@@ -27,22 +27,6 @@ export const MOCK_COUPONS: Coupon[] = [
     createdAt: new Date(),
     updatedAt: new Date(),
   },
-  {
-    id: "coup_002",
-    code: "FESTIVE500",
-    type: "FIXED",
-    value: 50000, // ₹500
-    minimumOrderPaise: 300000, // ₹3,000
-    maximumDiscountPaise: null,
-    expiresAt: null,
-    usageLimit: 50,
-    usageCount: 12,
-    perUserLimit: 1,
-    startsAt: null,
-    isActive: true,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  },
 ];
 
 import { isDatabaseConfigured } from "@/lib/utils";
@@ -52,7 +36,15 @@ const hasDatabase = () => {
 };
 
 export async function validateCouponCode(code: string, subtotalPaise: number): Promise<CouponValidationResult> {
-  const normalizedCode = code.trim().toUpperCase();
+  let normalizedCode = code.trim().toUpperCase();
+  if (normalizedCode === "WELCOME") {
+    normalizedCode = "WELCOME10";
+  }
+
+  // Restrict to WELCOME coupon only
+  if (normalizedCode !== "WELCOME10") {
+    return { success: false, error: "Invalid coupon code. Only WELCOME coupon is active." };
+  }
 
   let coupon: Coupon | undefined;
 
@@ -67,7 +59,7 @@ export async function validateCouponCode(code: string, subtotalPaise: number): P
 
   // Fallback to offline mock coupons
   if (!coupon) {
-    coupon = MOCK_COUPONS.find(c => c.code === normalizedCode);
+    coupon = MOCK_COUPONS.find(c => c.code === normalizedCode || c.code === "WELCOME10");
   }
 
   if (!coupon) {
@@ -124,7 +116,9 @@ export async function getAllCoupons(): Promise<Coupon[]> {
   if (!hasDatabase()) return MOCK_COUPONS;
 
   try {
-    return await db.select().from(coupons);
+    const all = await db.select().from(coupons);
+    const filtered = all.filter(c => c.code === "WELCOME10" || c.code === "WELCOME");
+    return filtered.length > 0 ? filtered : MOCK_COUPONS;
   } catch (err) {
     console.error("DB Query failed, falling back to mock coupons:", err);
     return MOCK_COUPONS;

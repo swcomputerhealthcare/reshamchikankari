@@ -7,6 +7,7 @@ export interface OrderConfirmationEmailData {
   subtotal: string;
   discount: string;
   shipping: string;
+  codFee?: string;
   walletPaid: string;
   total: string;
   items: Array<{
@@ -139,6 +140,16 @@ export function renderOrderConfirmationEmailHtml(data: OrderConfirmationEmailDat
                   <td>Shipping Fee</td>
                   <td style="text-align: right; color: #161616;">${data.shipping}</td>
                 </tr>
+                ${
+                  data.codFee && data.codFee !== "₹0"
+                    ? `
+                <tr>
+                  <td style="color: #854D0E; font-weight: 600;">COD Handling Charge</td>
+                  <td style="text-align: right; color: #854D0E; font-weight: 600;">${data.codFee}</td>
+                </tr>
+                `
+                    : ""
+                }
                 ${
                   data.walletPaid !== "₹0"
                     ? `
