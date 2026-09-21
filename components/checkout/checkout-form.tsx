@@ -107,8 +107,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
 
   // Price Calculations
   const subtotalPaise = cart.subtotalPaise;
-  const isTestCart = cart.items.some((item) => item.sku?.includes("TEST") || item.slug?.includes("test") || item.pricePaise <= 500);
-  const shippingPaise = (subtotalPaise >= 400000 || isTestCart) ? 0 : 20000;
+  const shippingPaise = 0;
   const codFeePaise = paymentMethod === "COD" ? 5000 : 0;
   const totalPaise = subtotalPaise - discountPaise + shippingPaise + codFeePaise;
 

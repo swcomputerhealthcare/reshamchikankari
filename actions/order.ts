@@ -76,9 +76,8 @@ export async function createOrderAction(
       }
     }
 
-    // Calculate Shipping (Free above ₹4000 or for test items)
-    const isTestCart = cart.items.some((item) => item.sku?.includes("TEST") || item.slug?.includes("test") || item.pricePaise <= 500);
-    const shippingPaise = (cart.subtotalPaise >= 400000 || isTestCart) ? 0 : 20000;
+    // Calculate Shipping (Free on all orders)
+    const shippingPaise = 0;
     const codFeePaise = paymentMethod === "COD" ? 5000 : 0;
 
     // Total
