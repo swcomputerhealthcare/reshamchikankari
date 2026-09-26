@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useTransition, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { useCart } from "@/context/cart-context";
 import Button from "@/components/ui/button";
 import WishlistButton from "@/components/product/wishlist-button";
@@ -87,8 +88,10 @@ export default function ProductActionPanel({
     return availableSizes.length === 1 ? availableSizes[0] : null;
   });
 
+  const router = useRouter();
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
+  const [isBuyingNow, setIsBuyingNow] = useState(false);
   const [isAdded, setIsAdded] = useState(false);
   const [validationError, setValidationError] = useState<string | null>(null);
   const [isSizeGuideOpen, setIsSizeGuideOpen] = useState(false);
@@ -201,6 +204,61 @@ export default function ProductActionPanel({
         setTimeout(() => setIsAdded(false), 2500);
       } else {
         setValidationError(res.error || "Failed to add item to bag");
+      }
+    });
+  };
+
+  const handleBuyNow = () => {
+    if (hasColors && !activeColor) {
+      setValidationError("Please select a colour");
+      return;
+    }
+
+    if (hasSizes && !selectedSize) {
+      setValidationError("Please select a size");
+      return;
+    }
+
+    if (!activeVariant) {
+      setValidationError("Please select available options");
+      return;
+    }
+
+    if (stock === 0) {
+      setValidationError("Selected item is out of stock");
+      return;
+    }
+
+    setValidationError(null);
+    setIsBuyingNow(true);
+
+    startTransition(async () => {
+      const mappedProduct = {
+        ...product,
+        variants: variants.map((v) => ({
+          id: v.id,
+          name: v.name,
+          stock: v.stock,
+          colorName: v.colorName,
+          colorCode: v.colorCode,
+          size: v.size,
+        })),
+      };
+
+      const res = await addItemOptimistic(mappedProduct, activeVariant.id, quantity);
+      if (res.success) {
+        event("InitiateCheckout", {
+          content_name: product.name,
+          content_ids: [activeVariant.id || product.id],
+          content_type: "product",
+          value: currentPrice * quantity,
+          currency: "INR",
+        });
+        // Direct seamless navigation to checkout without intermediate login redirect
+        router.push("/checkout");
+      } else {
+        setIsBuyingNow(false);
+        setValidationError(res.error || "Failed to proceed to checkout");
       }
     });
   };
@@ -388,21 +446,31 @@ export default function ProductActionPanel({
           </div>
         )}
 
-        <div className="flex gap-4 pt-2">
+        <div className="flex flex-col sm:flex-row gap-3 pt-2">
           <Button
-            variant="primary"
+            variant="outline"
             size="lg"
-            className="flex-1 py-4"
+            className="flex-1 py-4 uppercase font-bold tracking-widest text-xs border border-brand-black/25 hover:border-brand-black text-brand-black bg-white hover:bg-neutral-50 shadow-none cursor-pointer"
             onClick={handleAddToBag}
             isLoading={isAdding}
             disabled={activeVariant ? stock === 0 : false}
           >
             {isAdded ? "Added to Bag ✓" : stock === 0 && activeVariant ? "Sold Out" : "Add to Bag"}
           </Button>
+          <Button
+            variant="primary"
+            size="lg"
+            className="flex-1 py-4 uppercase font-bold tracking-widest text-xs bg-brand-black text-white hover:bg-neutral-800 shadow-xs cursor-pointer"
+            onClick={handleBuyNow}
+            isLoading={isBuyingNow}
+            disabled={activeVariant ? stock === 0 : false}
+          >
+            {stock === 0 && activeVariant ? "Sold Out" : "Buy Now"}
+          </Button>
           <WishlistButton
             productId={product.id}
             initialWishlisted={initialWishlisted}
-            className="!h-14 !w-14 !rounded-lg !border-brand-black/10 hover:!border-brand-black !bg-white hover:!bg-neutral-50 !shadow-none hover:scale-100 active:scale-100 flex items-center justify-center"
+            className="!h-14 !w-14 !rounded-lg !border-brand-black/10 hover:!border-brand-black !bg-white hover:!bg-neutral-50 !shadow-none hover:scale-100 active:scale-100 flex items-center justify-center shrink-0 self-center sm:self-auto"
           />
         </div>
       </div>

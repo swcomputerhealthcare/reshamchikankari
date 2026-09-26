@@ -28,6 +28,7 @@ export const envSchema = z.object({
   SHIPROCKET_EMAIL: z.string().optional(),
   SHIPROCKET_PASSWORD: z.string().optional(),
   SHIPROCKET_PICKUP_LOCATION: z.string().optional(),
+  SHIPROCKET_PICKUP_PINCODE: z.string().optional(),
   SHIPROCKET_WEBHOOK_SECRET: z.string().optional(),
 
   // Cloudflare
@@ -90,6 +91,9 @@ export const env = {
   },
   get SHIPROCKET_PICKUP_LOCATION() {
     return process.env.SHIPROCKET_PICKUP_LOCATION || "Home";
+  },
+  get SHIPROCKET_PICKUP_PINCODE() {
+    return process.env.SHIPROCKET_PICKUP_PINCODE || "110008";
   },
   get SHIPROCKET_WEBHOOK_SECRET() {
     return process.env.SHIPROCKET_WEBHOOK_SECRET || "";

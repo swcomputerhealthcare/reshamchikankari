@@ -7,7 +7,6 @@ export const orders = pgTable("orders", {
   id: text("id").primaryKey(),
   orderNumber: text("order_number").notNull().unique(),
   userId: uuid("user_id")
-    .notNull()
     .references(() => profiles.id, { onDelete: "restrict" }),
   status: text("status").notNull().default("PENDING"),
   paymentStatus: text("payment_status").notNull().default("PENDING"),

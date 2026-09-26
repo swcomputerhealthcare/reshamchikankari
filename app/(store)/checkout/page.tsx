@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import Container from "@/components/ui/container";
 import { getCartDetails } from "@/lib/cart";
 import { validateCouponCode } from "@/lib/coupon";
-import { requireUser } from "@/lib/auth/helpers";
+import { getCurrentUser } from "@/lib/auth/helpers";
 import CheckoutForm from "@/components/checkout/checkout-form";
 import CheckoutTracker from "@/components/analytics/CheckoutTracker";
 import { getOrCreateWallet } from "@/lib/wallet";
@@ -17,7 +17,7 @@ export const metadata = {
 };
 
 export default async function CheckoutPage() {
-  const user = await requireUser();
+  const user = await getCurrentUser();
   const cart = await getCartDetails();
 
   if (cart.items.length === 0) {
@@ -111,7 +111,7 @@ export default async function CheckoutPage() {
 
           <CheckoutForm
             cart={cart}
-            user={{ id: user.id, email: user.email, name: user.name }}
+            user={user ? { id: user.id, email: user.email, name: user.name } : null}
             wallet={{
               availableBalancePaise: wallet.availableBalancePaise,
               lockedBalancePaise: wallet.lockedBalancePaise,

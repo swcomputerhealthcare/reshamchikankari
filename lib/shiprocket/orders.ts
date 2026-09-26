@@ -33,7 +33,8 @@ export interface DBOrderForShipment {
 }
 
 export function buildShiprocketOrderPayload(
-  order: DBOrderForShipment
+  order: DBOrderForShipment,
+  pickupLocationOverride?: string
 ): CreateShiprocketOrderPayload {
   const addr = order.shippingAddressSnapshot || {};
 
@@ -109,10 +110,12 @@ export function buildShiprocketOrderPayload(
   const walletPaidRs = Math.round((addr.walletPaidPaise || 0) / 100);
   const totalDiscountRs = Math.round(order.discountPaise / 100) + (isCOD ? walletPaidRs : 0);
 
+  const effectivePickupLocation = pickupLocationOverride || process.env.SHIPROCKET_PICKUP_LOCATION || env.SHIPROCKET_PICKUP_LOCATION || "Home";
+
   return {
     order_id: order.orderNumber,
     order_date: formattedDate,
-    pickup_location: process.env.SHIPROCKET_PICKUP_LOCATION || env.SHIPROCKET_PICKUP_LOCATION || "Home",
+    pickup_location: effectivePickupLocation,
     billing_customer_name: firstName,
     billing_last_name: lastName,
     billing_address: cleanAddress,
@@ -147,8 +150,11 @@ export function buildShiprocketOrderPayload(
   };
 }
 
-export async function createShiprocketOrder(order: DBOrderForShipment) {
-  const payload = buildShiprocketOrderPayload(order);
+export async function createShiprocketOrder(
+  order: DBOrderForShipment,
+  pickupLocationOverride?: string
+) {
+  const payload = buildShiprocketOrderPayload(order, pickupLocationOverride);
 
   const res = await shiprocketFetch<CreateShiprocketOrderResponse>(
     "/orders/create/adhoc",

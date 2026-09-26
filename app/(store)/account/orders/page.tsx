@@ -22,13 +22,13 @@ export default async function CustomerOrdersPage() {
 
   if (isDbAvailable) {
     try {
-      const userEmailLower = (user.email || "").toLowerCase();
+      // First, claim any unlinked guest orders belonging to this verified identity
+      const { claimGuestOrdersForUser } = await import("@/lib/orders/claim");
+      await claimGuestOrdersForUser(user.id, user.email);
+
+      // Strictly query only orders where userId matches the authenticated user's ID
       userOrders = await db.query.orders.findMany({
-        where: or(
-          eq(orders.userId, user.id),
-          sql`LOWER(shipping_address_snapshot->>'email') = ${userEmailLower}`,
-          sql`LOWER(billing_address_snapshot->>'email') = ${userEmailLower}`
-        ),
+        where: eq(orders.userId, user.id),
         orderBy: [desc(orders.createdAt)],
         with: {
           items: true,

@@ -66,39 +66,34 @@ export default async function CustomerOrderDetailPage(props: OrderDetailsPagePro
           console.warn("Auto AWB sync notice on order details page:", syncErr);
         }
       }
+      // If not found yet, check if this is an unlinked guest order belonging to the user
+      if (!order && user.email) {
+        try {
+          const { claimGuestOrdersForUser } = await import("@/lib/orders/claim");
+          await claimGuestOrdersForUser(user.id, user.email);
+
+          order = await db.query.orders.findFirst({
+            where: and(eq(orders.id, orderId), eq(orders.userId, user.id)),
+            with: { items: true, timeline: true },
+          });
+
+          if (!order) {
+            order = await db.query.orders.findFirst({
+              where: and(eq(orders.orderNumber, orderId), eq(orders.userId, user.id)),
+              with: { items: true, timeline: true },
+            });
+          }
+        } catch (claimErr) {
+          console.warn("Could not check unlinked guest order:", claimErr);
+        }
+      }
     } catch (e) {
       console.error("Failed to query order details:", e);
     }
   }
 
   if (!order) {
-    // If not found in DB or offline, build fallback order representation
-    order = {
-      id: orderId,
-      orderNumber: orderId,
-      status: "CONFIRMED",
-      paymentStatus: "PAID",
-      paymentProvider: "RAZORPAY",
-      paymentId: null,
-      subtotalPaise: 100,
-      discountPaise: 0,
-      shippingPaise: 0,
-      totalPaise: 100,
-      createdAt: new Date(),
-      shippingAddressSnapshot: {
-        fullName: user.name || "Valued Customer",
-        email: user.email,
-        street: "Standard Delivery Address",
-        city: "Lucknow",
-        state: "Uttar Pradesh",
-        zip: "226001",
-        phone: "9876543210",
-      },
-      items: [],
-      timeline: [
-        { id: "1", status: "CONFIRMED", message: "Order placed successfully", createdAt: new Date() }
-      ],
-    };
+    notFound();
   }
 
   const shippingAddr = order.shippingAddressSnapshot as any;

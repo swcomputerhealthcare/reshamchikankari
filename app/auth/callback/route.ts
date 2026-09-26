@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
     },
   });
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
+  const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code);
 
   if (error) {
     console.error("OAuth callback exchange failed:", error.message, error);
@@ -105,6 +105,16 @@ export async function GET(request: NextRequest) {
         origin
       )
     );
+  }
+
+  // Claim any historical guest orders belonging to this verified Google identity
+  if (sessionData?.user?.id && sessionData?.user?.email) {
+    try {
+      const { claimGuestOrdersForUser } = await import("@/lib/orders/claim");
+      await claimGuestOrdersForUser(sessionData.user.id, sessionData.user.email);
+    } catch (claimErr) {
+      console.warn("Could not claim historical guest orders during Google OAuth callback:", claimErr);
+    }
   }
 
   return response;

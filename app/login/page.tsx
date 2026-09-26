@@ -5,15 +5,23 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { sendOtpAction, verifyOtpAction } from "@/actions/auth";
 import Button from "@/components/ui/button";
 
 function LoginForm() {
-  const [activeTab, setActiveTab] = useState<"signin" | "signup">("signin");
+  const [activeTab, setActiveTab] = useState<"otp" | "signin" | "signup">("otp");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [createdMessage, setCreatedMessage] = useState("");
+
+  // Passwordless OTP States
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [resolvedEmail, setResolvedEmail] = useState("");
+  const [otpCountdown, setOtpCountdown] = useState(0);
+  const [isOtpLoading, setIsOtpLoading] = useState(false);
   
   // Google button states: "idle" | "loading" | "redirecting" | "error"
   const [googleState, setGoogleState] = useState<"idle" | "loading" | "redirecting" | "error">("idle");
@@ -33,6 +41,70 @@ function LoginForm() {
     }
   }, [urlError]);
 
+  useEffect(() => {
+    if (otpCountdown <= 0) return;
+    const interval = setInterval(() => {
+      setOtpCountdown((c) => (c > 0 ? c - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [otpCountdown]);
+
+  const handleSendOtp = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    setError("");
+    setCreatedMessage("");
+    setIsOtpLoading(true);
+
+    try {
+      const res = await sendOtpAction(email);
+      if (res.success) {
+        setOtpSent(true);
+        setOtpCountdown(30);
+        setResolvedEmail(res.targetEmail || email);
+        setCreatedMessage(res.message || `A 6-digit code has been dispatched. Check your inbox.`);
+      } else {
+        setError(res.error || "Failed to dispatch verification code.");
+      }
+    } catch (err: any) {
+      setError(err?.message || "An unexpected error occurred while sending code.");
+    } finally {
+      setIsOtpLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setCreatedMessage("");
+    setIsOtpLoading(true);
+
+    try {
+      const emailToVerify = resolvedEmail || email;
+      const res = await verifyOtpAction(emailToVerify, otpCode);
+      if (res.success && res.user) {
+        if (res.session?.access_token && res.session?.refresh_token) {
+          try {
+            const supabase = createClient();
+            await supabase.auth.setSession({
+              access_token: res.session.access_token,
+              refresh_token: res.session.refresh_token,
+            });
+          } catch (syncErr) {
+            console.warn("Client Supabase sync error:", syncErr);
+          }
+        }
+        setCreatedMessage("Verified successfully! Redirecting...");
+        window.location.href = callbackURL;
+      } else {
+        setError(res.error || "Invalid or expired verification code.");
+      }
+    } catch (err: any) {
+      setError(err?.message || "An unexpected error occurred during OTP verification.");
+    } finally {
+      setIsOtpLoading(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -50,7 +122,7 @@ function LoginForm() {
 
         if (authError) {
           if (authError.message?.toLowerCase().includes("invalid login credentials")) {
-            setError("Invalid email or password. If you forgot your password or need a new account, switch to Create Account or click Forgot Password.");
+            setError("Invalid email or password. If you forgot your password or checked out without a password, please use the OTP Login tab.");
           } else {
             setError(authError.message || "Invalid email or password.");
           }
@@ -63,7 +135,7 @@ function LoginForm() {
       } finally {
         setIsLoading(false);
       }
-    } else {
+    } else if (activeTab === "signup") {
       // Create Account mode
       if (password.length < 6) {
         setError("Password must be at least 6 characters.");
@@ -88,8 +160,8 @@ function LoginForm() {
             signUpError.message?.toLowerCase().includes("user already registered") ||
             signUpError.message?.toLowerCase().includes("already exists")
           ) {
-            setError("An account with this email already exists. Please switch to Sign In and enter your password.");
-            setActiveTab("signin");
+            setError("An account with this email already exists. You can sign in directly with OTP Code or your password.");
+            setActiveTab("otp");
           } else {
             setError(signUpError.message || "Failed to create account. Please try again.");
           }
@@ -121,7 +193,7 @@ function LoginForm() {
   };
 
   const handleGoogleLogin = async () => {
-    if (isConnectingOAuthRef.current || googleState !== "idle" || isLoading) return;
+    if (isConnectingOAuthRef.current || googleState !== "idle" || isLoading || isOtpLoading) return;
     isConnectingOAuthRef.current = true;
     setError("");
     setGoogleState("loading");
@@ -167,17 +239,38 @@ function LoginForm() {
           Atelier Entrance
         </span>
         <h1 className="font-display text-4xl text-brand-black mb-2 font-light">
-          {activeTab === "signin" ? "Welcome Back" : "Create Account"}
+          {activeTab === "otp"
+            ? "Welcome"
+            : activeTab === "signin"
+            ? "Welcome Back"
+            : "Create Account"}
         </h1>
         <p className="font-sans text-xs text-neutral-500 tracking-wide">
-          {activeTab === "signin"
+          {activeTab === "otp"
+            ? "Sign in with a one-time OTP code sent to your email"
+            : activeTab === "signin"
             ? "Sign in to your Resham Chikankari account"
             : "Register for faster checkout & order tracking"}
         </p>
       </div>
 
       {/* Tab Switcher */}
-      <div className="grid grid-cols-2 gap-1 p-1 bg-brand-black/5 mb-6 text-center font-sans text-xs uppercase tracking-wider font-semibold">
+      <div className="grid grid-cols-3 gap-1 p-1 bg-brand-black/5 mb-6 text-center font-sans text-[11px] uppercase tracking-wider font-semibold">
+        <button
+          type="button"
+          onClick={() => {
+            setActiveTab("otp");
+            setError("");
+            setCreatedMessage("");
+          }}
+          className={`py-2.5 transition-colors cursor-pointer ${
+            activeTab === "otp"
+              ? "bg-[#FFF9F4] text-brand-black shadow-xs font-bold"
+              : "text-neutral-500 hover:text-brand-black"
+          }`}
+        >
+          OTP Code
+        </button>
         <button
           type="button"
           onClick={() => {
@@ -187,11 +280,11 @@ function LoginForm() {
           }}
           className={`py-2.5 transition-colors cursor-pointer ${
             activeTab === "signin"
-              ? "bg-[#FFF9F4] text-brand-black shadow-xs"
+              ? "bg-[#FFF9F4] text-brand-black shadow-xs font-bold"
               : "text-neutral-500 hover:text-brand-black"
           }`}
         >
-          Sign In
+          Password
         </button>
         <button
           type="button"
@@ -202,11 +295,11 @@ function LoginForm() {
           }}
           className={`py-2.5 transition-colors cursor-pointer ${
             activeTab === "signup"
-              ? "bg-[#FFF9F4] text-brand-black shadow-xs"
+              ? "bg-[#FFF9F4] text-brand-black shadow-xs font-bold"
               : "text-neutral-500 hover:text-brand-black"
           }`}
         >
-          Create Account
+          Register
         </button>
       </div>
 
@@ -228,60 +321,156 @@ function LoginForm() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="space-y-2">
-          <label htmlFor="email" className="block font-sans text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
-            Email Address
-          </label>
-          <input
-            id="email"
-            type="email"
-            inputMode="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            disabled={isLoading || googleState !== "idle"}
-            className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
-            placeholder="name@example.com"
-          />
-        </div>
+      {/* OTP Passwordless Form */}
+      {activeTab === "otp" && (
+        <>
+          {!otpSent ? (
+            <form onSubmit={handleSendOtp} className="space-y-5">
+              <div className="space-y-2">
+                <label htmlFor="otp-email" className="block font-sans text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
+                  Email Address or Mobile Number
+                </label>
+                <input
+                  id="otp-email"
+                  type="text"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  disabled={isOtpLoading || googleState !== "idle"}
+                  className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
+                  placeholder="name@example.com or 10-digit mobile"
+                />
+              </div>
 
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <label htmlFor="password" className="block font-sans text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
-              Password
-            </label>
-            {activeTab === "signin" && (
-              <Link
-                href="/forgot-password"
-                className="font-sans text-[10px] text-neutral-500 hover:text-brand-black transition-colors tracking-wide underline"
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={isOtpLoading || googleState !== "idle" || (!email.includes("@") && email.replace(/\D/g, "").length < 10)}
+                className="w-full py-3.5 !bg-brand-black hover:!bg-neutral-800 text-brand-offwhite text-xs uppercase tracking-widest font-bold font-sans !rounded-none transition-colors"
+                isLoading={isOtpLoading}
               >
-                Forgot Password?
-              </Link>
-            )}
-          </div>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            disabled={isLoading || googleState !== "idle"}
-            className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
-            placeholder="••••••••"
-          />
-        </div>
+                Send Verification Code
+              </Button>
+            </form>
+          ) : (
+            <form onSubmit={handleVerifyOtp} className="space-y-5">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <label htmlFor="otp-code" className="block font-sans text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
+                    6-Digit Code sent to {resolvedEmail || email}
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOtpSent(false);
+                      setOtpCode("");
+                      setResolvedEmail("");
+                    }}
+                    className="text-[10px] text-neutral-500 hover:text-brand-black underline cursor-pointer"
+                  >
+                    Change
+                  </button>
+                </div>
+                <input
+                  id="otp-code"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={(e) => {
+                    const val = e.target.value.replace(/\D/g, "").slice(0, 6);
+                    setOtpCode(val);
+                  }}
+                  required
+                  disabled={isOtpLoading || googleState !== "idle"}
+                  className="w-full px-4 py-3 bg-[#FFF9F4] border border-[#7C7A5A]/50 focus:border-[#7C7A5A] focus:outline-none text-xl font-mono text-center tracking-[0.3em] text-brand-black transition-colors rounded-none"
+                  placeholder="• • • • • •"
+                />
+              </div>
 
-        <Button
-          variant="primary"
-          type="submit"
-          disabled={isLoading || googleState !== "idle"}
-          className="w-full py-3.5 !bg-brand-black hover:!bg-neutral-800 text-brand-offwhite text-xs uppercase tracking-widest font-bold font-sans !rounded-none transition-colors"
-          isLoading={isLoading}
-        >
-          {activeTab === "signin" ? "Sign In" : "Register Account"}
-        </Button>
-      </form>
+              <Button
+                variant="primary"
+                type="submit"
+                disabled={isOtpLoading || googleState !== "idle" || otpCode.length < 6}
+                className="w-full py-3.5 !bg-brand-black hover:!bg-neutral-800 text-brand-offwhite text-xs uppercase tracking-widest font-bold font-sans !rounded-none transition-colors"
+                isLoading={isOtpLoading}
+              >
+                Verify &amp; Sign In
+              </Button>
+
+              <div className="text-center pt-1">
+                <button
+                  type="button"
+                  disabled={otpCountdown > 0 || isOtpLoading}
+                  onClick={() => handleSendOtp()}
+                  className="text-[11px] text-neutral-500 hover:text-brand-black disabled:text-neutral-400 font-sans tracking-wide cursor-pointer transition-colors"
+                >
+                  {otpCountdown > 0 ? `Resend code in ${otpCountdown}s` : "Resend verification code"}
+                </button>
+              </div>
+            </form>
+          )}
+        </>
+      )}
+
+      {/* Traditional Password / Signup Form */}
+      {activeTab !== "otp" && (
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-2">
+            <label htmlFor="email" className="block font-sans text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
+              Email Address
+            </label>
+            <input
+              id="email"
+              type="email"
+              inputMode="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              disabled={isLoading || googleState !== "idle"}
+              className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
+              placeholder="name@example.com"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label htmlFor="password" className="block font-sans text-[10px] uppercase tracking-widest text-neutral-600 font-medium">
+                Password
+              </label>
+              {activeTab === "signin" && (
+                <Link
+                  href="/forgot-password"
+                  className="font-sans text-[10px] text-neutral-500 hover:text-brand-black transition-colors tracking-wide underline"
+                >
+                  Forgot Password?
+                </Link>
+              )}
+            </div>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              disabled={isLoading || googleState !== "idle"}
+              className="w-full px-4 py-3 bg-[#FFF9F4] border border-brand-black/10 focus:border-[#7C7A5A] focus:outline-none text-base font-sans text-brand-black transition-colors rounded-none"
+              placeholder="••••••••"
+            />
+          </div>
+
+          <Button
+            variant="primary"
+            type="submit"
+            disabled={isLoading || googleState !== "idle"}
+            className="w-full py-3.5 !bg-brand-black hover:!bg-neutral-800 text-brand-offwhite text-xs uppercase tracking-widest font-bold font-sans !rounded-none transition-colors"
+            isLoading={isLoading}
+          >
+            {activeTab === "signin" ? "Sign In" : "Register Account"}
+          </Button>
+        </form>
+      )}
 
       <div className="relative my-8 text-center">
         <div className="absolute inset-0 flex items-center">

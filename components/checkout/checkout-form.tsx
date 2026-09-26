@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Script from "next/script";
 import { createOrderAction, verifyRazorpayPaymentAction, checkOrderPaymentStatusAction, type AddressData } from "@/actions/order";
 import { type CartDetails } from "@/lib/cart";
-import { ShieldCheck, Lock, AlertCircle, Check, CreditCard, Truck, Wallet, Gift, Sparkles } from "lucide-react";
+import { ShieldCheck, Lock, AlertCircle, Check, CreditCard, Truck, Wallet, Gift, Sparkles, User, ArrowRight } from "lucide-react";
 
 import EditorialOrderSummary from "@/components/checkout/editorial-order-summary";
 import FreeGiftPopup from "@/components/checkout/FreeGiftPopup";
@@ -18,7 +18,7 @@ interface CheckoutFormProps {
     id: string;
     email: string;
     name?: string | null;
-  };
+  } | null;
   wallet: {
     availableBalancePaise: number;
     lockedBalancePaise: number;
@@ -49,6 +49,8 @@ const loadRazorpaySDK = (): Promise<boolean> => {
   });
 };
 
+const DRAFT_STORAGE_KEY = "rc_guest_checkout_draft";
+
 export default function CheckoutForm({ cart, user, wallet, discountPaise, appliedCouponCode }: CheckoutFormProps) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -58,8 +60,8 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState({
-    fullName: user.name || "",
-    email: user.email || "",
+    fullName: user?.name || "",
+    email: user?.email || "",
     street: "",
     city: "",
     state: "",
@@ -70,10 +72,51 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isPincodeLoading, setIsPincodeLoading] = useState(false);
 
+  // Restore guest form data from sessionStorage on mount (preserves data through page refresh/redirects)
+  useEffect(() => {
+    try {
+      const saved = sessionStorage.getItem(DRAFT_STORAGE_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === "object") {
+          setForm((prev) => ({
+            ...prev,
+            fullName: user?.name || parsed.fullName || prev.fullName,
+            email: user?.email || parsed.email || prev.email,
+            phone: parsed.phone || prev.phone,
+            street: parsed.street || prev.street,
+            city: parsed.city || prev.city,
+            state: parsed.state || prev.state,
+            zip: parsed.zip || prev.zip,
+          }));
+          if (parsed.paymentMethod === "ONLINE" || parsed.paymentMethod === "COD") {
+            setPaymentMethod(parsed.paymentMethod);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Could not restore checkout draft from sessionStorage:", e);
+    }
+  }, [user]);
+
+  // Safely persist form state in sessionStorage as user types
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(
+        DRAFT_STORAGE_KEY,
+        JSON.stringify({
+          ...form,
+          paymentMethod,
+        })
+      );
+    } catch {}
+  }, [form, paymentMethod]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    if (errors[e.target.name]) {
-      setErrors((prev) => ({ ...prev, [e.target.name]: "" }));
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
   };
 
@@ -98,7 +141,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
           }));
         }
       } catch {
-        // Ignore PIN API failure
+        // Ignore PIN API failure gracefully
       } finally {
         setIsPincodeLoading(false);
       }
@@ -107,18 +150,18 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
 
   // Price Calculations
   const subtotalPaise = cart.subtotalPaise;
-  const shippingPaise = 0;
-  const codFeePaise = paymentMethod === "COD" ? 5000 : 0;
+  const shippingPaise = 0; // Free Shipping storewide
+  const codFeePaise = paymentMethod === "COD" ? 5000 : 0; // ₹50 COD handling charge only when COD is chosen
   const totalPaise = subtotalPaise - discountPaise + shippingPaise + codFeePaise;
 
-  const maxWalletDeductPaise = Math.min(wallet.availableBalancePaise, totalPaise);
-  const appliedWalletPaise = useWallet ? maxWalletDeductPaise : 0;
+  const maxWalletDeductPaise = user?.id ? Math.min(wallet.availableBalancePaise, totalPaise) : 0;
+  const appliedWalletPaise = useWallet && user?.id ? maxWalletDeductPaise : 0;
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!form.fullName.trim()) newErrors.fullName = "Full name is required";
-    
+
     // Email Validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!form.email.trim() || !emailRegex.test(form.email.trim())) {
@@ -157,6 +200,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
       return;
     }
 
+    // TRUE GUEST CHECKOUT: Directly process order without any login or OTP wall!
     startTransition(async () => {
       try {
         const address: AddressData = {
@@ -175,6 +219,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
           return;
         }
 
+        // Online payment with Razorpay
         if (result.requiresPayment && result.razorpayOrderId) {
           const isLoaded = await loadRazorpaySDK();
           if (!isLoaded || typeof window === "undefined" || !(window as any).Razorpay) {
@@ -209,6 +254,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                     response.razorpay_signature
                   );
                   if (verifyRes.success && verifyRes.orderNumber) {
+                    try { sessionStorage.removeItem(DRAFT_STORAGE_KEY); } catch {}
                     router.push(`/checkout/success?orderNumber=${encodeURIComponent(verifyRes.orderNumber)}&pm=ONLINE&name=${encodeURIComponent(form.fullName.trim())}&total=${totalPaise}`);
                   } else {
                     setError(verifyRes.error || "Payment verification failed. Please contact support.");
@@ -236,15 +282,15 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
             modal: {
               ondismiss: async function () {
                 cleanupPoller();
-                // Check if payment completed via webhook or QR scan before showing cancellation
                 try {
                   const statusCheck = await checkOrderPaymentStatusAction(result.orderId!);
                   if (statusCheck.isPaid && statusCheck.orderNumber) {
+                    try { sessionStorage.removeItem(DRAFT_STORAGE_KEY); } catch {}
                     router.push(`/checkout/success?orderNumber=${encodeURIComponent(statusCheck.orderNumber)}&pm=ONLINE&name=${encodeURIComponent(form.fullName.trim())}&total=${totalPaise}`);
                     return;
                   }
-                } catch { }
-                setError("Payment window closed. If you already completed payment in your UPI app, please refresh or check My Orders.");
+                } catch {}
+                setError("Payment window closed. If you already completed payment in your UPI app, please refresh or check your email.");
               },
             },
           };
@@ -256,19 +302,22 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
           });
           rzp.open();
 
-          // Real-time status poller: poll every 2.5s for instant redirect as soon as QR is scanned and paid
+          // Real-time status poller: redirect as soon as QR is scanned and paid
           pollInterval = setInterval(async () => {
             try {
               const statusCheck = await checkOrderPaymentStatusAction(result.orderId!);
               if (statusCheck.isPaid && statusCheck.orderNumber) {
                 cleanupPoller();
                 try { rzp.close(); } catch {}
+                try { sessionStorage.removeItem(DRAFT_STORAGE_KEY); } catch {}
                 router.push(`/checkout/success?orderNumber=${encodeURIComponent(statusCheck.orderNumber)}&pm=ONLINE&name=${encodeURIComponent(form.fullName.trim())}&total=${totalPaise}`);
               }
-            } catch { }
+            } catch {}
           }, 2500);
 
         } else if (result.orderNumber) {
+          // COD or 100% wallet paid order placed successfully!
+          try { sessionStorage.removeItem(DRAFT_STORAGE_KEY); } catch {}
           router.push(`/checkout/success?orderNumber=${encodeURIComponent(result.orderNumber)}&pm=${encodeURIComponent(paymentMethod)}&name=${encodeURIComponent(form.fullName.trim())}&total=${totalPaise}`);
         }
       } catch (submitErr: any) {
@@ -293,9 +342,40 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
               Shipping Information
             </h2>
             <span className="text-[10px] font-sans font-bold uppercase tracking-widest text-[#7C7A5A] flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5" /> Verified Delivery
+              <ShieldCheck className="w-3.5 h-3.5" /> Secure Checkout
             </span>
           </div>
+
+          {/* Optional Sign-in Banner (Exposes login as optional, never mandatory) */}
+          {user?.id ? (
+            <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/80 rounded-xl flex items-center justify-between text-xs font-sans">
+              <div className="flex items-center gap-2 text-emerald-900">
+                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>
+                  Signed in as <strong className="font-bold">{user.name || user.email}</strong>
+                </span>
+              </div>
+              <span className="text-[9.5px] uppercase font-bold tracking-wider text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-full">
+                ✓ Patron Account
+              </span>
+            </div>
+          ) : (
+            <div className="p-3.5 bg-neutral-100/70 border border-neutral-200/80 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs font-sans">
+              <span className="text-neutral-600">
+                Already have an account?{" "}
+                <Link
+                  href="/login?callbackURL=/checkout"
+                  className="font-bold text-brand-black underline hover:text-[#7C7A5A] transition-colors"
+                >
+                  Sign in
+                </Link>{" "}
+                <span className="text-neutral-500">(Optional — you can continue as guest below)</span>
+              </span>
+              <span className="text-[9.5px] uppercase font-bold tracking-wider text-neutral-400 bg-white border border-neutral-200 px-2.5 py-0.5 rounded-full shrink-0">
+                Guest Checkout Active
+              </span>
+            </div>
+          )}
 
           {error && (
             <div className="p-4 bg-[#E694AA]/10 border border-[#E694AA]/30 text-[#161616] text-xs font-sans rounded-xl flex items-start gap-2.5">
@@ -328,7 +408,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
             {/* Email Address */}
             <div className="space-y-1.5">
               <label htmlFor="email" className="uppercase tracking-widest text-[10px] font-extrabold text-neutral-800 block">
-                Email Address *
+                Email Address (for Order Updates &amp; Receipt) *
               </label>
               <input
                 id="email"
@@ -489,7 +569,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                 />
               </div>
               <p className="text-[10px] text-neutral-500 leading-relaxed uppercase tracking-wider mt-2">
-                100% Secure payment via Razorpay (UPI, GPay, PhonePe, Paytm, Cards & Netbanking). Instant order confirmation.
+                100% Secure payment via Razorpay (UPI, GPay, PhonePe, Paytm, Cards &amp; Netbanking). No extra handling charge.
               </p>
             </div>
 
@@ -516,7 +596,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                 />
               </div>
               <p className="text-[10px] text-neutral-500 leading-relaxed uppercase tracking-wider mt-2">
-                Pay with cash upon delivery. Mandatory ₹50 COD handling charge applies.
+                Pay with cash upon delivery. COD Handling Charge: ₹50.
               </p>
             </div>
           </div>
@@ -588,8 +668,8 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
           </div>
         </div>
 
-        {/* Wallet Balance Option */}
-        {wallet.availableBalancePaise > 0 && (
+        {/* Wallet Balance Option (Only for logged in users with balance) */}
+        {user?.id && wallet.availableBalancePaise > 0 && (
           <div className="bg-[#F8F2EC] border border-[#ECE9E2] p-5 rounded-2xl shadow-xs space-y-3 font-sans text-xs">
             <div className="flex items-center justify-between">
               <span className="font-semibold text-brand-black uppercase tracking-wider text-[10px] flex items-center gap-1.5">

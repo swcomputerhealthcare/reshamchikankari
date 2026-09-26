@@ -36,10 +36,14 @@ export async function createOrderAction(
     
     // Safely resolve valid UUID for database foreign key constraints
     const isUuidStr = (id: string) => typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-    const userId = (user && isUuidStr(user.id)) ? user.id : "00000000-0000-4000-a000-000000000000";
-    const userEmail = address.email || user?.email || "guest@user.com";
-    const userName = address.fullName || user?.name || "Guest Customer";
-    const userRole = user?.role || "CUSTOMER";
+    
+    // Support genuine guest checkout: If caller is authenticated, use real user ID.
+    // If guest, userId is null (no fake user accounts created).
+    const isAuthenticated = Boolean(user && isUuidStr(user.id) && user.id !== "00000000-0000-4000-a000-000000000000");
+    const userId: string | null = isAuthenticated ? user!.id : null;
+    const userEmail = (isAuthenticated && user?.email) ? user.email : address.email;
+    const userName = address.fullName || (isAuthenticated ? user?.name : "") || "Guest Patron";
+    const userRole = (isAuthenticated && user?.role) ? user.role : "CUSTOMER";
 
     const cart = await getCartDetails();
     if (!cart.items || cart.items.length === 0) {
@@ -83,12 +87,14 @@ export async function createOrderAction(
     // Total
     const orderTotalPaise = Math.max(0, cart.subtotalPaise - discountPaise + shippingPaise + codFeePaise);
 
-    // Validate and Debit Wallet Balance
+    // Validate and Debit Wallet Balance (ONLY available for authenticated users)
     const orderId = `ord_${Math.random().toString(36).substring(2, 11)}`;
     const orderNumber = `RES-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`;
-    const wallet = await getOrCreateWallet(userId);
+    let wallet: any = null;
+    let appliedWalletAmountPaise = 0;
 
-    if (walletAmountPaise > 0) {
+    if (isAuthenticated && userId && walletAmountPaise > 0) {
+      wallet = await getOrCreateWallet(userId);
       if (walletAmountPaise > wallet.availableBalancePaise) {
         return { success: false, error: "Requested wallet balance is no longer available." };
       }
@@ -98,12 +104,13 @@ export async function createOrderAction(
 
       try {
         await debitWalletForOrder(wallet.id, walletAmountPaise, orderId);
+        appliedWalletAmountPaise = walletAmountPaise;
       } catch (e: any) {
         return { success: false, error: e.message || "Failed to deduct wallet balance." };
       }
     }
 
-    const remainingCashTotalPaise = Math.max(0, orderTotalPaise - walletAmountPaise);
+    const remainingCashTotalPaise = Math.max(0, orderTotalPaise - appliedWalletAmountPaise);
 
     // Resolve final order payment status
     let paymentStatus = remainingCashTotalPaise === 0 ? "PAID" : "PENDING";
@@ -122,16 +129,16 @@ export async function createOrderAction(
           receipt: orderId,
           notes: {
             orderNumber,
-            userId,
+            userId: userId || "GUEST",
             userEmail,
           },
         });
         razorpayOrderId = rzpOrder.id;
       } catch (err: any) {
         console.error("Failed to create Razorpay order:", err);
-        if (walletAmountPaise > 0) {
+        if (appliedWalletAmountPaise > 0 && wallet) {
           try {
-            await creditWallet(wallet.id, walletAmountPaise, "REVERSAL_CREDIT", orderId, `Refund due to Razorpay order initialization failure ${orderId}`, "order");
+            await creditWallet(wallet.id, appliedWalletAmountPaise, "REVERSAL_CREDIT", orderId, `Refund due to Razorpay order initialization failure ${orderId}`, "order");
           } catch (revertErr) {
             console.error("Critical: failed to revert wallet debit:", revertErr);
           }
@@ -145,23 +152,25 @@ export async function createOrderAction(
       const { payments } = await import("@/db/schema/payment");
       const { profiles } = await import("@/db/schema/auth");
 
-      // Safely upsert profile row to satisfy foreign key orders_user_id_profiles_id_fk
-      try {
-        await db.insert(profiles).values({
-          id: userId,
-          fullName: userName,
-          email: userEmail,
-          role: userRole,
-        }).onConflictDoUpdate({
-          target: profiles.id,
-          set: {
+      // Safely upsert profile row ONLY if this is an authenticated user
+      if (userId) {
+        try {
+          await db.insert(profiles).values({
+            id: userId,
             fullName: userName,
             email: userEmail,
-            updatedAt: new Date(),
-          },
-        });
-      } catch (profileErr) {
-        console.warn("Profile auto-upsert warning for order placement:", profileErr);
+            role: userRole,
+          }).onConflictDoUpdate({
+            target: profiles.id,
+            set: {
+              fullName: userName,
+              email: userEmail,
+              updatedAt: new Date(),
+            },
+          });
+        } catch (profileErr) {
+          console.warn("Profile auto-upsert warning for order placement:", profileErr);
+        }
       }
 
       // Safely check if couponId exists in DB before linking FK
@@ -177,12 +186,12 @@ export async function createOrderAction(
         }
       }
 
-      const resolvedPaymentProvider = walletAmountPaise === orderTotalPaise ? "WALLET" : (paymentMethod === "COD" ? "COD" : "RAZORPAY");
+      const resolvedPaymentProvider = (appliedWalletAmountPaise === orderTotalPaise && orderTotalPaise > 0) ? "WALLET" : (paymentMethod === "COD" ? "COD" : "RAZORPAY");
 
       await db.insert(orders).values({
         id: orderId,
         orderNumber,
-        userId,
+        userId: userId || null,
         status: "PENDING",
         paymentStatus,
         subtotalPaise: cart.subtotalPaise,
@@ -195,19 +204,19 @@ export async function createOrderAction(
           ...address,
           paymentMethod,
           codFeePaise,
-          walletPaidPaise: walletAmountPaise,
+          walletPaidPaise: appliedWalletAmountPaise,
           remainingCashTotalPaise,
         },
         paymentProvider: resolvedPaymentProvider,
         paymentId: null,
-        walletAmountPaise,
+        walletAmountPaise: appliedWalletAmountPaise,
         currency: "INR",
         couponId: validCouponId,
         billingAddressSnapshot: {
           ...address,
           paymentMethod,
           codFeePaise,
-          walletPaidPaise: walletAmountPaise,
+          walletPaidPaise: appliedWalletAmountPaise,
           remainingCashTotalPaise,
         },
       });
@@ -340,6 +349,14 @@ export async function createOrderAction(
       await triggerOrderFulfillment(orderId);
     } catch (shiprocketErr) {
       console.error(`Non-blocking Shiprocket trigger error for order ${orderId}:`, shiprocketErr);
+    }
+
+    // Dispatch Order Confirmation Email asynchronously
+    try {
+      const { sendOrderConfirmationEmail } = await import("@/lib/email");
+      await sendOrderConfirmationEmail(orderId);
+    } catch (emailErr) {
+      console.error(`Non-blocking Order Confirmation Email error for order ${orderId}:`, emailErr);
     }
 
     return { success: true, requiresPayment: false, orderNumber };
