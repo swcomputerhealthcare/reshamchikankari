@@ -20,6 +20,8 @@ interface CartItem {
   slug: string;
   sku: string;
   pricePaise: number;
+  canonicalPricePaise?: number;
+  navratriDiscountPaise?: number;
   image: string;
   sizeName?: string;
   colorName?: string;
@@ -188,7 +190,12 @@ export default function CartItemsTable({
 
                       {/* Unit Price */}
                       <div className="col-span-2 text-center text-sm font-sans font-medium text-brand-black">
-                        ₹{(item.pricePaise / 100).toLocaleString("en-IN")}
+                        <div>₹{(item.pricePaise / 100).toLocaleString("en-IN")}</div>
+                        {item.canonicalPricePaise && item.canonicalPricePaise > item.pricePaise && (
+                          <div className="text-[11px] text-neutral-400 line-through">
+                            ₹{(item.canonicalPricePaise / 100).toLocaleString("en-IN")}
+                          </div>
+                        )}
                       </div>
 
                       {/* Quantity Controls Outlined Pill */}
@@ -218,7 +225,12 @@ export default function CartItemsTable({
 
                       {/* Line Total */}
                       <div className="col-span-2 text-right text-sm font-sans font-bold text-brand-black">
-                        ₹{((item.pricePaise * item.quantity) / 100).toLocaleString("en-IN")}
+                        <div>₹{((item.pricePaise * item.quantity) / 100).toLocaleString("en-IN")}</div>
+                        {item.canonicalPricePaise && item.canonicalPricePaise > item.pricePaise && (
+                          <div className="text-[11px] text-neutral-400 line-through font-normal">
+                            ₹{((item.canonicalPricePaise * item.quantity) / 100).toLocaleString("en-IN")}
+                          </div>
+                        )}
                       </div>
                     </div>
 
@@ -284,9 +296,16 @@ export default function CartItemsTable({
 
                         {/* Price & Delete */}
                         <div className="flex items-center gap-3">
-                          <span className="text-xs font-sans font-bold text-brand-black">
-                            ₹{((item.pricePaise * item.quantity) / 100).toLocaleString("en-IN")}
-                          </span>
+                          <div className="flex flex-col items-end">
+                            <span className="text-xs font-sans font-bold text-brand-black">
+                              ₹{((item.pricePaise * item.quantity) / 100).toLocaleString("en-IN")}
+                            </span>
+                            {item.canonicalPricePaise && item.canonicalPricePaise > item.pricePaise && (
+                              <span className="text-[10px] text-neutral-400 line-through">
+                                ₹{((item.canonicalPricePaise * item.quantity) / 100).toLocaleString("en-IN")}
+                              </span>
+                            )}
+                          </div>
                           <button
                             onClick={() => handleRemove(item.id)}
                             disabled={isPending}
@@ -321,6 +340,9 @@ export default function CartItemsTable({
       <div className="lg:col-span-4 w-full">
         <EditorialOrderSummary
           subtotalPaise={subtotalPaise}
+          canonicalSubtotalPaise={cart.canonicalSubtotalPaise}
+          navratriDiscountPaise={cart.navratriDiscountPaise}
+          isNavratriActive={cart.isNavratriActive}
           shippingPaise={shippingCostPaise}
           initialCouponCode={appliedCouponCode}
           initialDiscountPaise={discountPaise}

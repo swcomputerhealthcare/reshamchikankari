@@ -48,6 +48,7 @@ export default async function CheckoutSuccessPage(props: SuccessPageProps) {
     awbCode: null as string | null,
     courierName: null as string | null,
     trackingUrl: null as string | null,
+    pricingBreakdown: null as any,
   };
 
   if (isDbAvailable) {
@@ -84,6 +85,7 @@ export default async function CheckoutSuccessPage(props: SuccessPageProps) {
           awbCode: targetOrder.awbCode || null,
           courierName: targetOrder.courierName || null,
           trackingUrl: targetOrder.trackingUrl || null,
+          pricingBreakdown: address?.pricingBreakdown || null,
         };
       }
     } catch (err) {
@@ -108,6 +110,62 @@ export default async function CheckoutSuccessPage(props: SuccessPageProps) {
           paymentMethod={orderData.paymentProvider}
           paymentId={orderData.paymentId}
         />
+
+        {/* Itemized Order Breakdown */}
+        {(orderData as any).pricingBreakdown && (
+          <div className="w-full max-w-sm sm:max-w-md bg-white border border-brand-black/10 rounded-2xl p-6 text-left space-y-3.5 shadow-xs font-sans text-xs">
+            <h2 className="text-xs font-bold uppercase tracking-widest text-[#7C7A5A] border-b border-neutral-100 pb-3 flex items-center justify-between">
+              <span>Order Breakdown</span>
+              {(orderData as any).pricingBreakdown.navratriDiscountPaise > 0 && (
+                <span className="text-[9px] uppercase font-bold tracking-wider text-[#B66F79] bg-[#B66F79]/10 px-2 py-0.5 rounded-full">
+                  Navratri Sale
+                </span>
+              )}
+            </h2>
+            <div className="space-y-2 text-neutral-600">
+              <div className="flex justify-between items-center">
+                <span>Product Subtotal</span>
+                <span className="font-semibold text-neutral-900">
+                  ₹{(((orderData as any).pricingBreakdown.canonicalSubtotalPaise || orderData.totalPaise) / 100).toLocaleString("en-IN")}
+                </span>
+              </div>
+              {(orderData as any).pricingBreakdown.navratriDiscountPaise > 0 && (
+                <div className="flex justify-between items-center text-[#B66F79] font-medium">
+                  <span>Navratri Discount (20%)</span>
+                  <span>&minus; ₹{(((orderData as any).pricingBreakdown.navratriDiscountPaise) / 100).toLocaleString("en-IN")}</span>
+                </div>
+              )}
+              {(orderData as any).pricingBreakdown.couponDiscountPaise > 0 && (
+                <div className="flex justify-between items-center text-[#7C7A5A] font-medium">
+                  <span>Welcome 10% Discount ({(orderData as any).pricingBreakdown.couponCode || "WELCOME10"})</span>
+                  <span>&minus; ₹{(((orderData as any).pricingBreakdown.couponDiscountPaise) / 100).toLocaleString("en-IN")}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center">
+                <span>Complimentary Shipping</span>
+                <span className="font-semibold text-[#7C7A5A] uppercase text-[10px]">
+                  {(orderData as any).pricingBreakdown.shippingPaise === 0 ? "FREE" : `₹${(((orderData as any).pricingBreakdown.shippingPaise) / 100).toLocaleString("en-IN")}`}
+                </span>
+              </div>
+              {(orderData as any).pricingBreakdown.codFeePaise > 0 && (
+                <div className="flex justify-between items-center text-amber-800 font-semibold">
+                  <span>COD Handling Charge</span>
+                  <span>₹{(((orderData as any).pricingBreakdown.codFeePaise) / 100).toLocaleString("en-IN")}</span>
+                </div>
+              )}
+              {(orderData as any).pricingBreakdown.walletPaidPaise > 0 && (
+                <div className="flex justify-between items-center text-[#7C7A5A] font-semibold">
+                  <span>RC Wallet Applied</span>
+                  <span>&minus; ₹{(((orderData as any).pricingBreakdown.walletPaidPaise) / 100).toLocaleString("en-IN")}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center font-bold text-sm text-neutral-900 pt-2 border-t border-neutral-100">
+                <span>Total Amount Paid</span>
+                <span className="text-[#7C7A5A]">₹{(orderData.totalPaise / 100).toLocaleString("en-IN")}</span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Delivery Address & Fulfillment Information Summary */}
         <div className="w-full max-w-sm sm:max-w-md bg-white border border-brand-black/10 rounded-2xl p-6 text-left space-y-5 shadow-xs font-sans">

@@ -58,6 +58,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
   const [paymentMethod, setPaymentMethod] = useState<"ONLINE" | "COD">("ONLINE");
   const [useWallet, setUseWallet] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentDiscountPaise, setCurrentDiscountPaise] = useState(discountPaise);
 
   const [form, setForm] = useState({
     fullName: user?.name || "",
@@ -150,9 +151,11 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
 
   // Price Calculations
   const subtotalPaise = cart.subtotalPaise;
+  const canonicalSubtotalPaise = cart.canonicalSubtotalPaise;
+  const navratriDiscountPaise = cart.navratriDiscountPaise;
   const shippingPaise = 0; // Free Shipping storewide
   const codFeePaise = paymentMethod === "COD" ? 5000 : 0; // ₹50 COD handling charge only when COD is chosen
-  const totalPaise = subtotalPaise - discountPaise + shippingPaise + codFeePaise;
+  const totalPaise = Math.max(0, subtotalPaise - currentDiscountPaise + shippingPaise + codFeePaise);
 
   const maxWalletDeductPaise = user?.id ? Math.min(wallet.availableBalancePaise, totalPaise) : 0;
   const appliedWalletPaise = useWallet && user?.id ? maxWalletDeductPaise : 0;
@@ -635,8 +638,13 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
                   <p className="text-[10px] text-neutral-500 mt-0.5">
                     Size: {item.sizeName || "Standard"} | Qty: {item.quantity}
                   </p>
-                  <p className="text-[10px] font-semibold text-[#7C7A5A] mt-1">
-                    ₹{(item.pricePaise / 100).toLocaleString("en-IN")}
+                  <p className="text-[10px] font-semibold text-[#7C7A5A] mt-1 flex items-center gap-1.5">
+                    <span>₹{(item.pricePaise / 100).toLocaleString("en-IN")}</span>
+                    {item.canonicalPricePaise && item.canonicalPricePaise > item.pricePaise && (
+                      <span className="line-through text-neutral-400 font-normal">
+                        ₹{(item.canonicalPricePaise / 100).toLocaleString("en-IN")}
+                      </span>
+                    )}
                   </p>
                 </div>
               </div>
@@ -696,6 +704,8 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
         {/* Master Editorial Order Summary with Animated Coupon Interaction */}
         <EditorialOrderSummary
           subtotalPaise={subtotalPaise}
+          canonicalSubtotalPaise={canonicalSubtotalPaise}
+          navratriDiscountPaise={navratriDiscountPaise}
           shippingPaise={shippingPaise}
           codFeePaise={codFeePaise}
           appliedWalletPaise={appliedWalletPaise}
@@ -705,6 +715,7 @@ export default function CheckoutForm({ cart, user, wallet, discountPaise, applie
           paymentMethod={paymentMethod}
           onSubmitOrder={handleSubmit}
           showCheckoutButton={true}
+          onDiscountChange={(newDiscount) => setCurrentDiscountPaise(newDiscount)}
         />
       </div>
     </form>

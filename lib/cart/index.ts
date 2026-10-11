@@ -4,6 +4,7 @@ import { products, productVariants, productImages } from "@/db/schema/catalog";
 import { inArray } from "drizzle-orm";
 import { MOCK_PRODUCTS } from "@/lib/catalog";
 import { validateCouponCode } from "@/lib/coupon";
+import { calculateProductPrice, isNavratriPromotionActive } from "@/lib/promotions";
 
 export interface CartItemDetail {
   id: string;
@@ -13,7 +14,9 @@ export interface CartItemDetail {
   name: string;
   slug: string;
   sku: string;
-  pricePaise: number;
+  pricePaise: number; // Current selling price (Navratri sale price if active, canonical otherwise)
+  canonicalPricePaise: number; // Pre-campaign canonical selling price
+  navratriDiscountPaise: number; // Unit 20% discount (0 if inactive)
   image: string;
   sizeName?: string;
   colorName?: string;
@@ -24,9 +27,13 @@ export interface CartItemDetail {
 
 export interface CartDetails {
   items: CartItemDetail[];
-  subtotalPaise: number;
+  canonicalSubtotalPaise: number; // Pre-campaign base subtotal
+  navratriDiscountPaise: number; // Total Navratri 20% discount
+  subtotalPaise: number; // Discounted product subtotal after Navratri
   appliedCouponCode?: string;
-  discountPaise: number;
+  discountPaise: number; // Coupon discount applied sequentially to subtotalPaise
+  finalSubtotalPaise: number; // Product amount after both discounts
+  isNavratriActive: boolean;
 }
 
 const COOKIE_NAME = "resham_cart";
@@ -79,43 +86,17 @@ async function saveCookieCartItems(items: { id: string; productId: string; varia
 export async function getCartDetails(): Promise<CartDetails> {
   const localItems = await getCookieCartItems();
   let resolvedItems: CartItemDetail[] = [];
+  let canonicalSubtotal = 0;
+  let navratriDiscountTotal = 0;
   let subtotal = 0;
 
   if (!hasDatabase()) {
     // Resolve products from offline mock catalog
-    for (const item of localItems) {
-      const prod = MOCK_PRODUCTS.find(p => p.id === item.productId);
-      if (!prod) continue;
-
-      const variant = prod.variants.find(v => v.id === item.variantId);
-      const price = variant ? (variant.pricePaise ?? 0) : (prod.pricePaise ?? 0);
-      const stock = variant ? variant.stock : 10;
-      const sizeName = variant ? (variant.size || variant.name) : undefined;
-      const colorName = variant ? (variant.colorName || undefined) : undefined;
-      const colorCode = variant ? (variant.colorCode || undefined) : undefined;
-      const image = prod.images[0]?.url || "/images/chikankari_hero.png";
-
-      const variantLabel = [colorName, sizeName].filter(Boolean).join(" · ") || variant?.name;
-
-      resolvedItems.push({
-        id: item.id,
-        productId: item.productId,
-        variantId: item.variantId,
-        quantity: item.quantity,
-        name: prod.name,
-        slug: prod.slug,
-        sku: variant?.sku || prod.sku,
-        pricePaise: price,
-        image,
-        sizeName,
-        colorName,
-        colorCode,
-        variantLabel,
-        stock,
-      });
-
-      subtotal += price * item.quantity;
-    }
+    const offline = getCartDetailsOffline(localItems);
+    resolvedItems = offline.items;
+    canonicalSubtotal = offline.canonicalSubtotalPaise;
+    navratriDiscountTotal = offline.navratriDiscountPaise;
+    subtotal = offline.subtotalPaise;
   } else {
     try {
       if (localItems.length > 0) {
@@ -137,7 +118,7 @@ export async function getCartDetails(): Promise<CartDetails> {
           let colorName: string | undefined = undefined;
           let colorCode: string | undefined = undefined;
           let sizeName: string | undefined = undefined;
-          let price = prod.pricePaise ?? 0;
+          let canonicalPrice = prod.pricePaise ?? 0;
           let stock = 10;
           let sku = prod.sku;
 
@@ -148,11 +129,16 @@ export async function getCartDetails(): Promise<CartDetails> {
               colorName = variant.colorName || undefined;
               colorCode = variant.colorCode || undefined;
               sizeName = variant.size || variant.name || undefined;
-              price = variant.pricePaise ?? 0;
+              canonicalPrice = variant.pricePaise ?? 0;
               stock = variant.stock;
               sku = variant.sku;
             }
           }
+
+          // Authoritative canonical price calculation
+          const priceBreakdown = calculateProductPrice(canonicalPrice);
+          const price = priceBreakdown.sellingPricePaise;
+          const unitNavratriDiscount = priceBreakdown.navratriDiscountPaise;
 
           // Find first product image
           const image = dbImages.find(img => img.productId === prod.id)?.url || "/images/chikankari_hero.png";
@@ -167,6 +153,8 @@ export async function getCartDetails(): Promise<CartDetails> {
             slug: prod.slug,
             sku,
             pricePaise: price,
+            canonicalPricePaise: canonicalPrice,
+            navratriDiscountPaise: unitNavratriDiscount,
             image,
             sizeName: sizeName || variantName || undefined,
             colorName,
@@ -175,6 +163,8 @@ export async function getCartDetails(): Promise<CartDetails> {
             stock,
           });
 
+          canonicalSubtotal += canonicalPrice * item.quantity;
+          navratriDiscountTotal += unitNavratriDiscount * item.quantity;
           subtotal += price * item.quantity;
         }
       }
@@ -182,11 +172,13 @@ export async function getCartDetails(): Promise<CartDetails> {
       console.error("DB cart lookup failed, falling back to mock details:", error);
       const offline = getCartDetailsOffline(localItems);
       resolvedItems = offline.items;
+      canonicalSubtotal = offline.canonicalSubtotalPaise;
+      navratriDiscountTotal = offline.navratriDiscountPaise;
       subtotal = offline.subtotalPaise;
     }
   }
 
-  // Calculate Coupon Discount
+  // Calculate Coupon Discount sequentially on the discounted subtotal
   const cookieStore = await cookies();
   const couponCode = cookieStore.get("applied_coupon")?.value;
   let discountPaise = 0;
@@ -212,21 +204,36 @@ export async function getCartDetails(): Promise<CartDetails> {
 
   return {
     items: resolvedItems,
+    canonicalSubtotalPaise: canonicalSubtotal,
+    navratriDiscountPaise: navratriDiscountTotal,
     subtotalPaise: subtotal,
     appliedCouponCode,
     discountPaise,
+    finalSubtotalPaise: Math.max(0, subtotal - discountPaise),
+    isNavratriActive: isNavratriPromotionActive(),
   };
 }
 
-function getCartDetailsOffline(items: { id: string; productId: string; variantId: string | null; quantity: number }[]): { items: CartItemDetail[]; subtotalPaise: number } {
+function getCartDetailsOffline(items: { id: string; productId: string; variantId: string | null; quantity: number }[]): {
+  items: CartItemDetail[];
+  canonicalSubtotalPaise: number;
+  navratriDiscountPaise: number;
+  subtotalPaise: number;
+} {
   const resolvedItems: CartItemDetail[] = [];
+  let canonicalSubtotal = 0;
+  let navratriDiscountTotal = 0;
   let subtotal = 0;
 
   for (const item of items) {
     const prod = MOCK_PRODUCTS.find(p => p.id === item.productId);
     if (!prod) continue;
     const variant = prod.variants.find(v => v.id === item.variantId);
-    const price = variant ? (variant.pricePaise ?? 0) : (prod.pricePaise ?? 0);
+    const canonicalPrice = variant ? (variant.pricePaise ?? 0) : (prod.pricePaise ?? 0);
+    const priceBreakdown = calculateProductPrice(canonicalPrice);
+    const price = priceBreakdown.sellingPricePaise;
+    const unitNavratriDiscount = priceBreakdown.navratriDiscountPaise;
+
     resolvedItems.push({
       id: item.id,
       productId: item.productId,
@@ -236,13 +243,23 @@ function getCartDetailsOffline(items: { id: string; productId: string; variantId
       slug: prod.slug,
       sku: variant?.sku || prod.sku,
       pricePaise: price,
+      canonicalPricePaise: canonicalPrice,
+      navratriDiscountPaise: unitNavratriDiscount,
       image: prod.images[0]?.url || "/images/chikankari_hero.png",
       sizeName: variant?.name,
       stock: variant ? variant.stock : 10,
     });
+
+    canonicalSubtotal += canonicalPrice * item.quantity;
+    navratriDiscountTotal += unitNavratriDiscount * item.quantity;
     subtotal += price * item.quantity;
   }
-  return { items: resolvedItems, subtotalPaise: subtotal };
+  return {
+    items: resolvedItems,
+    canonicalSubtotalPaise: canonicalSubtotal,
+    navratriDiscountPaise: navratriDiscountTotal,
+    subtotalPaise: subtotal,
+  };
 }
 
 export async function addToCart(productId: string, variantId: string | null, qty: number): Promise<boolean> {

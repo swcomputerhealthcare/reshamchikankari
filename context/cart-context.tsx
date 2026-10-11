@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect, useTransition } from "react";
 import { addToCartAction, removeFromCartAction, updateCartItemQtyAction, clearCartAction } from "@/actions/cart";
 import { applyCouponAction, removeCouponAction } from "@/actions/coupon";
+import { calculateProductPrice } from "@/lib/promotions";
 
 export interface CartItem {
   id: string;
@@ -12,7 +13,9 @@ export interface CartItem {
   name: string;
   slug: string;
   sku: string;
-  pricePaise: number;
+  pricePaise: number; // Current selling price (Navratri price if active, canonical otherwise)
+  canonicalPricePaise?: number; // Pre-campaign canonical price
+  navratriDiscountPaise?: number; // Navratri discount per unit
   image: string;
   sizeName?: string;
   colorName?: string;
@@ -21,11 +24,15 @@ export interface CartItem {
   stock: number;
 }
 
-interface Cart {
+export interface Cart {
   items: CartItem[];
-  subtotalPaise: number;
+  canonicalSubtotalPaise?: number;
+  navratriDiscountPaise?: number;
+  subtotalPaise: number; // Discounted product subtotal after Navratri
   appliedCouponCode?: string;
   discountPaise: number;
+  finalSubtotalPaise?: number;
+  isNavratriActive?: boolean;
 }
 
 interface CartContextType {
@@ -52,24 +59,42 @@ export function CartProvider({
   initialCart,
 }: {
   children: React.ReactNode;
-  initialCart: { items: CartItem[]; subtotalPaise: number; appliedCouponCode?: string; discountPaise?: number };
+  initialCart: {
+    items: CartItem[];
+    canonicalSubtotalPaise?: number;
+    navratriDiscountPaise?: number;
+    subtotalPaise: number;
+    appliedCouponCode?: string;
+    discountPaise?: number;
+    finalSubtotalPaise?: number;
+    isNavratriActive?: boolean;
+  };
 }) {
   const [cart, setCart] = useState<Cart>(() => ({
     items: initialCart.items || [],
+    canonicalSubtotalPaise: initialCart.canonicalSubtotalPaise,
+    navratriDiscountPaise: initialCart.navratriDiscountPaise,
     subtotalPaise: initialCart.subtotalPaise || 0,
     appliedCouponCode: initialCart.appliedCouponCode,
     discountPaise: initialCart.discountPaise || 0,
+    finalSubtotalPaise: initialCart.finalSubtotalPaise,
+    isNavratriActive: initialCart.isNavratriActive,
   }));
   const [isOpen, setIsOpen] = useState(false);
-  const [isUpdating, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
+  const [isUpdating] = useState(false);
 
   // Sync state if initialCart changes on hard reload or navigate
   useEffect(() => {
     setCart({
       items: initialCart.items || [],
+      canonicalSubtotalPaise: initialCart.canonicalSubtotalPaise,
+      navratriDiscountPaise: initialCart.navratriDiscountPaise,
       subtotalPaise: initialCart.subtotalPaise || 0,
       appliedCouponCode: initialCart.appliedCouponCode,
       discountPaise: initialCart.discountPaise || 0,
+      finalSubtotalPaise: initialCart.finalSubtotalPaise,
+      isNavratriActive: initialCart.isNavratriActive,
     });
   }, [initialCart]);
 
@@ -101,6 +126,10 @@ export function CartProvider({
     const variantLabel = [colorName, sizeName].filter(Boolean).join(" · ") || variant?.name;
     const stock = variant?.stock ?? 10;
 
+    // Use authoritative pricing calculation
+    const rawCanonicalPrice = variant?.pricePaise ?? product.pricePaise ?? 0;
+    const priceBreakdown = calculateProductPrice(rawCanonicalPrice);
+
     const updatedItems = [...cart.items];
     const existingIndex = updatedItems.findIndex(
       (item) => item.productId === product.id && item.variantId === variantId
@@ -110,6 +139,9 @@ export function CartProvider({
       updatedItems[existingIndex] = {
         ...updatedItems[existingIndex],
         quantity: Math.min(updatedItems[existingIndex].quantity + quantity, stock),
+        pricePaise: priceBreakdown.sellingPricePaise,
+        canonicalPricePaise: priceBreakdown.canonicalPricePaise,
+        navratriDiscountPaise: priceBreakdown.navratriDiscountPaise,
       };
     } else {
       updatedItems.push({
@@ -120,7 +152,9 @@ export function CartProvider({
         name: product.name,
         slug: product.slug,
         sku: variant?.sku || product.sku || `RC-${product.id.slice(-4).toUpperCase()}`,
-        pricePaise: product.pricePaise,
+        pricePaise: priceBreakdown.sellingPricePaise,
+        canonicalPricePaise: priceBreakdown.canonicalPricePaise,
+        navratriDiscountPaise: priceBreakdown.navratriDiscountPaise,
         image: product.images?.[0]?.url || "/images/chikankari_hero.png",
         sizeName,
         colorName,
@@ -131,10 +165,22 @@ export function CartProvider({
     }
 
     const nextSubtotal = calculateSubtotal(updatedItems);
-    const nextCart = {
+    const nextCanonicalSubtotal = updatedItems.reduce(
+      (sum, item) => sum + (item.canonicalPricePaise || item.pricePaise) * item.quantity,
+      0
+    );
+    const nextNavratriDiscount = updatedItems.reduce(
+      (sum, item) => sum + (item.navratriDiscountPaise || 0) * item.quantity,
+      0
+    );
+
+    const nextCart: Cart = {
       ...cart,
       items: updatedItems,
+      canonicalSubtotalPaise: nextCanonicalSubtotal,
+      navratriDiscountPaise: nextNavratriDiscount,
       subtotalPaise: nextSubtotal,
+      finalSubtotalPaise: Math.max(0, nextSubtotal - (cart.discountPaise || 0)),
     };
 
     // Optimistic Update
@@ -172,10 +218,22 @@ export function CartProvider({
     });
 
     const nextSubtotal = calculateSubtotal(updatedItems);
-    const nextCart = {
+    const nextCanonicalSubtotal = updatedItems.reduce(
+      (sum, item) => sum + (item.canonicalPricePaise || item.pricePaise) * item.quantity,
+      0
+    );
+    const nextNavratriDiscount = updatedItems.reduce(
+      (sum, item) => sum + (item.navratriDiscountPaise || 0) * item.quantity,
+      0
+    );
+
+    const nextCart: Cart = {
       ...cart,
       items: updatedItems,
+      canonicalSubtotalPaise: nextCanonicalSubtotal,
+      navratriDiscountPaise: nextNavratriDiscount,
       subtotalPaise: nextSubtotal,
+      finalSubtotalPaise: Math.max(0, nextSubtotal - (cart.discountPaise || 0)),
     };
 
     // Optimistic Update
@@ -196,17 +254,29 @@ export function CartProvider({
       setCart(previousCart);
       return { success: false, error: err.message || "Failed to update quantity" };
     }
-  }, [cart]);
+  }, [cart, syncWithServer]);
 
   const removeItemOptimistic = useCallback(async (itemId: string) => {
     const previousCart = { ...cart };
 
     const updatedItems = cart.items.filter((item) => item.id !== itemId);
     const nextSubtotal = calculateSubtotal(updatedItems);
-    const nextCart = {
+    const nextCanonicalSubtotal = updatedItems.reduce(
+      (sum, item) => sum + (item.canonicalPricePaise || item.pricePaise) * item.quantity,
+      0
+    );
+    const nextNavratriDiscount = updatedItems.reduce(
+      (sum, item) => sum + (item.navratriDiscountPaise || 0) * item.quantity,
+      0
+    );
+
+    const nextCart: Cart = {
       ...cart,
       items: updatedItems,
+      canonicalSubtotalPaise: nextCanonicalSubtotal,
+      navratriDiscountPaise: nextNavratriDiscount,
       subtotalPaise: nextSubtotal,
+      finalSubtotalPaise: Math.max(0, nextSubtotal - (cart.discountPaise || 0)),
     };
 
     // Optimistic Update
@@ -224,16 +294,19 @@ export function CartProvider({
       setCart(previousCart);
       return { success: false, error: err.message || "Failed to remove item" };
     }
-  }, [cart]);
+  }, [cart, syncWithServer]);
 
   const clearCartOptimistic = useCallback(async () => {
     const previousCart = { ...cart };
 
     setCart({
       items: [],
+      canonicalSubtotalPaise: 0,
+      navratriDiscountPaise: 0,
       subtotalPaise: 0,
       appliedCouponCode: undefined,
       discountPaise: 0,
+      finalSubtotalPaise: 0,
     });
 
     try {
@@ -259,6 +332,7 @@ export function CartProvider({
           ...prev,
           appliedCouponCode: res.code || code.toUpperCase(),
           discountPaise: res.discountPaise || 0,
+          finalSubtotalPaise: Math.max(0, prev.subtotalPaise - (res.discountPaise || 0)),
         }));
         return { success: true };
       } else {
@@ -277,6 +351,7 @@ export function CartProvider({
       ...prev,
       appliedCouponCode: undefined,
       discountPaise: 0,
+      finalSubtotalPaise: prev.subtotalPaise,
     }));
 
     try {
@@ -286,6 +361,7 @@ export function CartProvider({
       }
       return { success: true };
     } catch (err: any) {
+      // Rollback
       setCart(previousCart);
       return { success: false, error: err.message || "Failed to remove coupon" };
     }

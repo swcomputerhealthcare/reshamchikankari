@@ -8,6 +8,9 @@ import Button from "@/components/ui/button";
 
 interface EditorialOrderSummaryProps {
   subtotalPaise: number;
+  canonicalSubtotalPaise?: number;
+  navratriDiscountPaise?: number;
+  isNavratriActive?: boolean;
   shippingPaise: number;
   codFeePaise?: number;
   appliedWalletPaise?: number;
@@ -18,10 +21,14 @@ interface EditorialOrderSummaryProps {
   onSubmitOrder?: (e: React.FormEvent) => void;
   ctaText?: string;
   showCheckoutButton?: boolean;
+  onDiscountChange?: (discountPaise: number, code?: string) => void;
 }
 
 export default function EditorialOrderSummary({
   subtotalPaise,
+  canonicalSubtotalPaise,
+  navratriDiscountPaise,
+  isNavratriActive,
   shippingPaise,
   codFeePaise = 0,
   appliedWalletPaise = 0,
@@ -32,6 +39,7 @@ export default function EditorialOrderSummary({
   onSubmitOrder,
   ctaText,
   showCheckoutButton = true,
+  onDiscountChange,
 }: EditorialOrderSummaryProps) {
   const prefersReducedMotion = useReducedMotion();
   const [isPending, startTransition] = useTransition();
@@ -42,11 +50,18 @@ export default function EditorialOrderSummary({
   const [discountPaise, setDiscountPaise] = useState<number>(initialDiscountPaise);
   const [couponError, setCouponError] = useState<string | null>(null);
 
-  // Animated Price Interpolation State
-  const prevTotalRef = useRef<number | null>(null);
-  const [displayedTotalPaise, setDisplayedTotalPaise] = useState<number>(() => {
-    return subtotalPaise - initialDiscountPaise + shippingPaise + codFeePaise - appliedWalletPaise;
-  });
+  // Derive Navratri discount and canonical base subtotal
+  const effectiveNavratriDiscountPaise =
+    navratriDiscountPaise !== undefined
+      ? navratriDiscountPaise
+      : (canonicalSubtotalPaise && canonicalSubtotalPaise > subtotalPaise
+          ? canonicalSubtotalPaise - subtotalPaise
+          : 0);
+
+  const effectiveCanonicalSubtotalPaise =
+    canonicalSubtotalPaise !== undefined && canonicalSubtotalPaise > 0
+      ? canonicalSubtotalPaise
+      : subtotalPaise + effectiveNavratriDiscountPaise;
 
   const targetTotalPaise = Math.max(
     0,
@@ -55,8 +70,14 @@ export default function EditorialOrderSummary({
 
   const baseTotalWithoutDiscountPaise = Math.max(
     0,
-    subtotalPaise + shippingPaise + codFeePaise - appliedWalletPaise
+    effectiveCanonicalSubtotalPaise + shippingPaise + codFeePaise - appliedWalletPaise
   );
+
+  const totalSavingsPaise = effectiveNavratriDiscountPaise + discountPaise;
+
+  // Animated Price Interpolation State
+  const prevTotalRef = useRef<number | null>(null);
+  const [displayedTotalPaise, setDisplayedTotalPaise] = useState<number>(() => targetTotalPaise);
 
   // Smooth numeric counter animation interpolation over 450ms
   useEffect(() => {
@@ -104,9 +125,11 @@ export default function EditorialOrderSummary({
       try {
         const res = await applyCouponAction(couponCodeInput, subtotalPaise);
         if (res.success && res.discountPaise !== undefined) {
-          setAppliedCode(res.code || couponCodeInput.trim().toUpperCase());
+          const applied = res.code || couponCodeInput.trim().toUpperCase();
+          setAppliedCode(applied);
           setDiscountPaise(res.discountPaise);
           setCouponError(null);
+          onDiscountChange?.(res.discountPaise, applied);
         } else {
           setCouponError(res.error || "Coupon code is invalid.");
         }
@@ -127,26 +150,19 @@ export default function EditorialOrderSummary({
         setAppliedCode(undefined);
         setDiscountPaise(0);
         setCouponCodeInput("");
+        onDiscountChange?.(0, undefined);
       } catch (err) {
         setCouponError("Failed to remove coupon. Please try again.");
       }
     });
   };
 
-  const formattedBaseTotal = (baseTotalWithoutDiscountPaise / 100).toLocaleString("en-IN", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
-
-  const formattedDisplayedTotal = (displayedTotalPaise / 100).toLocaleString("en-IN", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
-
-  const formattedSavings = (discountPaise / 100).toLocaleString("en-IN", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  });
+  const formatAmount = (paise: number) => {
+    const rs = paise / 100;
+    return rs % 1 !== 0
+      ? rs.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : rs.toLocaleString("en-IN");
+  };
 
   return (
     <div className="bg-[#F8F2EC] border border-[#ECE9E2] p-6 sm:p-8 rounded-2xl shadow-xs space-y-6 text-left font-sans select-none">
@@ -156,13 +172,34 @@ export default function EditorialOrderSummary({
 
       {/* Pricing Rows */}
       <div className="space-y-3.5 border-b border-[#ECE9E2] pb-6 text-xs text-neutral-700">
-        {/* Bag Subtotal */}
+        {/* Product Subtotal (Pre-campaign) */}
         <div className="flex justify-between items-center">
-          <span className="text-neutral-600">Bag Subtotal</span>
+          <span className="text-neutral-600">Product Subtotal</span>
           <span className="font-semibold text-[#161616]">
-            ₹{(subtotalPaise / 100).toLocaleString("en-IN")}
+            ₹{formatAmount(effectiveCanonicalSubtotalPaise)}
           </span>
         </div>
+
+        {/* Navratri Sale 20% Discount Row */}
+        {effectiveNavratriDiscountPaise > 0 && (
+          <div className="flex justify-between items-center text-[#B66F79] font-semibold">
+            <span className="flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5 text-[#B66F79]" />
+              Navratri Discount (20%)
+            </span>
+            <span>&minus; ₹{formatAmount(effectiveNavratriDiscountPaise)}</span>
+          </div>
+        )}
+
+        {/* Subtotal after Navratri */}
+        {effectiveNavratriDiscountPaise > 0 && (
+          <div className="flex justify-between items-center text-neutral-600 text-[11px]">
+            <span>Subtotal after Navratri</span>
+            <span className="font-medium text-[#161616]">
+              ₹{formatAmount(subtotalPaise)}
+            </span>
+          </div>
+        )}
 
         {/* Complimentary Free Gift Privilege */}
         <div className="flex justify-between items-center bg-[#FFF9F4] p-2.5 rounded-xl border border-[#7C7A5A]/25 text-xs text-[#7C7A5A]">
@@ -178,7 +215,7 @@ export default function EditorialOrderSummary({
           </div>
         </div>
 
-        {/* Animated Discount Row */}
+        {/* Animated Coupon Discount Row */}
         <AnimatePresence>
           {discountPaise > 0 && appliedCode && (
             <motion.div
@@ -190,18 +227,28 @@ export default function EditorialOrderSummary({
             >
               <span className="flex items-center gap-1.5">
                 <Tag className="w-3.5 h-3.5 text-[#E694AA]" />
-                Discount ({appliedCode})
+                Welcome 10% Discount ({appliedCode})
               </span>
-              <span>&minus; ₹{(discountPaise / 100).toLocaleString("en-IN")}</span>
+              <span>&minus; ₹{formatAmount(discountPaise)}</span>
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Subtotal after eligible discounts */}
+        {discountPaise > 0 && (
+          <div className="flex justify-between items-center text-neutral-600 text-[11px]">
+            <span>Subtotal after eligible discounts</span>
+            <span className="font-medium text-[#161616]">
+              ₹{formatAmount(Math.max(0, subtotalPaise - discountPaise))}
+            </span>
+          </div>
+        )}
 
         {/* Estimated Shipping */}
         <div className="flex justify-between items-center">
           <span className="text-neutral-600">Estimated Shipping</span>
           <span className="font-semibold text-[#7C7A5A] uppercase text-[11px] tracking-wider">
-            {shippingPaise === 0 ? "FREE" : `₹${(shippingPaise / 100).toLocaleString("en-IN")}`}
+            {shippingPaise === 0 ? "FREE" : `₹${formatAmount(shippingPaise)}`}
           </span>
         </div>
 
@@ -209,7 +256,7 @@ export default function EditorialOrderSummary({
         {codFeePaise > 0 && (
           <div className="flex justify-between items-center text-amber-800 font-semibold">
             <span>COD Handling Charge</span>
-            <span>₹{(codFeePaise / 100).toLocaleString("en-IN")}</span>
+            <span>₹{formatAmount(codFeePaise)}</span>
           </div>
         )}
 
@@ -217,7 +264,7 @@ export default function EditorialOrderSummary({
         {appliedWalletPaise > 0 && (
           <div className="flex justify-between items-center text-[#7C7A5A] font-semibold">
             <span>RC Wallet Applied</span>
-            <span>&minus; ₹{(appliedWalletPaise / 100).toLocaleString("en-IN")}</span>
+            <span>&minus; ₹{formatAmount(appliedWalletPaise)}</span>
           </div>
         )}
 
@@ -263,7 +310,7 @@ export default function EditorialOrderSummary({
             </button>
           </motion.div>
         ) : (
-          /* Coupon Entry Container (Div instead of Form to prevent nested forms) */
+          /* Coupon Entry Container */
           <div className="space-y-2">
             <div className="flex gap-2">
               <input
@@ -281,58 +328,45 @@ export default function EditorialOrderSummary({
                 }}
                 placeholder="Enter coupon code (e.g. WELCOME10)"
                 disabled={isPending}
-                className="flex-1 px-4 py-2.5 bg-white border border-[#ECE9E2] rounded-xl text-xs font-mono uppercase tracking-wider text-[#161616] focus:outline-none focus:ring-1 focus:ring-[#7C7A5A] disabled:opacity-50 placeholder:text-neutral-400 placeholder:normal-case placeholder:font-sans"
+                className="flex-1 bg-white border border-[#ECE9E2] px-3.5 py-2.5 rounded-xl text-xs uppercase font-mono tracking-wider focus:outline-none focus:border-[#7C7A5A] text-[#161616] placeholder:text-neutral-400 placeholder:normal-case placeholder:font-sans"
               />
-              <button
+              <Button
                 type="button"
                 onClick={handleApplyCoupon}
-                disabled={isPending || !couponCodeInput.trim()}
-                className="px-5 py-2.5 bg-[#161616] hover:bg-[#7C7A5A] text-[#FFF9F4] text-[10px] font-bold uppercase tracking-widest rounded-xl transition-colors disabled:opacity-40 cursor-pointer border-none flex items-center gap-1.5"
+                isLoading={isPending}
+                disabled={!couponCodeInput.trim() || isPending}
+                variant="outline"
+                className="px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl border-[#7C7A5A] text-[#7C7A5A] hover:bg-[#7C7A5A] hover:text-[#FFF9F4] transition-all"
               >
-                {isPending ? (
-                  <>
-                    <Loader2 className="w-3 h-3 animate-spin" /> CHECKING...
-                  </>
-                ) : (
-                  "APPLY"
-                )}
+                APPLY
+              </Button>
+            </div>
+
+            {/* Quick-Click Welcome Coupon Suggestion */}
+            <div className="flex items-center gap-1.5 pt-1">
+              <span className="text-[10px] text-neutral-400 font-sans">Available:</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setCouponCodeInput("WELCOME10");
+                  setCouponError(null);
+                }}
+                className="text-[10px] font-mono font-bold text-[#7C7A5A] hover:text-[#E694AA] underline cursor-pointer bg-transparent border-none p-0"
+              >
+                WELCOME10 (10% OFF)
               </button>
             </div>
 
-            {/* Quick Clickable Available Offers Badges */}
-            <div className="pt-1 flex flex-wrap gap-1.5 items-center">
-              <span className="text-[9px] uppercase font-extrabold tracking-wider text-neutral-500 mr-0.5">Available Offer:</span>
-              {[
-                { code: "WELCOME10", label: "10% OFF" },
-              ].map((offer) => (
-                <button
-                  key={offer.code}
-                  type="button"
-                  onClick={() => {
-                    setCouponCodeInput(offer.code);
-                    if (couponError) setCouponError(null);
-                  }}
-                  className={`px-2 py-0.5 border rounded-lg text-[10px] font-mono font-bold tracking-wider uppercase transition-all cursor-pointer ${
-                    couponCodeInput === offer.code
-                      ? "bg-[#7C7A5A] text-white border-[#7C7A5A] shadow-xs"
-                      : "bg-white text-[#7C7A5A] border-[#7C7A5A]/30 hover:border-[#7C7A5A] hover:bg-[#7C7A5A]/10"
-                  }`}
-                >
-                  {offer.code} <span className="opacity-75 font-sans font-normal">({offer.label})</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Inline Editorial Error Message */}
+            {/* Inline Coupon Error Feedback */}
             <AnimatePresence>
               {couponError && (
                 <motion.p
                   initial={{ opacity: 0, y: -4 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -4 }}
-                  className="text-[11px] text-[#E694AA] font-sans font-medium pl-1 leading-normal"
+                  className="text-[11px] text-[#B66F79] font-sans font-medium pl-1 leading-normal"
                 >
-                  {couponError}
+                  ✦ {couponError}
                 </motion.p>
               )}
             </AnimatePresence>
@@ -347,10 +381,10 @@ export default function EditorialOrderSummary({
 
           <div className="text-right flex flex-col items-end">
             {/* If discount is active: Show animated old price with left-to-right strike-through line */}
-            {discountPaise > 0 && (
+            {totalSavingsPaise > 0 && (
               <div className="relative inline-block mb-0.5">
                 <span className="text-xs text-neutral-400 font-mono font-medium tracking-tight">
-                  ₹{formattedBaseTotal}
+                  ₹{formatAmount(baseTotalWithoutDiscountPaise)}
                 </span>
 
                 {/* Animated Strike-Through Line */}
@@ -372,12 +406,12 @@ export default function EditorialOrderSummary({
               transition={{ duration: 0.3 }}
               className="text-2xl sm:text-3xl font-bold text-[#161616] tracking-tight font-sans"
             >
-              ₹{formattedDisplayedTotal}
+              ₹{formatAmount(displayedTotalPaise)}
             </motion.span>
 
-            {/* Subtext: "You save ₹500" */}
+            {/* Subtext: "You save ₹..." */}
             <AnimatePresence>
-              {discountPaise > 0 && (
+              {totalSavingsPaise > 0 && (
                 <motion.span
                   initial={prefersReducedMotion ? { opacity: 1 } : { opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -385,7 +419,7 @@ export default function EditorialOrderSummary({
                   transition={{ duration: 0.3, delay: 0.1 }}
                   className="text-[11px] font-sans font-semibold text-[#7C7A5A] mt-0.5 block"
                 >
-                  You save ₹{formattedSavings}
+                  You save ₹{formatAmount(totalSavingsPaise)}
                 </motion.span>
               )}
             </AnimatePresence>

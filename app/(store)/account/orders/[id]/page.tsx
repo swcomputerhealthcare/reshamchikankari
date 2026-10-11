@@ -193,38 +193,49 @@ export default async function CustomerOrderDetailPage(props: OrderDetailsPagePro
                 </div>
 
                 {/* Price Breakdown */}
-                <div className="border-t border-[#ECE9E2] pt-4 space-y-2 text-xs text-neutral-600">
-                  <div className="flex justify-between">
-                    <span>Subtotal</span>
-                    <span>₹{(order.subtotalPaise / 100).toLocaleString("en-IN")}</span>
-                  </div>
-                  {order.discountPaise > 0 && (
-                    <div className="flex justify-between text-[#E694AA]">
-                      <span>Discount / Privilege applied</span>
-                      <span>-₹{(order.discountPaise / 100).toLocaleString("en-IN")}</span>
+                {(() => {
+                  const breakdown = (order.shippingAddressSnapshot as any)?.pricingBreakdown;
+                  return (
+                    <div className="border-t border-[#ECE9E2] pt-4 space-y-2 text-xs text-neutral-600">
+                      <div className="flex justify-between">
+                        <span>Product Subtotal</span>
+                        <span>₹{((breakdown?.canonicalSubtotalPaise ?? order.subtotalPaise) / 100).toLocaleString("en-IN")}</span>
+                      </div>
+                      {breakdown?.navratriDiscountPaise > 0 && (
+                        <div className="flex justify-between text-[#B66F79] font-medium">
+                          <span>Navratri Discount (20%)</span>
+                          <span>&minus;₹{(breakdown.navratriDiscountPaise / 100).toLocaleString("en-IN")}</span>
+                        </div>
+                      )}
+                      {order.discountPaise > 0 && (
+                        <div className="flex justify-between text-[#7C7A5A]">
+                          <span>Welcome 10% Discount ({order.couponCodeSnapshot || "WELCOME10"})</span>
+                          <span>&minus;₹{(order.discountPaise / 100).toLocaleString("en-IN")}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span>Complimentary Express Shipping</span>
+                        <span>{order.shippingPaise === 0 ? "FREE" : `₹${(order.shippingPaise / 100).toLocaleString("en-IN")}`}</span>
+                      </div>
+                      {((order.shippingAddressSnapshot as any)?.codFeePaise > 0 || (order.paymentProvider === "COD" && order.totalPaise > order.subtotalPaise - order.discountPaise + order.shippingPaise - order.walletAmountPaise)) && (
+                        <div className="flex justify-between text-amber-800 font-semibold">
+                          <span>COD Handling Charge</span>
+                          <span>₹{(((order.shippingAddressSnapshot as any)?.codFeePaise || 5000) / 100).toLocaleString("en-IN")}</span>
+                        </div>
+                      )}
+                      {order.walletAmountPaise > 0 && (
+                        <div className="flex justify-between text-[#7C7A5A]">
+                          <span>Wallet Balance Applied</span>
+                          <span>&minus;₹{(order.walletAmountPaise / 100).toLocaleString("en-IN")}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between font-bold text-sm text-[#161616] pt-2 border-t border-[#ECE9E2]">
+                        <span>Total Amount Paid</span>
+                        <span>₹{(order.totalPaise / 100).toLocaleString("en-IN")}</span>
+                      </div>
                     </div>
-                  )}
-                  <div className="flex justify-between">
-                    <span>Complimentary Express Shipping</span>
-                    <span>{order.shippingPaise === 0 ? "FREE" : `₹${(order.shippingPaise / 100).toLocaleString("en-IN")}`}</span>
-                  </div>
-                  {((order.shippingAddressSnapshot as any)?.codFeePaise > 0 || (order.paymentProvider === "COD" && order.totalPaise > order.subtotalPaise - order.discountPaise + order.shippingPaise - order.walletAmountPaise)) && (
-                    <div className="flex justify-between text-amber-800 font-semibold">
-                      <span>COD Handling Charge</span>
-                      <span>₹{(((order.shippingAddressSnapshot as any)?.codFeePaise || 5000) / 100).toLocaleString("en-IN")}</span>
-                    </div>
-                  )}
-                  {order.walletAmountPaise > 0 && (
-                    <div className="flex justify-between text-[#7C7A5A]">
-                      <span>Wallet Balance Applied</span>
-                      <span>-₹{(order.walletAmountPaise / 100).toLocaleString("en-IN")}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between font-bold text-sm text-[#161616] pt-2 border-t border-[#ECE9E2]">
-                    <span>Total Amount Paid</span>
-                    <span>₹{(order.totalPaise / 100).toLocaleString("en-IN")}</span>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
 
               {/* Shipping & Shipment Tracking Card */}

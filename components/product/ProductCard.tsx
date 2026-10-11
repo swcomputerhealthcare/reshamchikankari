@@ -9,6 +9,7 @@ import WishlistButton from "@/components/product/wishlist-button";
 import { addToCartAction } from "@/actions/cart";
 import { useCart } from "@/context/cart-context";
 import { type CatalogProduct } from "@/lib/catalog";
+import { calculateProductPrice } from "@/lib/promotions";
 
 interface ProductCardProps {
   product: CatalogProduct;
@@ -91,7 +92,11 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
   const reviewCount = product.reviewCount ?? 0;
   const ratingDisplay = product.rating ? product.rating.toFixed(1) : null;
 
-  // Discount calculation
+  // Authoritative pricing calculation
+  const priceBreakdown = calculateProductPrice(product.pricePaise, product.compareAtPricePaise);
+  const isSaleActive = priceBreakdown.isNavratriActive;
+
+  // Traditional compareAt discount calculation (when promotion is inactive)
   const hasDiscount = product.compareAtPricePaise && product.compareAtPricePaise > product.pricePaise;
   const discountPercent = hasDiscount
     ? Math.round(((product.compareAtPricePaise! - product.pricePaise) / product.compareAtPricePaise!) * 100)
@@ -194,13 +199,17 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
           <WishlistButton productId={product.id} initialWishlisted={initialWishlisted} />
         </div>
 
-        {/* Top Badges (Sale / Discount / New) */}
+        {/* Top Badges (Navratri Sale / New) */}
         <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10 text-[9px] uppercase tracking-widest font-bold font-sans pointer-events-none">
-          {hasDiscount && (
+          {isSaleActive ? (
+            <span className="bg-[#B66F79] text-[#FFF9F4] px-2 py-0.5 shadow-xs rounded-[2px] tracking-wider">
+              {priceBreakdown.displayBadge}
+            </span>
+          ) : hasDiscount ? (
             <span className="bg-brand-pink text-brand-offwhite px-2 py-0.5 shadow-xs">
               -{discountPercent}% OFF
             </span>
-          )}
+          ) : null}
           {product.id.includes("prod_kurt_004") && (
             <span className="bg-brand-sage text-brand-offwhite px-2 py-0.5 shadow-xs">
               New
@@ -239,13 +248,17 @@ export default function ProductCard({ product, initialWishlisted }: ProductCardP
         {/* Price Tag info */}
         <div className="flex items-baseline gap-2 pt-0.5">
           <span className="text-sm sm:text-base font-bold text-brand-black">
-            ₹{(product.pricePaise / 100).toLocaleString("en-IN")}
+            ₹{(priceBreakdown.sellingPricePaise / 100).toLocaleString("en-IN")}
           </span>
-          {hasDiscount && (
+          {isSaleActive ? (
+            <span className="text-xs text-neutral-400 line-through">
+              ₹{(priceBreakdown.canonicalPricePaise / 100).toLocaleString("en-IN")}
+            </span>
+          ) : hasDiscount ? (
             <span className="text-xs text-neutral-400 line-through">
               ₹{(product.compareAtPricePaise! / 100).toLocaleString("en-IN")}
             </span>
-          )}
+          ) : null}
         </div>
 
         {/* Color Swatches (Multi-Color Products Only) */}

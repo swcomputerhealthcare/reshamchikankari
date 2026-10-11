@@ -7,6 +7,7 @@ import { getProductBySlug } from "@/lib/catalog";
 import { getWishlistItems } from "@/lib/wishlist";
 import ProductReviews from "@/components/product/product-reviews";
 import { getProductReviewsAction } from "@/actions/review";
+import { calculateProductPrice } from "@/lib/promotions";
 
 interface ProductPageProps {
   params: Promise<{ slug: string }>;
@@ -112,6 +113,8 @@ export default async function ProductDetailPage(props: ProductPageProps) {
     ? product.variants.some((v) => (v.inventoryQuantity ?? 0) > 0 || v.isAvailable)
     : true;
 
+  const productPricing = calculateProductPrice(product.pricePaise, product.compareAtPricePaise);
+
   // Schema.org Product JSON-LD
   const productSchema: Record<string, any> = {
     "@context": "https://schema.org",
@@ -132,7 +135,7 @@ export default async function ProductDetailPage(props: ProductPageProps) {
       "@type": "Offer",
       url: `https://www.reshamchikankari.com/product/${product.slug}`,
       priceCurrency: "INR",
-      price: (product.pricePaise / 100).toFixed(2),
+      price: (productPricing.sellingPricePaise / 100).toFixed(2),
       priceValidUntil: "2026-12-31",
       itemCondition: "https://schema.org/NewCondition",
       availability: inStock

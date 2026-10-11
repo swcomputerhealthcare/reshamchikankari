@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
-import { requireAdmin } from "@/lib/auth/helpers";
+import { requireAdmin, getCurrentUser } from "@/lib/auth/helpers";
 import { validateCouponCode } from "@/lib/coupon";
 import { db } from "@/db";
 import { coupons } from "@/db/schema/coupon";
@@ -27,7 +27,16 @@ const hasDatabase = () => {
 };
 
 export async function applyCouponAction(code: string, subtotalPaise: number) {
-  const result = await validateCouponCode(code, subtotalPaise);
+  let user = null;
+  try {
+    user = await getCurrentUser();
+  } catch {}
+
+  const result = await validateCouponCode(
+    code,
+    subtotalPaise,
+    user?.id ? { userId: user.id, email: user.email } : undefined
+  );
 
   if (!result.success) {
     return { success: false, error: result.error };

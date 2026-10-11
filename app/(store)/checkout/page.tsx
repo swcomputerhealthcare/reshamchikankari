@@ -42,7 +42,11 @@ export default async function CheckoutPage() {
 
   if (couponCode) {
     const decodedCode = decodeURIComponent(couponCode);
-    const validation = await validateCouponCode(decodedCode, cart.subtotalPaise);
+    const validation = await validateCouponCode(
+      decodedCode,
+      cart.subtotalPaise,
+      user?.id ? { userId: user.id, email: user.email } : undefined
+    );
     if (validation.success) {
       discountPaise = validation.discountPaise || 0;
       validatedCode = validation.coupon?.code || decodedCode;

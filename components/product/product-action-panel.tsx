@@ -7,6 +7,7 @@ import Button from "@/components/ui/button";
 import WishlistButton from "@/components/product/wishlist-button";
 import SizeGuideModal from "@/components/product/size-guide-modal";
 import { event } from "@/lib/pixel";
+import { calculateProductPrice } from "@/lib/promotions";
 
 export interface Variant {
   id: string;
@@ -112,9 +113,14 @@ export default function ProductActionPanel({
     );
   }, [variants, hasColors, hasSizes, activeColor, selectedSize]);
 
-  // Derived stock & price
+  // Authoritative variant & product price calculation
   const stock = activeVariant ? activeVariant.stock : 0;
-  const currentPrice = ((activeVariant?.pricePaise ?? product.pricePaise) || product.pricePaise) / 100;
+  const canonicalVariantPricePaise = (activeVariant?.pricePaise ?? product.pricePaise) || product.pricePaise;
+  const priceBreakdown = calculateProductPrice(canonicalVariantPricePaise);
+  const isSaleActive = priceBreakdown.isNavratriActive;
+  const currentSellingPricePaise = priceBreakdown.sellingPricePaise;
+  const canonicalPricePaise = priceBreakdown.canonicalPricePaise;
+  const currentPrice = currentSellingPricePaise / 100;
 
   // Handle color change
   const handleColorSelect = (colorName: string) => {
@@ -266,18 +272,32 @@ export default function ProductActionPanel({
   return (
     <div className="space-y-7 font-sans">
       {/* Price Details */}
-      <div className="flex items-baseline gap-3 border-b border-brand-black/5 pb-5">
-        <span className="font-sans text-2xl font-semibold text-brand-black">
-          ₹{currentPrice.toLocaleString("en-IN")}
-        </span>
-        <span className="text-xs text-neutral-400 font-sans tracking-wide">
-          Inclusive of all taxes
-        </span>
-        {activeVariant?.sku && (
-          <span className="ml-auto text-[10px] uppercase font-mono tracking-wider text-neutral-400">
-            SKU: {activeVariant.sku}
-          </span>
+      <div className="border-b border-brand-black/5 pb-5 space-y-2">
+        {isSaleActive && (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-[2px] text-[10px] uppercase font-bold tracking-widest bg-[#B66F79] text-[#FFF9F4] shadow-xs">
+              {priceBreakdown.displayBadge}
+            </span>
+          </div>
         )}
+        <div className="flex items-baseline gap-3 flex-wrap">
+          <span className="font-sans text-2xl sm:text-3xl font-semibold text-brand-black">
+            ₹{currentPrice.toLocaleString("en-IN")}
+          </span>
+          {isSaleActive && (
+            <span className="text-sm sm:text-base text-neutral-400 line-through">
+              ₹{(canonicalPricePaise / 100).toLocaleString("en-IN")}
+            </span>
+          )}
+          <span className="text-xs text-neutral-400 font-sans tracking-wide">
+            Inclusive of all taxes
+          </span>
+          {activeVariant?.sku && (
+            <span className="ml-auto text-[10px] uppercase font-mono tracking-wider text-neutral-400">
+              SKU: {activeVariant.sku}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Validation Error Banner */}

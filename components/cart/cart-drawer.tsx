@@ -194,9 +194,16 @@ export default function CartDrawer({ variant = "default" }: CartDrawerProps) {
                         </button>
                       </div>
 
-                      <span className="text-xs font-sans font-bold text-brand-black">
-                        ₹{((item.pricePaise * item.quantity) / 100).toLocaleString("en-IN")}
-                      </span>
+                      <div className="flex flex-col items-end">
+                        <span className="text-xs font-sans font-bold text-brand-black">
+                          ₹{((item.pricePaise * item.quantity) / 100).toLocaleString("en-IN")}
+                        </span>
+                        {item.canonicalPricePaise && item.canonicalPricePaise > item.pricePaise && (
+                          <span className="text-[10px] text-neutral-400 line-through">
+                            ₹{((item.canonicalPricePaise * item.quantity) / 100).toLocaleString("en-IN")}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -208,13 +215,30 @@ export default function CartDrawer({ variant = "default" }: CartDrawerProps) {
         {/* SUMMARY FIXED FOOTER: Flex Fixed */}
         {items.length > 0 && (
           <div className="flex: 0 0 auto p-6 sm:p-8 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] bg-[#FFF9F4] border-t border-[rgba(23,23,23,0.12)] space-y-4">
+            {cart.canonicalSubtotalPaise && cart.canonicalSubtotalPaise > subtotalPaise && (
+              <div className="flex items-center justify-between text-xs text-[#7C7A5A] bg-[#7C7A5A]/5 px-3 py-2 rounded-lg border border-[#7C7A5A]/15">
+                <span className="font-semibold uppercase tracking-wider text-[10px]">
+                  Navratri Sale (20% OFF)
+                </span>
+                <span className="font-bold">
+                  &minus; ₹{((cart.canonicalSubtotalPaise - subtotalPaise) / 100).toLocaleString("en-IN")}
+                </span>
+              </div>
+            )}
             <div className="flex items-baseline justify-between">
               <span className="text-xs uppercase tracking-widest text-[#6f6f68] font-bold">
                 Subtotal
               </span>
-              <span className="text-lg font-bold text-brand-black">
-                ₹{(subtotalPaise / 100).toLocaleString("en-IN")}
-              </span>
+              <div className="flex items-baseline gap-2">
+                <span className="text-lg font-bold text-brand-black">
+                  ₹{(subtotalPaise / 100).toLocaleString("en-IN")}
+                </span>
+                {cart.canonicalSubtotalPaise && cart.canonicalSubtotalPaise > subtotalPaise && (
+                  <span className="text-xs text-neutral-400 line-through">
+                    ₹{(cart.canonicalSubtotalPaise / 100).toLocaleString("en-IN")}
+                  </span>
+                )}
+              </div>
             </div>
 
             <p className="text-[10px] text-neutral-400 leading-normal font-sans">

@@ -69,7 +69,11 @@ export async function createOrderAction(
             break;
           }
         }
-        const validation = await validateCouponCode(decodedCode, cart.subtotalPaise);
+        const validation = await validateCouponCode(decodedCode, cart.subtotalPaise, {
+          userId: userId || undefined,
+          email: address.email,
+          phone: address.phone,
+        });
         if (validation.success) {
           discountPaise = validation.discountPaise || 0;
           couponCode = validation.coupon?.code || decodedCode;
@@ -80,12 +84,24 @@ export async function createOrderAction(
       }
     }
 
-    // Calculate Shipping (Free on all orders)
-    const shippingPaise = 0;
-    const codFeePaise = paymentMethod === "COD" ? 5000 : 0;
+    // Calculate canonical order pricing via central promotion pricing engine
+    const { calculateOrderPricing } = await import("@/lib/promotions/pricing");
+    const pricing = calculateOrderPricing({
+      items: cart.items.map((i) => ({
+        productId: i.productId,
+        variantId: i.variantId,
+        canonicalPricePaise: i.canonicalPricePaise,
+        quantity: i.quantity,
+      })),
+      coupon: couponCode && discountPaise > 0 ? { code: couponCode, discountPaise } : null,
+      paymentMethod,
+      shippingPaise: 0,
+      walletAmountPaise: 0,
+    });
 
-    // Total
-    const orderTotalPaise = Math.max(0, cart.subtotalPaise - discountPaise + shippingPaise + codFeePaise);
+    const shippingPaise = pricing.shippingPaise;
+    const codFeePaise = pricing.codFeePaise;
+    const orderTotalPaise = pricing.orderTotalPaise;
 
     // Validate and Debit Wallet Balance (ONLY available for authenticated users)
     const orderId = `ord_${Math.random().toString(36).substring(2, 11)}`;
@@ -188,6 +204,20 @@ export async function createOrderAction(
 
       const resolvedPaymentProvider = (appliedWalletAmountPaise === orderTotalPaise && orderTotalPaise > 0) ? "WALLET" : (paymentMethod === "COD" ? "COD" : "RAZORPAY");
 
+      const pricingBreakdown = {
+        canonicalSubtotalPaise: pricing.canonicalSubtotalPaise,
+        navratriDiscountPaise: pricing.navratriDiscountPaise,
+        discountedSubtotalPaise: pricing.discountedSubtotalPaise,
+        couponCode: pricing.couponCode,
+        couponDiscountPaise: pricing.couponDiscountPaise,
+        subtotalAfterDiscountsPaise: pricing.subtotalAfterDiscountsPaise,
+        shippingPaise: pricing.shippingPaise,
+        codFeePaise: pricing.codFeePaise,
+        walletPaidPaise: appliedWalletAmountPaise,
+        finalPayablePaise: remainingCashTotalPaise,
+        isNavratriActive: pricing.isNavratriActive,
+      };
+
       await db.insert(orders).values({
         id: orderId,
         orderNumber,
@@ -206,6 +236,7 @@ export async function createOrderAction(
           codFeePaise,
           walletPaidPaise: appliedWalletAmountPaise,
           remainingCashTotalPaise,
+          pricingBreakdown,
         },
         paymentProvider: resolvedPaymentProvider,
         paymentId: null,
@@ -218,8 +249,23 @@ export async function createOrderAction(
           codFeePaise,
           walletPaidPaise: appliedWalletAmountPaise,
           remainingCashTotalPaise,
+          pricingBreakdown,
         },
       });
+
+      if (validCouponId) {
+        try {
+          const { recordCouponUsage } = await import("@/lib/coupon");
+          await recordCouponUsage({
+            couponId: validCouponId,
+            orderId,
+            userId: userId || null,
+            discountPaise,
+          });
+        } catch (cUsageErr) {
+          console.warn("Coupon usage recording notice:", cUsageErr);
+        }
+      }
 
       for (const item of cart.items) {
         let validProductId: string | null = null;
