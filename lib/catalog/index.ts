@@ -2021,10 +2021,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "size": "M",
         "pricePaise": 149500,
         "compareAtPricePaise": null,
-        "stock": 12,
-        "inventoryQuantity": 12,
+        "stock": 0,
+        "inventoryQuantity": 0,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": false
       },
       {
         "id": "var_rc_8_peach_l",
@@ -3476,10 +3476,10 @@ export const MOCK_PRODUCTS: CatalogProductInput[] = [
         "size": "M",
         "pricePaise": 129500,
         "compareAtPricePaise": null,
-        "stock": 12,
-        "inventoryQuantity": 12,
+        "stock": 0,
+        "inventoryQuantity": 0,
         "isActive": true,
-        "isAvailable": true
+        "isAvailable": false
       },
       {
         "id": "var_rc_14_black_l",
