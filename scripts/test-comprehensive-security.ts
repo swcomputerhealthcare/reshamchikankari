@@ -58,9 +58,10 @@ async function runComprehensiveSecurityMatrix() {
   const userA_Email = `patron.a.${testSuffix}@example.com`;
   const userB_Email = `patron.b.${testSuffix}@example.com`;
 
-  // Resolve valid category for test fixtures
-  const firstProd = await db.query.products.findFirst();
-  const validCategoryId = firstProd?.categoryId || "cat_everyday_cotton";
+  try {
+    // Resolve valid category for test fixtures
+    const firstProd = await db.query.products.findFirst();
+    const validCategoryId = firstProd?.categoryId || "cat_everyday_cotton";
 
   // Upsert test customer profiles
   await db.insert(profiles).values([
@@ -1089,6 +1090,27 @@ async function runComprehensiveSecurityMatrix() {
 
     // Clean up rate limit row
     await resetRateLimit(targetEmail, "otp_verify");
+  }
+  } finally {
+    try {
+      console.log("\n▶ Cleaning up security test fixtures...");
+      const prodIds = [`prod_test_${testSuffix}`, `prod_last_${testSuffix}`, `prod_price_${testSuffix}`];
+      for (const pid of prodIds) {
+        await db.delete(productVariants).where(eq(productVariants.productId, pid));
+        await db.delete(products).where(eq(products.id, pid));
+      }
+      const orderIds = [`ord_sec_a_${testSuffix}`, `ord_sec_b_${testSuffix}`, `ord_guest_${testSuffix}`, `ord_other_${testSuffix}`, `ord_vuln_${testSuffix}`];
+      for (const oid of orderIds) {
+        await db.delete(orderItems).where(eq(orderItems.orderId, oid));
+        await db.delete(payments).where(eq(payments.orderId, oid));
+        await db.delete(orders).where(eq(orders.id, oid));
+      }
+      await db.delete(profiles).where(eq(profiles.id, userA_Id));
+      await db.delete(profiles).where(eq(profiles.id, userB_Id));
+      console.log("✔ Security test fixtures cleaned up successfully.");
+    } catch (cleanupErr) {
+      console.warn("Fixture cleanup warning:", cleanupErr);
+    }
   }
 
   console.log("\n================================================================================");
