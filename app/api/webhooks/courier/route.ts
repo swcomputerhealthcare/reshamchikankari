@@ -75,18 +75,30 @@ export async function POST(req: Request) {
       url.searchParams.get("token") ||
       "";
 
-    const validTokens = [
-      process.env.SHIPROCKET_WEBHOOK_SECRET,
-      env.SHIPROCKET_WEBHOOK_SECRET,
-      "sr_sec_wh_78a1c9e42b5f6d03918a2e4c8d71b305",
-      "shiprocket_wh_secret_reshamk_test",
-    ].filter(Boolean) as string[];
+    const crypto = await import("crypto");
+    const configuredSecret = process.env.SHIPROCKET_WEBHOOK_SECRET || env.SHIPROCKET_WEBHOOK_SECRET;
+    const isProd = process.env.NODE_ENV === "production";
 
-    // Optional token validation on actual events if token is passed
-    if (receivedToken && validTokens.length > 0 && !validTokens.includes(receivedToken)) {
-      if (env.NODE_ENV === "production") {
-        console.warn("Courier Webhook Token Mismatch:", receivedToken);
-        return NextResponse.json({ error: "Unauthorized webhook token" }, { status: 401 });
+    if (isProd) {
+      if (!configuredSecret) {
+        console.error("Critical: SHIPROCKET_WEBHOOK_SECRET is not configured in production.");
+        return NextResponse.json({ error: "Webhook configuration error." }, { status: 500 });
+      }
+      if (!receivedToken) {
+        return NextResponse.json({ error: "Missing webhook authorization token." }, { status: 401 });
+      }
+      const expBuf = Buffer.from(configuredSecret);
+      const recBuf = Buffer.from(receivedToken);
+      const isValid = expBuf.length === recBuf.length && crypto.timingSafeEqual(expBuf, recBuf);
+      if (!isValid) {
+        console.warn("Courier Webhook Token Mismatch");
+        return NextResponse.json({ error: "Unauthorized webhook token." }, { status: 401 });
+      }
+    } else if (configuredSecret && receivedToken) {
+      const expBuf = Buffer.from(configuredSecret);
+      const recBuf = Buffer.from(receivedToken);
+      if (expBuf.length !== recBuf.length || !crypto.timingSafeEqual(expBuf, recBuf)) {
+        return NextResponse.json({ error: "Unauthorized webhook token." }, { status: 401 });
       }
     }
 

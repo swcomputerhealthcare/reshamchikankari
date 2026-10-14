@@ -10,12 +10,35 @@ export const dynamic = "force-dynamic";
 
 function verifyShiprocketHeader(req: Request): boolean {
   const secret = process.env.SHIPROCKET_WEBHOOK_SECRET || env.SHIPROCKET_WEBHOOK_SECRET;
-  if (!secret) return true; // If no secret configured, proceed
+  const isProd = process.env.NODE_ENV === "production";
 
-  const sigHeader = req.headers.get("x-shiprocket-signature") || req.headers.get("x-api-key");
-  if (!sigHeader) return true;
+  if (!secret) {
+    if (isProd) {
+      console.error("Critical: SHIPROCKET_WEBHOOK_SECRET is not configured in production environment.");
+      return false;
+    }
+    return true;
+  }
 
-  return sigHeader === secret;
+  const sigHeader =
+    req.headers.get("x-shiprocket-signature") ||
+    req.headers.get("x-shiprocket-token") ||
+    req.headers.get("x-api-key");
+
+  if (!sigHeader) {
+    return false;
+  }
+
+  try {
+    const expectedBuf = Buffer.from(secret);
+    const providedBuf = Buffer.from(sigHeader);
+    if (expectedBuf.length !== providedBuf.length) {
+      return false;
+    }
+    return crypto.timingSafeEqual(expectedBuf, providedBuf);
+  } catch {
+    return false;
+  }
 }
 
 export async function POST(req: Request) {

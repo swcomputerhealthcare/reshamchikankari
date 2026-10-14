@@ -1,10 +1,11 @@
 'use server';
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseJsClient } from "@supabase/supabase-js";
 import { db } from "@/db";
 import { profiles } from "@/db/schema/auth";
+import { checkRateLimit, resetRateLimit } from "@/lib/security/rate-limiter";
 
 const SUPABASE_URL =
   process.env.NEXT_PUBLIC_SUPABASE_URL ||
@@ -100,6 +101,42 @@ export async function sendOtpAction(
       }
     }
 
+    // Rate limiting: Protect against OTP bombing & abuse per IP and per account
+    let clientIp = "127.0.0.1";
+    try {
+      const headerList = await headers();
+      const rawIp =
+        headerList.get("x-forwarded-for") ||
+        headerList.get("x-real-ip") ||
+        headerList.get("cf-connecting-ip") ||
+        "127.0.0.1";
+      clientIp = rawIp.split(",")[0].trim();
+    } catch {}
+
+    const ipLimit = await checkRateLimit(clientIp, "otp_send_ip", {
+      maxHits: 10,
+      windowSeconds: 900,
+      blockDurationSeconds: 900,
+    });
+    if (!ipLimit.allowed) {
+      return {
+        success: false,
+        error: `Too many verification requests from this network. Please wait ${ipLimit.retryAfterSeconds || 60} seconds before trying again.`,
+      };
+    }
+
+    const emailLimit = await checkRateLimit(cleanEmail, "otp_send_email", {
+      maxHits: 5,
+      windowSeconds: 900,
+      blockDurationSeconds: 900,
+    });
+    if (!emailLimit.allowed) {
+      return {
+        success: false,
+        error: `Too many verification requests for this account. Please wait ${emailLimit.retryAfterSeconds || 60} seconds before trying again.`,
+      };
+    }
+
     const supabase = createSupabaseJsClient(SUPABASE_URL, SUPABASE_KEY);
 
     const { error } = await supabase.auth.signInWithOtp({
@@ -161,6 +198,19 @@ export async function verifyOtpAction(
 
     if (!cleanToken || cleanToken.length < 6) {
       return { success: false, error: "Please enter the complete 6-digit verification code." };
+    }
+
+    // Rate limiting: Protect against OTP brute-forcing
+    const verifyLimit = await checkRateLimit(cleanEmail, "otp_verify", {
+      maxHits: 5,
+      windowSeconds: 900,
+      blockDurationSeconds: 900,
+    });
+    if (!verifyLimit.allowed) {
+      return {
+        success: false,
+        error: `Too many invalid attempts. For your security, this account is temporarily locked for ${verifyLimit.retryAfterSeconds || 60} seconds.`,
+      };
     }
 
     let cookieStore: any = null;
@@ -251,6 +301,12 @@ export async function verifyOtpAction(
     } catch (claimErr) {
       console.warn("Could not claim historical guest orders during OTP verification:", claimErr);
     }
+
+    // Reset rate limits on successful OTP verification
+    try {
+      await resetRateLimit(cleanEmail, "otp_verify");
+      await resetRateLimit(cleanEmail, "otp_send_email");
+    } catch {}
 
     return {
       success: true,

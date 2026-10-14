@@ -40,8 +40,18 @@ export default async function TrackOrderPage(props: TrackOrderPageProps) {
         const snapPhone = (snap.phone || "").replace(/\D/g, "");
         const queryDigits = contactQuery.replace(/\D/g, "");
 
-        // If contact verification is provided, ensure it matches
-        if (contactQuery) {
+        let currentUser = null;
+        try {
+          const { getCurrentUser } = await import("@/lib/auth/helpers");
+          currentUser = await getCurrentUser();
+        } catch {}
+
+        const isOwner = currentUser && order.userId && currentUser.id === order.userId;
+        const isAdmin = currentUser?.role === "ADMIN";
+
+        if (isOwner || isAdmin) {
+          orderData = order;
+        } else if (contactQuery) {
           const emailMatches = contactQuery.includes("@") && (snapEmail === contactQuery);
           const phoneMatches = queryDigits.length >= 10 && snapPhone.endsWith(queryDigits.slice(-10));
 
@@ -51,8 +61,7 @@ export default async function TrackOrderPage(props: TrackOrderPageProps) {
             orderData = order;
           }
         } else {
-          // If came directly from order confirmation link, allow preview
-          orderData = order;
+          searchError = "For customer privacy, please enter the Email Address or 10-digit Mobile Number used when placing this order.";
         }
 
         if (orderData) {
@@ -201,16 +210,16 @@ export default async function TrackOrderPage(props: TrackOrderPageProps) {
               </div>
             </div>
 
-            {/* Destination Address */}
-            {shipping.street && (
+            {/* Destination Address (Masked for privacy) */}
+            {(shipping.city || shipping.state) && (
               <div className="p-4 bg-neutral-50 rounded-xl text-xs space-y-1 text-neutral-600">
                 <div className="font-bold text-neutral-900 flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-[#7C7A5A]" />
                   <span>Delivery Destination</span>
                 </div>
                 <p className="pl-5 leading-relaxed">
-                  {shipping.fullName}<br />
-                  {shipping.street}, {shipping.city}, {shipping.state} - {shipping.zip}
+                  {shipping.fullName ? `${shipping.fullName.split(" ")[0]} ••••` : "Valued Patron"}<br />
+                  {shipping.city ? `${shipping.city}, ` : ""}{shipping.state || ""} {shipping.zip ? `— ${shipping.zip.slice(0, 2)}••••` : ""}
                 </p>
               </div>
             )}

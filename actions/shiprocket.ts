@@ -464,6 +464,17 @@ export async function syncOrderTrackingAction(orderId: string) {
       return { success: false, error: "Order not found." };
     }
 
+    // Verify actor authorization: prevent unauthorized cross-customer tracking synchronization
+    try {
+      const { getCurrentUser } = await import("@/lib/auth/helpers");
+      const currentUser = await getCurrentUser();
+      if (orderData.userId && currentUser && orderData.userId !== currentUser.id && currentUser.role !== "ADMIN") {
+        return { success: false, error: "Unauthorized access to order tracking." };
+      }
+    } catch {
+      // Non-request contexts
+    }
+
     // If order has no AWB yet, check if Shiprocket has assigned one
     if (!orderData.awbCode && orderData.shiprocketOrderId) {
       try {

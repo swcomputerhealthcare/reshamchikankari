@@ -5,13 +5,21 @@ import { env } from "@/lib/validation/env";
 
 export const dynamic = "force-dynamic";
 
-// Simple webhook signature verification
+// Secure webhook signature verification
 function verifySignature(payload: string, signature: string, secret: string) {
-  if (secret === "dummy_secret") return true; // Local development bypass
-  const hmac = crypto.createHmac("sha256", secret);
-  hmac.update(payload);
-  const digest = hmac.digest("hex");
-  return digest === signature;
+  if (!signature || !secret) return false;
+  if (process.env.NODE_ENV !== "production" && secret === "dummy_secret") return true;
+  try {
+    const hmac = crypto.createHmac("sha256", secret);
+    hmac.update(payload);
+    const digest = hmac.digest("hex");
+    const digestBuf = Buffer.from(digest);
+    const sigBuf = Buffer.from(signature);
+    if (digestBuf.length !== sigBuf.length) return false;
+    return crypto.timingSafeEqual(digestBuf, sigBuf);
+  } catch {
+    return false;
+  }
 }
 
 export async function POST(req: Request) {

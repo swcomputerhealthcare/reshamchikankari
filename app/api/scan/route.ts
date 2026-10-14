@@ -1,8 +1,20 @@
 import { NextResponse } from "next/server";
 import fs from "fs";
 import path from "path";
+import { getCurrentUser } from "@/lib/auth/helpers";
 
 export async function GET() {
+  if (process.env.NODE_ENV === "production") {
+    try {
+      const user = await getCurrentUser();
+      if (!user || user.role !== "ADMIN") {
+        return NextResponse.json({ error: "Unauthorized access" }, { status: 403 });
+      }
+    } catch {
+      return NextResponse.json({ error: "Unauthorized access" }, { status: 401 });
+    }
+  }
+
   try {
     const targetDir = path.join(process.cwd(), "public", "images", "reshamchikankari");
 

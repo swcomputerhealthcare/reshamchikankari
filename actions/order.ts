@@ -500,9 +500,54 @@ export async function verifyRazorpayPaymentAction(
 
   if (isDbAvailable) {
     try {
-      const { eq } = await import("drizzle-orm");
+      const { eq, and } = await import("drizzle-orm");
       const { payments } = await import("@/db/schema/payment");
       const { orderTimeline } = await import("@/db/schema/order");
+
+      // Verify order existence and ownership
+      const [targetOrder] = await db
+        .select()
+        .from(orders)
+        .where(eq(orders.id, orderId))
+        .limit(1);
+
+      if (!targetOrder) {
+        return { success: false, error: "Order not found." };
+      }
+
+      // Check if already paid (idempotent response)
+      if (targetOrder.paymentStatus === "PAID" && targetOrder.status === "CONFIRMED") {
+        return { success: true, orderNumber: targetOrder.orderNumber, message: "Order is already verified and confirmed." };
+      }
+
+      // Prevent cross-customer unauthorized access if order already has an assigned owner
+      if (targetOrder.userId && currentUser?.id && targetOrder.userId !== currentUser.id && currentUser.role !== "ADMIN") {
+        return { success: false, error: "Unauthorized access: this order belongs to another patron." };
+      }
+
+      // Verify that razorpayOrderId corresponds to this specific orderId in the database
+      const [paymentRecord] = await db
+        .select()
+        .from(payments)
+        .where(
+          and(
+            eq(payments.orderId, orderId),
+            eq(payments.providerOrderId, razorpayOrderId)
+          )
+        )
+        .limit(1);
+
+      if (!paymentRecord) {
+        console.error("Security alert: payment record mismatch between orderId and providerOrderId", {
+          orderId,
+          razorpayOrderId,
+          actor: currentUser?.id || "guest",
+        });
+        return {
+          success: false,
+          error: "Payment verification failed. Invalid transaction and order association.",
+        };
+      }
 
       await db.transaction(async (tx) => {
         // 1. Update Order status
@@ -513,25 +558,28 @@ export async function verifyRazorpayPaymentAction(
           updatedAt: new Date(),
         };
 
-        // Attach userId if currentUser logged in and order didn't have one
-        if (currentUser?.id) {
+        // Attach userId only if order was previously a guest order (no owner set yet)
+        if (!targetOrder.userId && currentUser?.id) {
           updateData.userId = currentUser.id;
         }
 
         await tx.update(orders).set(updateData).where(eq(orders.id, orderId));
 
         // 2. Update Payment record
-        if (razorpayOrderId) {
-          await tx
-            .update(payments)
-            .set({
-              status: "CAPTURED",
-              providerPaymentId: razorpayPaymentId,
-              signatureVerified: true,
-              updatedAt: new Date(),
-            })
-            .where(eq(payments.providerOrderId, razorpayOrderId));
-        }
+        await tx
+          .update(payments)
+          .set({
+            status: "CAPTURED",
+            providerPaymentId: razorpayPaymentId,
+            signatureVerified: true,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(payments.orderId, orderId),
+              eq(payments.providerOrderId, razorpayOrderId)
+            )
+          );
 
         // 3. Add timeline entry
         await tx.insert(orderTimeline).values({

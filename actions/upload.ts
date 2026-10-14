@@ -22,9 +22,41 @@ export async function uploadAdminImageAction(formData: FormData): Promise<Upload
     return { success: false, error: "No file provided for upload." };
   }
 
-  // Validate mime type
-  if (!file.type.startsWith("image/")) {
-    return { success: false, error: "Uploaded file must be a valid image." };
+  // 1. Enforce strict file size limit (max 10 MB)
+  const MAX_FILE_SIZE = 10 * 1024 * 1024;
+  if (file.size > MAX_FILE_SIZE) {
+    return { success: false, error: "Image file exceeds maximum allowable size of 10 MB." };
+  }
+
+  // 2. Validate MIME type against strict raster image allowlist (disallowing active SVG content)
+  const ALLOWED_MIME_TYPES = new Set([
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/avif",
+    "image/gif",
+  ]);
+
+  const mimeType = (file.type || "").toLowerCase().trim();
+  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+    return {
+      success: false,
+      error: "Unsupported file type. Please upload a standard image file (JPEG, PNG, WebP, AVIF, or GIF).",
+    };
+  }
+
+  // 3. Inspect binary magic bytes to prevent MIME spoofing
+  const bytes = await file.arrayBuffer();
+  const buffer = Buffer.from(bytes);
+
+  const isJpeg = buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff;
+  const isPng = buffer[0] === 0x89 && buffer[1] === 0x50 && buffer[2] === 0x4e && buffer[3] === 0x47;
+  const isGif = buffer[0] === 0x47 && buffer[1] === 0x49 && buffer[2] === 0x46;
+  const isWebp = buffer.length > 12 && buffer.toString("utf8", 0, 4) === "RIFF" && buffer.toString("utf8", 8, 12) === "WEBP";
+  const isAvif = buffer.length > 12 && buffer.toString("utf8", 4, 12).includes("ftyp");
+
+  if (!isJpeg && !isPng && !isGif && !isWebp && !isAvif) {
+    return { success: false, error: "Invalid image content. File header does not match a recognized image format." };
   }
 
   const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
@@ -41,9 +73,7 @@ export async function uploadAdminImageAction(formData: FormData): Promise<Upload
 
   if (isCloudinaryConfigured) {
     try {
-      const bytes = await file.arrayBuffer();
-      const buffer = Buffer.from(bytes);
-      const base64Data = `data:${file.type};base64,${buffer.toString("base64")}`;
+      const base64Data = `data:${mimeType};base64,${buffer.toString("base64")}`;
 
       const timestamp = Math.floor(Date.now() / 1000);
       const crypto = await import("crypto");
@@ -86,9 +116,7 @@ export async function uploadAdminImageAction(formData: FormData): Promise<Upload
 
   // Fallback: Convert to optimized Data URL if Cloudinary credentials are not present in current env
   try {
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-    const dataUrl = `data:${file.type};base64,${buffer.toString("base64")}`;
+    const dataUrl = `data:${mimeType};base64,${buffer.toString("base64")}`;
     return {
       success: true,
       image: {

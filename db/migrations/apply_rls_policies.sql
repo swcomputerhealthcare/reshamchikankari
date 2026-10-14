@@ -201,3 +201,51 @@ CREATE POLICY "Admin only activities access"
   TO authenticated
   USING (public.is_admin());
 
+-- 10. COUPONS POLICIES (Enforce admin-only direct table access; customer validation via server actions)
+ALTER TABLE IF EXISTS public.coupons ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admin only coupons access" ON public.coupons;
+CREATE POLICY "Admin only coupons access"
+  ON public.coupons
+  FOR ALL
+  TO authenticated
+  USING (public.is_admin());
+
+-- 11. COUPON USAGE POLICIES
+ALTER TABLE IF EXISTS public.coupon_usage ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow user coupon_usage access" ON public.coupon_usage;
+CREATE POLICY "Allow user coupon_usage access"
+  ON public.coupon_usage
+  FOR SELECT
+  TO authenticated
+  USING (user_id = auth.uid() OR public.is_admin());
+
+-- 12. SECURITY RATE LIMITS POLICIES (Prevent tampering with rate limit records)
+ALTER TABLE IF EXISTS public.security_rate_limits ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admin only security_rate_limits access" ON public.security_rate_limits;
+CREATE POLICY "Admin only security_rate_limits access"
+  ON public.security_rate_limits
+  FOR ALL
+  TO authenticated
+  USING (public.is_admin());
+
+-- 13. PAYMENTS POLICIES (Users can only view payments for their own orders; mutations via admin/server)
+ALTER TABLE IF EXISTS public.payments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Allow user payments read" ON public.payments;
+CREATE POLICY "Allow user payments read"
+  ON public.payments
+  FOR SELECT
+  TO authenticated
+  USING (
+    order_id IN (SELECT id FROM public.orders WHERE user_id = auth.uid())
+    OR public.is_admin()
+  );
+
+-- 14. PROCESSED WEBHOOKS POLICIES (Admin only)
+ALTER TABLE IF EXISTS public.processed_webhooks ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admin only processed_webhooks access" ON public.processed_webhooks;
+CREATE POLICY "Admin only processed_webhooks access"
+  ON public.processed_webhooks
+  FOR ALL
+  TO authenticated
+  USING (public.is_admin());
+

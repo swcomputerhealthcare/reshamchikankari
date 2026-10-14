@@ -10,9 +10,23 @@ export async function GET(request: Request) {
   const secretParam = searchParams.get("secret");
   const authHeader = request.headers.get("authorization");
   const expectedSecret = process.env.CRON_SECRET;
+  const isProd = process.env.NODE_ENV === "production";
 
-  if (expectedSecret && secretParam !== expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
-    return NextResponse.json({ error: "Unauthorized cron execution request." }, { status: 401 });
+  const providedSecret = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7).trim()
+    : secretParam?.trim();
+
+  // Fail-closed: production requires CRON_SECRET to be defined and matched via timing-safe check
+  if (isProd || expectedSecret) {
+    if (!expectedSecret || !providedSecret) {
+      return NextResponse.json({ error: "Unauthorized cron execution request." }, { status: 401 });
+    }
+    const crypto = await import("crypto");
+    const expBuf = Buffer.from(expectedSecret);
+    const provBuf = Buffer.from(providedSecret);
+    if (expBuf.length !== provBuf.length || !crypto.timingSafeEqual(expBuf, provBuf)) {
+      return NextResponse.json({ error: "Unauthorized cron execution request." }, { status: 401 });
+    }
   }
 
   const isDbAvailable = !!process.env.DATABASE_URL && process.env.DATABASE_URL.indexOf("[YOUR-PASSWORD]") === -1;

@@ -37,6 +37,8 @@ export const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
 });
 
+const isProd = process.env.NODE_ENV === "production";
+
 export const env = {
   get DATABASE_URL() {
     return process.env.DATABASE_URL || "";
@@ -51,25 +53,25 @@ export const env = {
     return process.env.SUPABASE_SECRET_KEY || "";
   },
   get BETTER_AUTH_SECRET() {
-    return process.env.BETTER_AUTH_SECRET || "dummy_secret_32_chars_long_minimum";
+    return process.env.BETTER_AUTH_SECRET || (isProd ? "" : "dummy_secret_32_chars_long_minimum");
   },
   get BETTER_AUTH_URL() {
-    return process.env.BETTER_AUTH_URL || "http://localhost:3000";
+    return process.env.BETTER_AUTH_URL || (isProd ? "https://www.reshamchikankari.com" : "http://localhost:3000");
   },
   get BETTER_AUTH_API_KEY() {
-    return process.env.BETTER_AUTH_API_KEY || "ba_ebnmgmbkvwc3jbodrmm1dz4g7t0z7b45";
+    return process.env.BETTER_AUTH_API_KEY || "";
   },
   get RAZORPAY_KEY_ID() {
-    return process.env.RAZORPAY_KEY_ID || "rzp_live_TYIGUQfADESI9t";
+    return process.env.RAZORPAY_KEY_ID || (isProd ? "" : "rzp_test_placeholder");
   },
   get RAZORPAY_KEY_SECRET() {
-    return process.env.RAZORPAY_KEY_SECRET || "S6foaXaoR516ySbyqwbmrR3c";
+    return process.env.RAZORPAY_KEY_SECRET || (isProd ? "" : "placeholder_secret");
   },
   get RAZORPAY_WEBHOOK_SECRET() {
-    return process.env.RAZORPAY_WEBHOOK_SECRET || "rzp_webhook_secret_reshamk_live";
+    return process.env.RAZORPAY_WEBHOOK_SECRET || "";
   },
   get NEXT_PUBLIC_RAZORPAY_KEY_ID() {
-    return process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || "rzp_live_TYIGUQfADESI9t";
+    return process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || process.env.RAZORPAY_KEY_ID || (isProd ? "" : "rzp_test_placeholder");
   },
   get CLOUDINARY_CLOUD_NAME() {
     return process.env.CLOUDINARY_CLOUD_NAME || "";
@@ -84,10 +86,10 @@ export const env = {
     return process.env.RESEND_API_KEY || "";
   },
   get SHIPROCKET_EMAIL() {
-    return process.env.SHIPROCKET_EMAIL || "sw.computerhealthcare@gmail.com";
+    return process.env.SHIPROCKET_EMAIL || "";
   },
   get SHIPROCKET_PASSWORD() {
-    return process.env.SHIPROCKET_PASSWORD || "@B$EqTdjy&TFH4dD5ZEjXtBbk2sYO!n#";
+    return process.env.SHIPROCKET_PASSWORD || "";
   },
   get SHIPROCKET_PICKUP_LOCATION() {
     return process.env.SHIPROCKET_PICKUP_LOCATION || "Home";
