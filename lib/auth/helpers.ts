@@ -16,19 +16,29 @@ export interface User {
 }
 
 export const getCurrentUser = cache(async (): Promise<User | null> => {
-  const { data: ctx, error } = await createSupabaseContext({ auth: "user" });
+  // In development/test mode, provide fallback Admin if ALLOW_DEV_AUTH_BYPASS is explicitly set to "true"
+  if (process.env.NODE_ENV === "development" && process.env.ALLOW_DEV_AUTH_BYPASS === "true") {
+    return {
+      id: "usr_admin_dev",
+      name: "Resham Admin (Dev Mode)",
+      email: "admin@reshamchikankari.com",
+      role: "ADMIN",
+      image: null,
+      createdAt: new Date().toISOString(),
+    };
+  }
+
+  let ctx = null;
+  let error = null;
+  try {
+    const res = await createSupabaseContext({ auth: "user" });
+    ctx = res.data;
+    error = res.error;
+  } catch (ctxErr) {
+    return null;
+  }
+
   if (error || !ctx || !ctx.userClaims) {
-    // In development mode, only provide fallback Admin if ALLOW_DEV_AUTH_BYPASS is explicitly set to "true"
-    if (process.env.NODE_ENV === "development" && process.env.ALLOW_DEV_AUTH_BYPASS === "true") {
-      return {
-        id: "usr_admin_dev",
-        name: "Resham Admin (Dev Mode)",
-        email: "admin@reshamchikankari.com",
-        role: "ADMIN",
-        image: null,
-        createdAt: new Date().toISOString(),
-      };
-    }
     return null;
   }
 

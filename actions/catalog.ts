@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { products, categories, productVariants, productImages } from "@/db/schema/catalog";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
+import { logAdminActivity } from "@/lib/audit";
 
 const imageInputSchema = z.object({
   url: z.string().min(1, "Image URL is required"),
@@ -72,8 +73,10 @@ export async function revalidateCatalog(slug?: string) {
     if (slug) {
       revalidatePath(`/product/${slug.toLowerCase()}`);
     }
-  } catch (err) {
-    console.warn("Catalog revalidation error:", err);
+  } catch (err: any) {
+    if (!err?.message?.includes("static generation store")) {
+      console.warn("Catalog revalidation error:", err);
+    }
   }
 }
 
@@ -469,7 +472,7 @@ export async function duplicateProductAction(id: string) {
 }
 
 export async function deleteProductAction(id: string) {
-  await requireAdmin();
+  const adminUser = await requireAdmin();
 
   if (!hasDatabase()) {
     return { success: false, error: "Database offline. Cannot delete." };
@@ -479,6 +482,29 @@ export async function deleteProductAction(id: string) {
     const prod = await db.query.products.findFirst({
       where: eq(products.id, id),
     });
+
+    if (!prod) {
+      return { success: false, error: "Product not found." };
+    }
+
+    // Check if the product has historical order items
+    try {
+      const { orderItems } = await import("@/db/schema/order");
+      const existingOrderItem = await db.query.orderItems.findFirst({
+        where: eq(orderItems.productId, id),
+      });
+      if (existingOrderItem) {
+        return {
+          success: false,
+          error: "Cannot delete product with existing order history. Historical orders and financial records must be preserved. Please unpublish or archive the product instead.",
+        };
+      }
+    } catch (orderCheckErr: any) {
+      if (orderCheckErr?.message && orderCheckErr.message.includes("Cannot delete product")) {
+        return { success: false, error: orderCheckErr.message };
+      }
+      console.warn("Could not check existing order items:", orderCheckErr);
+    }
 
     // 1. Clean up dependent cart items
     try {
@@ -504,29 +530,21 @@ export async function deleteProductAction(id: string) {
       console.warn("Could not delete dependent reviews:", e);
     }
 
-    // 4. Detach from existing orders snapshot (set null so historical orders don't break)
-    try {
-      const { orderItems } = await import("@/db/schema/order");
-      await db.update(orderItems).set({ productId: null, variantId: null }).where(eq(orderItems.productId, id));
-    } catch (e) {
-      console.warn("Could not detach order items:", e);
-    }
-
-    // 5. Delete product images
+    // 4. Delete product images
     try {
       await db.delete(productImages).where(eq(productImages.productId, id));
     } catch (e) {
       console.warn("Could not delete product images:", e);
     }
 
-    // 6. Delete product variants
+    // 5. Delete product variants
     try {
       await db.delete(productVariants).where(eq(productVariants.productId, id));
     } catch (e) {
       console.warn("Could not delete product variants:", e);
     }
 
-    // 7. Delete product options and option values
+    // 6. Delete product options and option values
     try {
       const { productOptions } = await import("@/db/schema/catalog");
       await db.delete(productOptions).where(eq(productOptions.productId, id));
@@ -534,10 +552,19 @@ export async function deleteProductAction(id: string) {
       console.warn("Could not delete product options:", e);
     }
 
-    // 8. Delete the product itself
+    // 7. Delete the product itself
     await db.delete(products).where(eq(products.id, id));
 
     await revalidateCatalog(prod?.slug);
+
+    await logAdminActivity({
+      adminId: adminUser.id,
+      action: "product.delete",
+      entityType: "product",
+      entityId: id,
+      details: { name: prod.name, sku: prod.sku },
+    });
+
     return { success: true };
   } catch (error: any) {
     console.error("Delete product failed:", error);
@@ -551,14 +578,14 @@ export async function updateProductVariantAction(
     stock: number;
     isAvailable: boolean;
     sku: string;
-    inventoryQuantity: number;
+    inventoryQuantity?: number;
     colorName?: string | null;
     colorCode?: string | null;
     size?: string | null;
     pricePaise?: number | null;
   }
 ) {
-  await requireAdmin();
+  const adminUser = await requireAdmin();
   if (!hasDatabase()) return { success: true };
 
   try {
@@ -566,17 +593,25 @@ export async function updateProductVariantAction(
       where: eq(productVariants.id, variantId),
     });
     let slug: string | undefined;
+    let productName: string | undefined;
     if (v?.productId) {
       const prod = await db.query.products.findFirst({
         where: eq(products.id, v.productId),
       });
       slug = prod?.slug;
+      productName = prod?.name;
     }
 
+    // Authoritative stock and availability rule:
+    // If stock is 0, isAvailable must be false.
+    const finalStock = Math.max(0, data.stock ?? 0);
+    const finalIsAvailable = finalStock === 0 ? false : (data.isAvailable ?? true);
+    const finalInventoryQty = data.inventoryQuantity !== undefined ? Math.max(0, data.inventoryQuantity) : finalStock;
+
     const updateData: Record<string, any> = {
-      stock: data.stock,
-      inventoryQuantity: data.inventoryQuantity,
-      isAvailable: data.isAvailable,
+      stock: finalStock,
+      inventoryQuantity: finalInventoryQty,
+      isAvailable: finalIsAvailable,
       sku: data.sku.toUpperCase(),
       updatedAt: new Date(),
     };
@@ -592,6 +627,22 @@ export async function updateProductVariantAction(
       .where(eq(productVariants.id, variantId));
 
     await revalidateCatalog(slug);
+
+    await logAdminActivity({
+      adminId: adminUser.id,
+      action: "variant.update_stock",
+      entityType: "variant",
+      entityId: variantId,
+      details: {
+        productName,
+        variantName: v?.name,
+        size: data.size || v?.size,
+        previousStock: v?.stock,
+        newStock: finalStock,
+        isAvailable: finalIsAvailable,
+      },
+    });
+
     return { success: true };
   } catch (error: any) {
     console.error("Update variant failed:", error);
@@ -801,5 +852,94 @@ export async function reorderProductImagesAction(
     return { success: false, error: "Failed to save image order." };
   }
 }
+
+export async function bulkUpdatePricesAction(
+  updates: { id: string; pricePaise: number; compareAtPricePaise?: number | null }[]
+) {
+  const adminUser = await requireAdmin();
+
+  if (!hasDatabase()) {
+    return { success: false, error: "Database offline. Cannot perform bulk update." };
+  }
+
+  if (!updates || !Array.isArray(updates) || updates.length === 0) {
+    return { success: false, error: "No products provided for bulk update." };
+  }
+
+  const results: { id: string; success: boolean; error?: string }[] = [];
+  let successCount = 0;
+  const auditDetails: Array<{ id: string; oldPrice?: number; newPrice: number; oldCompare?: number | null; newCompare?: number | null }> = [];
+
+  for (const item of updates) {
+    if (!item.id || typeof item.pricePaise !== "number" || item.pricePaise <= 0) {
+      results.push({
+        id: item.id || "unknown",
+        success: false,
+        error: "Invalid price: selling price must be greater than ₹0",
+      });
+      continue;
+    }
+
+    try {
+      const existing = await db.query.products.findFirst({
+        where: eq(products.id, item.id),
+      });
+
+      if (!existing) {
+        results.push({ id: item.id, success: false, error: "Product not found in database" });
+        continue;
+      }
+
+      const updatePayload: Record<string, any> = {
+        pricePaise: Math.round(item.pricePaise),
+        updatedAt: new Date(),
+      };
+
+      if (item.compareAtPricePaise !== undefined) {
+        updatePayload.compareAtPricePaise = item.compareAtPricePaise ? Math.round(item.compareAtPricePaise) : null;
+      }
+
+      await db.update(products).set(updatePayload).where(eq(products.id, item.id));
+
+      auditDetails.push({
+        id: item.id,
+        oldPrice: existing.pricePaise,
+        newPrice: updatePayload.pricePaise,
+        oldCompare: existing.compareAtPricePaise,
+        newCompare: updatePayload.compareAtPricePaise,
+      });
+
+      results.push({ id: item.id, success: true });
+      successCount++;
+    } catch (err: any) {
+      console.error(`Failed to bulk update price for product ${item.id}:`, err);
+      results.push({ id: item.id, success: false, error: err.message || "Database update failed" });
+    }
+  }
+
+  await revalidateCatalog();
+
+  await logAdminActivity({
+    adminId: adminUser.id,
+    action: "product.bulk_price_update",
+    entityType: "product",
+    entityId: `bulk_${Date.now()}`,
+    details: {
+      totalSubmitted: updates.length,
+      successCount,
+      failureCount: updates.length - successCount,
+      changes: auditDetails,
+    },
+  });
+
+  return {
+    success: successCount > 0,
+    totalCount: updates.length,
+    successCount,
+    failureCount: updates.length - successCount,
+    results,
+  };
+}
+
 
 

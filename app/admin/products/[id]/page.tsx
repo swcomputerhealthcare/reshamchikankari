@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireAdmin } from "@/lib/auth/helpers";
 import Container from "@/components/ui/container";
 import ProductEditForm from "@/components/admin/product-edit-form";
-import { getCategories, MOCK_PRODUCTS } from "@/lib/catalog";
+import { getCategories } from "@/lib/catalog";
 import { db } from "@/db";
 import { products } from "@/db/schema/catalog";
 import { eq } from "drizzle-orm";
@@ -43,17 +43,6 @@ export default async function AdminEditProductPage(props: AdminEditProductPagePr
       });
     } catch (e) {
       console.error("Database product query failed:", e);
-    }
-  }
-
-  if (!product) {
-    const mock = MOCK_PRODUCTS.find((p) => p.id === id) || null;
-    if (mock) {
-      product = {
-        ...mock,
-        images: mock.images || [],
-        variants: mock.variants || [],
-      };
     }
   }
 

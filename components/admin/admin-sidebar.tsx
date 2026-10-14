@@ -14,7 +14,10 @@ import {
   ExternalLink,
   LogOut,
   Menu,
-  X
+  X,
+  Tag,
+  Sparkles,
+  Ticket,
 } from "lucide-react";
 
 interface AdminSidebarProps {
@@ -47,7 +50,10 @@ export default function AdminSidebar({ user }: AdminSidebarProps) {
   const navItems = [
     { name: "Overview", href: "/admin", icon: LayoutDashboard },
     { name: "Products", href: "/admin/products", icon: Package },
+    { name: "Bulk Prices", href: "/admin/products/prices", icon: Tag },
     { name: "Orders", href: "/admin/orders", icon: ShoppingBag },
+    { name: "Promotions", href: "/admin/promotions", icon: Sparkles },
+    { name: "Coupons", href: "/admin/coupons", icon: Ticket },
     { name: "RC Wallet", href: "/admin/wallet", icon: Wallet },
     { name: "Reviews", href: "/admin/reviews", icon: Star },
     { name: "Settings", href: "/admin/settings", icon: SettingsIcon },

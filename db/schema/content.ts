@@ -49,6 +49,7 @@ export const siteSettings = pgTable("site_settings", {
   socialLinks: jsonb("social_links").notNull().default({}),
   footerConfiguration: jsonb("footer_configuration").notNull().default({}),
   maintenanceMode: boolean("maintenance_mode").notNull().default(false),
+  promotions: jsonb("promotions").default({}),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 

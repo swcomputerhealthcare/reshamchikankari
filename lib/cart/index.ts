@@ -130,7 +130,7 @@ export async function getCartDetails(): Promise<CartDetails> {
               colorCode = variant.colorCode || undefined;
               sizeName = variant.size || variant.name || undefined;
               canonicalPrice = variant.pricePaise ?? 0;
-              stock = variant.stock;
+              stock = variant.isAvailable === false ? 0 : variant.stock;
               sku = variant.sku;
             }
           }

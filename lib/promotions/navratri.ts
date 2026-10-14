@@ -34,6 +34,24 @@ export const NAVRATRI_CAMPAIGN: PromotionCampaign = {
 let runtimeCampaignOverride: boolean | null = null;
 
 /**
+ * Apply updated configuration dynamically (from DB or Admin UI)
+ */
+export function applyCampaignConfig(config: Partial<PromotionCampaign>): void {
+  if (config.name !== undefined) NAVRATRI_CAMPAIGN.name = config.name;
+  if (config.discountPercent !== undefined) {
+    NAVRATRI_CAMPAIGN.discountPercent = config.discountPercent;
+    NAVRATRI_CAMPAIGN.badgeShort = `${config.discountPercent}% OFF`;
+    NAVRATRI_CAMPAIGN.displayBadge = `${(config.name || NAVRATRI_CAMPAIGN.name).toUpperCase()} · ${config.discountPercent}% OFF`;
+  }
+  if (config.displayBadge !== undefined) NAVRATRI_CAMPAIGN.displayBadge = config.displayBadge;
+  if (config.badgeShort !== undefined) NAVRATRI_CAMPAIGN.badgeShort = config.badgeShort;
+  if (config.saleTag !== undefined) NAVRATRI_CAMPAIGN.saleTag = config.saleTag;
+  if (config.isActive !== undefined) NAVRATRI_CAMPAIGN.isActive = config.isActive;
+  if (config.startDate !== undefined) NAVRATRI_CAMPAIGN.startDate = config.startDate;
+  if (config.endDate !== undefined) NAVRATRI_CAMPAIGN.endDate = config.endDate;
+}
+
+/**
  * Check if the Navratri Sale promotion is currently active.
  * Governed by central configuration, environment variable, and optional date window.
  */

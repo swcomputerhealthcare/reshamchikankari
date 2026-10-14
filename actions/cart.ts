@@ -40,7 +40,10 @@ export async function addToCartAction(productId: string, variantId: string | nul
         const varResult = await db.select().from(productVariants).where(eq(productVariants.id, variantId)).limit(1);
         const variant = varResult[0];
         if (!variant) return { success: false, error: "Size variant not found" };
-        isActive = isActive && variant.isActive;
+        if (!variant.isActive || variant.isAvailable === false || variant.stock <= 0) {
+          return { success: false, error: "Selected size is currently out of stock" };
+        }
+        isActive = isActive && variant.isActive && variant.isAvailable;
         stockAvailable = variant.stock;
       }
     } catch (e) {
@@ -55,7 +58,11 @@ export async function addToCartAction(productId: string, variantId: string | nul
     if (variantId) {
       const variant = prod.variants.find(v => v.id === variantId);
       if (!variant) return { success: false, error: "Variant not found" };
-      isActive = isActive && variant.isActive;
+      const isVarAvailable = (variant as any).isAvailable !== false;
+      if (!variant.isActive || !isVarAvailable || variant.stock <= 0) {
+        return { success: false, error: "Selected size is currently out of stock" };
+      }
+      isActive = isActive && variant.isActive && isVarAvailable;
       stockAvailable = variant.stock;
     }
   }

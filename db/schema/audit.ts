@@ -5,8 +5,7 @@ import { profiles } from "./auth";
 export const adminActivities = pgTable("admin_activities", {
   id: text("id").primaryKey(),
   adminId: uuid("admin_id")
-    .notNull()
-    .references(() => profiles.id, { onDelete: "cascade" }),
+    .references(() => profiles.id, { onDelete: "set null" }),
   action: text("action").notNull(), // e.g. 'PRODUCT_CREATED', 'PRODUCT_UPDATED', 'PRODUCT_ARCHIVED', etc.
   entityType: text("entity_type").notNull(), // e.g. 'product', 'review', 'order', 'coupon', 'wallet'
   entityId: text("entity_id").notNull(),

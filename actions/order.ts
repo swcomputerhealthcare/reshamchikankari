@@ -50,6 +50,36 @@ export async function createOrderAction(
       return { success: false, error: "Your shopping bag is empty. Please add items to your bag before proceeding to checkout." };
     }
 
+    // Server-side inventory and availability verification before proceeding
+    if (process.env.DATABASE_URL) {
+      const { productVariants } = await import("@/db/schema/catalog");
+      const { eq } = await import("drizzle-orm");
+
+      for (const item of cart.items) {
+        if (item.variantId) {
+          const [v] = await db
+            .select({
+              stock: productVariants.stock,
+              isAvailable: productVariants.isAvailable,
+              isActive: productVariants.isActive,
+              name: productVariants.name,
+            })
+            .from(productVariants)
+            .where(eq(productVariants.id, item.variantId))
+            .limit(1);
+
+          if (v) {
+            if (!v.isActive || v.isAvailable === false || v.stock < item.quantity) {
+              return {
+                success: false,
+                error: `Size ${v.name || item.sizeName || ""} of "${item.name}" is out of stock or has insufficient quantity. Please update your bag.`,
+              };
+            }
+          }
+        }
+      }
+    }
+
     // Validate coupon if applied
     const cookieStore = await cookies();
     const couponCookie = cookieStore.get("applied_coupon")?.value;
@@ -318,6 +348,7 @@ export async function createOrderAction(
               .set({
                 stock: sql`GREATEST(0, ${productVariants.stock} - ${item.quantity})`,
                 inventoryQuantity: sql`GREATEST(0, ${productVariants.inventoryQuantity} - ${item.quantity})`,
+                isAvailable: sql`CASE WHEN ${productVariants.stock} - ${item.quantity} <= 0 THEN false ELSE ${productVariants.isAvailable} END`,
               })
               .where(eq(productVariants.id, validVariantId));
           } catch (invErr) {

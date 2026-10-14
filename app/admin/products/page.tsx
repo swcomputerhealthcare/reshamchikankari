@@ -35,6 +35,11 @@ export default async function AdminProductsPage() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            <Link href="/admin/products/prices">
+              <Button variant="outline" className="py-2 text-xs border-white/20 text-white hover:bg-white/10">
+                Bulk Edit Prices
+              </Button>
+            </Link>
             <Link href="/admin/products/new">
               <Button variant="accent" className="py-2 text-xs">
                 Add Product

@@ -217,19 +217,25 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
     const nextStock = parseInt(nextStockStr, 10);
     if (isNaN(nextStock) || nextStock < 0) return;
 
+    const v = variantsList.find((item) => item.id === varId);
+    const nextAvailable = nextStock === 0 ? false : (v?.isAvailable ?? true);
+
     // Optimistic update
     setVariantsList(
-      variantsList.map((v) => (v.id === varId ? { ...v, stock: nextStock, inventoryQuantity: nextStock } : v))
+      variantsList.map((item) =>
+        item.id === varId
+          ? { ...item, stock: nextStock, inventoryQuantity: nextStock, isAvailable: nextAvailable }
+          : item
+      )
     );
 
     startTransition(async () => {
-      const v = variantsList.find((v) => v.id === varId);
       if (!v) return;
 
       const res = await updateProductVariantAction(varId, {
         stock: nextStock,
         inventoryQuantity: nextStock,
-        isAvailable: v.isAvailable,
+        isAvailable: nextAvailable,
         sku: v.sku,
       });
 
@@ -237,6 +243,69 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
         triggerToast("Failed to update variant stock.", true);
         router.refresh();
       }
+    });
+  };
+
+  const handleSetVariantStockDirect = (varId: string, newStock: number, isAvailable: boolean) => {
+    // Optimistic update
+    setVariantsList(
+      variantsList.map((item) =>
+        item.id === varId
+          ? { ...item, stock: newStock, inventoryQuantity: newStock, isAvailable }
+          : item
+      )
+    );
+
+    startTransition(async () => {
+      const v = variantsList.find((item) => item.id === varId);
+      if (!v) return;
+
+      const res = await updateProductVariantAction(varId, {
+        stock: newStock,
+        inventoryQuantity: newStock,
+        isAvailable,
+        sku: v.sku,
+      });
+
+      if (!res.success) {
+        triggerToast("Failed to update variant stock.", true);
+        router.refresh();
+      } else {
+        triggerToast(
+          isAvailable
+            ? `Size marked in stock (${newStock} units).`
+            : "Size marked out of stock.",
+          false
+        );
+        router.refresh();
+      }
+    });
+  };
+
+  const handleMoveImage = (imgId: string, direction: "left" | "right") => {
+    const sorted = [...imagesList].sort((a, b) => a.sortOrder - b.sortOrder);
+    const index = sorted.findIndex((img) => img.id === imgId);
+    if (index === -1) return;
+    if (direction === "left" && index === 0) return;
+    if (direction === "right" && index === sorted.length - 1) return;
+
+    const swapIndex = direction === "left" ? index - 1 : index + 1;
+    const temp = sorted[index];
+    sorted[index] = sorted[swapIndex];
+    sorted[swapIndex] = temp;
+
+    const updated = sorted.map((img, i) => ({ ...img, sortOrder: i }));
+    setImagesList(updated);
+
+    startTransition(async () => {
+      await reorderProductImagesAction(
+        updated.map((img) => ({
+          id: img.id,
+          sortOrder: img.sortOrder,
+          isPrimary: img.isPrimary,
+        }))
+      );
+      router.refresh();
     });
   };
 
@@ -689,11 +758,28 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-6">
+                      <div className="flex flex-wrap items-center gap-4">
+                        {/* Status Badge */}
+                        <div>
+                          {v.stock === 0 || !v.isAvailable ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-red-50 text-red-700 border border-red-200">
+                              Out of Stock
+                            </span>
+                          ) : v.stock <= 3 ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-amber-50 text-amber-700 border border-amber-200">
+                              Low Stock ({v.stock})
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              In Stock ({v.stock})
+                            </span>
+                          )}
+                        </div>
+
                         {/* Stock Input */}
                         <div className="flex items-center gap-2">
                           <span className="text-[10px] text-neutral-400 uppercase font-bold tracking-widest">
-                            Stock
+                            Qty
                           </span>
                           <input
                             type="number"
@@ -702,6 +788,25 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
                             className="w-16 px-2 py-1.5 bg-neutral-50 border border-neutral-200 focus:outline-none text-center font-semibold rounded-xs"
                           />
                         </div>
+
+                        {/* Explicit 1-Click Out-of-Stock / In-Stock Button */}
+                        {v.stock === 0 || !v.isAvailable ? (
+                          <button
+                            type="button"
+                            onClick={() => handleSetVariantStockDirect(v.id, 10, true)}
+                            className="px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-widest rounded-xs bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 transition-colors cursor-pointer"
+                          >
+                            Mark In Stock
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSetVariantStockDirect(v.id, 0, false)}
+                            className="px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-widest rounded-xs bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 transition-colors cursor-pointer"
+                          >
+                            Mark Out of Stock
+                          </button>
+                        )}
 
                         {/* Availability Toggle */}
                         <button
@@ -805,7 +910,7 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-6">
                   {imagesList
                     .sort((a, b) => a.sortOrder - b.sortOrder)
-                    .map((img) => (
+                    .map((img, idx) => (
                       <div
                         key={img.id}
                         className={`group relative border rounded-xs overflow-hidden flex flex-col justify-between bg-white ${
@@ -836,20 +941,41 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
                         </div>
 
                         {/* Controls Panel */}
-                        <div className="p-2 border-t border-neutral-50 flex items-center justify-between text-[9px] font-bold uppercase tracking-widest">
+                        <div className="p-2 border-t border-neutral-50 flex items-center justify-between text-[9px] font-bold uppercase tracking-widest gap-1">
                           <button
                             type="button"
                             onClick={() => handleSetPrimaryImage(img.id)}
                             disabled={img.isPrimary}
                             className={`flex items-center gap-1 px-1.5 py-1 rounded-xs transition-colors cursor-pointer ${
                               img.isPrimary
-                                ? "text-brand-sage"
+                                ? "text-brand-sage font-bold"
                                 : "text-neutral-400 hover:text-brand-sage hover:bg-brand-sage/5"
                             }`}
                           >
                             <Check className="h-3 w-3" />
                             <span>Primary</span>
                           </button>
+
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveImage(img.id, "left")}
+                              disabled={idx === 0}
+                              className="px-1.5 py-0.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-xs disabled:opacity-30 cursor-pointer text-[10px]"
+                              title="Move Earlier"
+                            >
+                              ←
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveImage(img.id, "right")}
+                              disabled={idx === imagesList.length - 1}
+                              className="px-1.5 py-0.5 bg-neutral-100 hover:bg-neutral-200 text-neutral-600 rounded-xs disabled:opacity-30 cursor-pointer text-[10px]"
+                              title="Move Later"
+                            >
+                              →
+                            </button>
+                          </div>
                         </div>
                       </div>
                     ))}
@@ -881,9 +1007,32 @@ export default function ProductEditForm({ product, categories }: ProductEditForm
                         const { uploadAdminImageAction } = await import("@/actions/upload");
                         const res = await uploadAdminImageAction(formData);
                         if (res.success && res.image) {
-                          setNewImgUrl(res.image.url);
-                          setNewImgAlt(file.name.replace(/\.[^/.]+$/, ""));
-                          triggerToast("File uploaded successfully. Click 'Add to Gallery' below.");
+                          const primaryFlag = imagesList.length === 0;
+                          const sortVal = imagesList.length;
+                          const altText = file.name.replace(/\.[^/.]+$/, "");
+                          const imgRes = await createProductImageAction(product.id, {
+                            url: res.image.url,
+                            altText,
+                            isPrimary: primaryFlag,
+                            sortOrder: sortVal,
+                          });
+                          if (imgRes.success) {
+                            setImagesList((prev) => [
+                              ...prev,
+                              {
+                                id: imgRes.id || `img_${Date.now()}`,
+                                url: res.image!.url,
+                                isPrimary: primaryFlag,
+                                sortOrder: sortVal,
+                                altText,
+                              },
+                            ]);
+                            triggerToast("Image uploaded and added to gallery.");
+                            router.refresh();
+                          } else {
+                            setNewImgUrl(res.image.url);
+                            triggerToast("Image uploaded. Click 'Add to Gallery' to attach.");
+                          }
                         } else {
                           triggerToast(res.error || "Failed to upload file.", true);
                         }
