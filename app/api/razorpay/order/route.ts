@@ -9,15 +9,38 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { amountPaise, currency = "INR", orderNumber, userEmail } = body;
 
-    if (!amountPaise || amountPaise < 100) {
+    const { getCartDetails } = await import("@/lib/cart");
+    const { calculateOrderPricing } = await import("@/lib/promotions/pricing");
+    const cart = await getCartDetails();
+
+    if (!cart.items || cart.items.length === 0) {
       return NextResponse.json(
-        { success: false, error: "Amount must be at least ₹1 (100 paise)." },
+        { success: false, error: "Your shopping bag is empty." },
+        { status: 400 }
+      );
+    }
+
+    const pricing = calculateOrderPricing({
+      items: cart.items.map((i) => ({
+        productId: i.productId,
+        variantId: i.variantId,
+        canonicalPricePaise: i.canonicalPricePaise,
+        quantity: i.quantity,
+      })),
+      paymentMethod: "ONLINE",
+    });
+
+    const authoritativeAmount = pricing.finalPayablePaise;
+
+    if (authoritativeAmount < 100) {
+      return NextResponse.json(
+        { success: false, error: "Order total must be at least ₹1 (100 paise)." },
         { status: 400 }
       );
     }
 
     const order = await razorpay.orders.create({
-      amount: amountPaise,
+      amount: authoritativeAmount,
       currency,
       receipt: `rcpt_${Math.random().toString(36).substring(2, 11)}`,
       notes: {

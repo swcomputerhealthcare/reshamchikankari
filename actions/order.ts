@@ -99,14 +99,28 @@ export async function createOrderAction(
             break;
           }
         }
+
+        let ipAddress = "127.0.0.1";
+        try {
+          const { headers } = await import("next/headers");
+          const headerList = await headers();
+          const rawIp =
+            headerList.get("x-forwarded-for") ||
+            headerList.get("x-real-ip") ||
+            headerList.get("cf-connecting-ip") ||
+            "127.0.0.1";
+          ipAddress = rawIp.split(",")[0].trim();
+        } catch {}
+
         const validation = await validateCouponCode(decodedCode, cart.subtotalPaise, {
           userId: userId || undefined,
           email: address.email,
           phone: address.phone,
+          ipAddress,
         });
         if (validation.success) {
           discountPaise = validation.discountPaise || 0;
-          couponCode = validation.coupon?.code || decodedCode;
+          couponCode = validation.coupon?.codeMasked || validation.coupon?.code || decodedCode;
           couponId = validation.coupon?.id || null;
         }
       } catch (couponErr) {
@@ -219,16 +233,27 @@ export async function createOrderAction(
         }
       }
 
-      // Safely check if couponId exists in DB before linking FK
+      // Safely check and atomically claim coupon redemption before order placement
       let validCouponId: string | null = null;
       if (couponId) {
         try {
-          const { coupons } = await import("@/db/schema/coupon");
-          const { eq } = await import("drizzle-orm");
-          const [c] = await db.select({ id: coupons.id }).from(coupons).where(eq(coupons.id, couponId)).limit(1);
-          if (c) validCouponId = c.id;
+          const { claimCouponRedemption } = await import("@/lib/coupon");
+          const claimResult = await claimCouponRedemption({
+            couponId,
+            orderId,
+            userId: userId || null,
+            discountPaise,
+          });
+
+          if (!claimResult.success) {
+            return {
+              success: false,
+              error: claimResult.error || "The applied coupon has reached its redemption limit or is no longer available.",
+            };
+          }
+          validCouponId = couponId;
         } catch (cErr) {
-          console.warn("Coupon FK check notice:", cErr);
+          console.warn("Coupon claim notice:", cErr);
         }
       }
 
@@ -283,19 +308,7 @@ export async function createOrderAction(
         },
       });
 
-      if (validCouponId) {
-        try {
-          const { recordCouponUsage } = await import("@/lib/coupon");
-          await recordCouponUsage({
-            couponId: validCouponId,
-            orderId,
-            userId: userId || null,
-            discountPaise,
-          });
-        } catch (cUsageErr) {
-          console.warn("Coupon usage recording notice:", cUsageErr);
-        }
-      }
+      // Note: Coupon redemption was already atomically claimed and verified prior to order persistence
 
       for (const item of cart.items) {
         let validProductId: string | null = null;
